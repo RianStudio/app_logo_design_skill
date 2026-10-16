@@ -30,11 +30,11 @@
     </filter>
     <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="a"/><feOffset in="a" dy="36" result="a"/>
-      <feFlood flood-color="#060B14" flood-opacity=".38"/><feComposite in2="a" operator="in" result="far"/>
+      <feFlood flood-color="#060B14" flood-opacity="0.38"/><feComposite in2="a" operator="in" result="far"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#060B14" flood-opacity=".26"/><feComposite in2="b" operator="in" result="mid"/>
+      <feFlood flood-color="#060B14" flood-opacity="0.26"/><feComposite in2="b" operator="in" result="mid"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#060B14" flood-opacity=".2"/><feComposite in2="c" operator="in" result="near"/>
+      <feFlood flood-color="#060B14" flood-opacity="0.2"/><feComposite in2="c" operator="in" result="near"/>
       <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->

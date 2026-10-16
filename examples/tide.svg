@@ -26,11 +26,11 @@
     </filter>
     <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="a"/><feOffset in="a" dy="36" result="a"/>
-      <feFlood flood-color="#000000" flood-opacity=".38"/><feComposite in2="a" operator="in" result="far"/>
+      <feFlood flood-color="#000000" flood-opacity="0.38"/><feComposite in2="a" operator="in" result="far"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#000000" flood-opacity=".26"/><feComposite in2="b" operator="in" result="mid"/>
+      <feFlood flood-color="#000000" flood-opacity="0.26"/><feComposite in2="b" operator="in" result="mid"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#000000" flood-opacity=".2"/><feComposite in2="c" operator="in" result="near"/>
+      <feFlood flood-color="#000000" flood-opacity="0.2"/><feComposite in2="c" operator="in" result="near"/>
       <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->
@@ -66,8 +66,8 @@
     </g>
     <!-- subject scaled ×1.37 about the centre to sit on the Apple / Material keyline grid -->
     <g id="glyph" transform="translate(512 512) scale(1.37) translate(-512 -512) translate(-26 26)">
-      <!-- progress arc (cinnabar 朱砂): 150° = 25 of 60 minutes, r 250, stroke 76, round caps, starting at 12 o'clock -->
-      <g filter="url(#elevate)"><path d="M 512 262 A 250 250 0 0 1 637 728.5" fill="none" stroke="url(#solid)" stroke-width="76" stroke-linecap="round" filter="url(#inner-solid)"/></g>
+      <!-- progress arc (cinnabar 朱砂): 150° = 25 of 60 minutes, r 250, stroke 92, round caps, starting at 12 o'clock -->
+      <g filter="url(#elevate)"><path d="M 512 262 A 250 250 0 0 1 637 728.5" fill="none" stroke="url(#solid)" stroke-width="92" stroke-linecap="round" filter="url(#inner-solid)"/></g>
     </g>
   </g>
 
@@ -78,7 +78,7 @@
       <use href="#scene" transform="translate(26 -26) translate(512 512) scale(0.72993) translate(-512 -512)" filter="url(#through-glaze)"/>
       <use href="#glaze-shape" fill="url(#glaze)"/>
       <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
-      <ellipse cx="450" cy="400" rx="150" ry="62" fill="#fff" opacity=".55" filter="url(#soft)"/>
+      <ellipse cx="440" cy="372" rx="120" ry="34" fill="#fff" opacity=".55" filter="url(#soft)"/>
     </g>
     <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="4" clip-path="url(#glaze-clip)"/>
   </g>

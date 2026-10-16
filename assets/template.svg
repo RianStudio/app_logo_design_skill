@@ -38,7 +38,7 @@
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
       <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
     </filter>
-    <!-- TODO elevate flood-color (x3): the ground's deepest tone, darker still -->
+    <!-- TODO elevate flood-color (x3): the ground's deepest tone, darker still. Light ground (宣纸): a neutral #3A332A and opacities .23 / .16 / .12 -->
     <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="a"/><feOffset in="a" dy="36" result="a"/>
       <feFlood flood-color="#060B14" flood-opacity=".38"/><feComposite in2="a" operator="in" result="far"/>
