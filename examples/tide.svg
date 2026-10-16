@@ -2,31 +2,31 @@
   <defs>
     <!-- ground: a traditional colour in three tones, lit from above -->
     <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#4A4D55"/>
-      <stop offset=".45" stop-color="#26282E"/>
-      <stop offset="1" stop-color="#0D0E11"/>
+      <stop offset="0" stop-color="#3C4854"/>
+      <stop offset=".45" stop-color="#1A222B"/>
+      <stop offset="1" stop-color="#070A0E"/>
     </radialGradient>
     <!-- grain: like the tooth of xuan paper or unglazed clay -->
     <filter id="grain" x="0" y="0" width="100%" height="100%">
       <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .06 0"/>
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .03 0"/>
       <feComposite in2="SourceGraphic" operator="in"/>
     </filter>
     <linearGradient id="solid" x1="512" y1="224" x2="800" y2="740" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F08A6E"/>
-      <stop offset=".45" stop-color="#D9473A"/>
-      <stop offset="1" stop-color="#A52A22"/>
+      <stop offset="0" stop-color="#E4836E"/>
+      <stop offset=".45" stop-color="#BF4639"/>
+      <stop offset="1" stop-color="#8A2A23"/>
     </linearGradient>
     <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
       <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
       <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
-      <feFlood flood-color="#6E1712" flood-opacity=".45"/>
+      <feFlood flood-color="#6E1712" flood-opacity=".28"/>
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
       <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
     </filter>
     <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="a"/><feOffset in="a" dy="36" result="a"/>
-      <feFlood flood-color="#000000" flood-opacity="0.38"/><feComposite in2="a" operator="in" result="far"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="28" result="a"/><feOffset in="a" dy="24" result="a"/>
+      <feFlood flood-color="#000000" flood-opacity="0.29"/><feComposite in2="a" operator="in" result="far"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
       <feFlood flood-color="#000000" flood-opacity="0.26"/><feComposite in2="b" operator="in" result="mid"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
@@ -35,8 +35,8 @@
     </filter>
     <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->
     <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="34"/>
-      <feColorMatrix type="saturate" values="1.8"/>
+      <feGaussianBlur stdDeviation="26"/>
+      <feColorMatrix type="saturate" values="1.25"/>
     </filter>
     <linearGradient id="glaze" x1="0" y1="280" x2="0" y2="744" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#DCEDE8" stop-opacity="0.9"/>
@@ -46,12 +46,12 @@
     <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
       <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
       <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
-      <feFlood flood-color="#3E6B66" flood-opacity=".32"/>
+      <feFlood flood-color="#3E6B66" flood-opacity=".16"/>
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
     </filter>
     <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
     <linearGradient id="lip" x1="0" y1="280" x2="0" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity=".85"/>
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
       <stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
     <!-- dial face (sky-after-rain celadon 天青): disc r 232, concentric with the arc so only its outer band shows -->
@@ -78,8 +78,8 @@
       <use href="#scene" transform="translate(26 -26) translate(512 512) scale(0.72993) translate(-512 -512)" filter="url(#through-glaze)"/>
       <use href="#glaze-shape" fill="url(#glaze)"/>
       <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
-      <ellipse cx="440" cy="372" rx="120" ry="34" fill="#fff" opacity=".55" filter="url(#soft)"/>
+      <ellipse cx="440" cy="372" rx="120" ry="34" fill="#fff" opacity=".3" filter="url(#soft)"/>
     </g>
-    <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="4" clip-path="url(#glaze-clip)"/>
+    <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="2.5" clip-path="url(#glaze-clip)"/>
   </g>
 </svg>

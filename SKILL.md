@@ -1,21 +1,21 @@
 ---
 name: rian-app-icon
-description: Design app icons and logo marks as production SVG in Rian's house style, which is simple, clear and tactile and draws on Apple and Google icon design with a Chinese aesthetic (a geometric solid in a traditional colour behind a celadon-glaze shape, with generous empty space). Use when asked to create, redesign, or iterate on an app icon, app logo, or logo mark. 用于按 Rian 的风格生成 app 图标 / logo（SVG）。
+description: Design app icons and logo marks as production SVG in Rian's house style, which is simple, clear, minimal and cool-toned, with a tech-precise finish, drawing on Apple and Google icon design and a Chinese aesthetic (a muted traditional-colour solid behind a clear celadon-glaze shape with a crisp edge, sized full on the icon grid). Use when asked to create, redesign, or iterate on an app icon, app logo, or logo mark. 用于按 Rian 的风格生成 app 图标 / logo（SVG）。
 ---
 
 # Rian App Icon
 
 把一句产品描述变成一枚可以直接上架的 app 图标：1024×1024 全出血 SVG 母版、PNG 导出和一张评审对照图。
 
-只有一种风格：**简洁、明确、有质感，带东方气质**。构造学 Google（几何、关键线、自信的色块），光影学 Apple（体积、多层投影），材质和颜色来自中国美学（青瓷釉、传统色）。详细规则在 `references/style.md`，SVG 配方和平台规格在 `references/construction.md`。动笔前两份都要读。
+只有一种风格：**清冷的东方质感**：简洁、明确，偏极简、科技和冷淡。构造学 Google（几何、关键线、自信的色块），光影学 Apple（体积、多层投影），材质和颜色来自中国美学（青瓷釉、传统色）。详细规则在 `references/style.md`，SVG 配方和平台规格在 `references/construction.md`。动笔前两份都要读。
 
 ## 风格的签名
 
 每一枚图标都由同样的三层构成：
 
-1. **底色**：一种传统色，三档色调的径向渐变，加宣纸般的细颗粒
+1. **底色**：一种冷调传统色，三档色调的径向渐变，加极细的颗粒
 2. **实色图形**：一个有体积感的传统色几何形，在后面
-3. **瓷釉**：一个青瓷釉质的几何形，叠在前面，背后的颜色微微晕出；下沿积釉，上方一片柔光
+3. **瓷釉**：一个青瓷釉质的几何形，叠在前面，背后的颜色淡淡透出；下沿淡淡积釉，边缘一道细亮切边
 
 实色和瓷釉的**重叠处**是图标的视觉焦点，也是这个风格的签名。主体尺寸按 Apple 和 Google 的图标网格，长边约占画布 70%，饱满不空。
 
@@ -44,7 +44,8 @@ description: Design app icons and logo marks as production SVG in Rian's house s
 ### 3. 定颜色
 
 - 只从 `references/style.md` 的传统色板里选：一个底色、一个实色、一个釉色。
-- 底色和实色要拉开：深底配暖色（墨配朱砂、黛蓝配藤黄），或者浅底配一个浓色（宣纸配朱砂）。
+- 冷色为主：工具类默认银白或石青，暖色（淡朱砂、淡藤黄）只给本来就是暖色的东西，面积小于主体的一半。
+- 底色和实色要拉开明度：深底配亮色（玄青配银白、黛蓝配淡藤黄），浅底配深色（霜白配黛、霜白配石青）。
 - 产品有品牌色时，从色板里选最接近的传统色，不要直接用西式亮色。
 
 ### 4. 画 SVG
@@ -67,7 +68,7 @@ python3 scripts/render.py path/to/icon.svg -o renders
 |---|---|
 | 釉面发灰 | 釉主要压在深色上时，透明度提到 0.90 → 0.82；釉太薄时透出的是底色的黑 |
 | 釉像一块不透明的奶白卡片，看不到背后的颜色 | 釉主要压在浅亮的实色上时，透明度降到 0.80 → 0.70 |
-| 釉透出的颜色发脏 | 冷釉压暖色时最容易脏：压在朱砂、胭脂上改用月白 |
+| 釉透出的颜色发脏 | 冷釉压暖色时最容易脏：压在淡朱砂上改用月白 |
 | 釉面一片灰，看不出背后的颜色 | 釉要压在实色的**色块**上，而不是压在实色里的浅色细节（山、线条）上；移动釉或实色，让重叠区里主色占大半 |
 | 釉像塑料 | 检查积釉深带和左上釉光是否都在，釉光要大、要软 |
 | 重叠处没看头 | 釉面积的 30%–80% 压在实色上，并让釉有一段边越出实色、落在底色上 |
@@ -77,7 +78,7 @@ python3 scripts/render.py path/to/icon.svg -o renders
 | 浅色底上投影发褐、发脏 | 投影透明度降到 0.23 / 0.16 / 0.12，颜色换中性的 `#3A332A` |
 | 釉光太亮，釉面像一颗球 | 釉光椭圆要扁（高约为宽的 30%），放在上沿内侧，不要压在中心 |
 | 看起来很平、不高级 | 对照 `style.md` 的「质感从哪里来」六件事逐项检查 |
-| 颜色廉价、不够东方 | 换回传统色板里的颜色；底色压深、实色降饱和 |
+| 颜色廉价、太暖、不够冷静 | 换回色板里的颜色；暖色换成银白、黛或石青，或者缩小暖色面积 |
 
 打磨时**不加东西，只调准已有的东西**：比例、重叠量、颜色明度、阴影浓度。
 
