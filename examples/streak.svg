@@ -1,16 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Streak, a daily habit check-in app: an ink calendar page with today ticked off on a green stamp.
-    Built from assets/template.svg (line style). Scaled by k = 1.05 so stroke = 52 ÷ 1.05 ≈ 49.5 before scaling.
+    Streak, a daily habit check-in app: an ink calendar page with today ticked off on a green badge.
+    Built from assets/template.svg (line style). Scaled by k = 0.92 so stroke = 52 ÷ 0.92 ≈ 56.5 before scaling.
+    Variants (dark, tinted, favicon) come from python3 scripts/render.py examples/streak.svg plus the variants flag.
   -->
   <defs>
-    <!-- bg: light (default) #FFFFFF → #EEEEEB -->
+    <!-- bg: light #FFFFFF → #EEEEEB -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <!-- accent: green (完成), light → main; y1/y2 = stamp circle top 420 and bottom 760 -->
-    <linearGradient id="accent" x1="0" y1="420" x2="0" y2="760" gradientUnits="userSpaceOnUse">
+    <!-- accent: green (完成), light → main. Fixed span 480 px after scaling = 480 ÷ 0.92 ≈ 521.7 in source units,
+         centred on the badge's vertical centre y 589: y1 = 589 - 260.9 = 328.1, y2 = 589 + 260.9 = 849.9 -->
+    <linearGradient id="accent" x1="0" y1="328.1" x2="0" y2="849.9" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#6FD3A6"/>
       <stop offset="1" stop-color="#23A36B"/>
     </linearGradient>
@@ -24,21 +26,30 @@
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- k = 1.05, ty = -31. Unscaled outer box (half stroke 24.75): x 199..825 (626), y 207..851 (644).
-       Scaled: 657 × 676. Optical centring as in Tide: the page body (y 296..826, centre 561) is the mass,
-       the rings are a top bump, so the body centre goes to (512, 530): (561 - 31 - 512) × 1.05 + 512 ≈ 531.
-       Outer box after the move: y 159..835, inside the 824 safe zone (100..924). -->
-  <g id="subject" transform="translate(512 512) scale(1.05) translate(-512 -512) translate(0 -31)" filter="url(#lift)">
-    <!-- today stamp: circle r 170 at (512, 590); 40 px clear of the page's bottom line (inner edge 800) -->
-    <circle id="accent-shape" fill="url(#accent)" cx="512" cy="590" r="170"/>
-    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="49.5" stroke-linecap="round" stroke-linejoin="round">
-      <!-- page: 576 × 530 at (224, 296), rx 108 (≥ 18 % of 576); outer edge 24.75 = 49.5 / 2 -->
+  <!-- k = 0.92, ty = -29. data-shape square: the page is the body, the binder rings are a top protrusion.
+       Unscaled page outer box (half stroke 28.25): x 195.75..828.25 (632.5), y 267.75..854.25 (586.5);
+       ring tops at 203.75. Scaled: page 582 × 540, 598 tall with the rings; final x 221..803, y 202..800.
+       Optical centring: the page body centre y 561 goes to (561 - 29 - 512) × 0.92 + 512 ≈ 530.
+       render.py: silhouette 1.07 × Tide, accent 17 % of the hull, r_max 357. -->
+  <g id="subject" data-shape="square" transform="translate(512 512) scale(0.92) translate(-512 -512) translate(0 -29)" filter="url(#lift)">
+    <!-- backing: same rounded rect as the page outline, on its centre line; keeps the lift shadow outside the page -->
+    <rect id="backing" x="224" y="296" width="576" height="530" rx="108" fill="url(#bg)"/>
+    <!-- today badge: circle r 160 at (512, 589), entirely inside the page (edge case 2: clear of every line).
+         Bottom: page line inner edge 826 - 28.25 = 797.75, badge bottom 749 → 48.75 × 0.92 = 44.9 px clear.
+         Top: ring ends 352 + 28.25 = 380.25, badge top 429 → 48.75 × 0.92 = 44.9 px clear. -->
+    <circle id="accent-shape" fill="url(#accent)" cx="512" cy="589" r="160"/>
+    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="56.5" stroke-linecap="round" stroke-linejoin="round">
+      <!-- page: 576 × 530 at (224, 296), rx 108 (≥ 20 % of the short side 530 = 106, on the centre line) -->
       <rect x="224" y="296" width="576" height="530" rx="108"/>
-      <!-- binder rings: two stubs at x = 512 ± 144, from y 232 (above the page) to 352 (inside) -->
-      <path d="M 368 232 V 352 M 656 232 V 352"/>
-      <!-- tick: short arm 70 × 70 into the vertex (482, 661), long arm 130 × 130 up to the right;
-           nudged (-8, +6) from the stamp centre because the long arm carries the visual weight up-right -->
-      <path d="M 412 591 L 482 661 L 612 531"/>
+      <!-- binder rings: two stubs at x = 512 ± 144, from y 232 (above the page) to 352 (inside); they cross the
+           page's top line, so they are connected lines (no clearance check). Inner detail: dropped in the favicon. -->
+      <path class="detail" d="M 368 232 V 352 M 656 232 V 352"/>
+      <!-- tick: lies inside the badge (on-accent: stays #1C1C1E in the dark variant).
+           Short arm 56 × 56 into the vertex (488, 646), long arm 96 × 96 up to the right; set slightly left and low
+           of the badge centre because the long arm carries the weight up and right.
+           Clear of the badge edge: (160 - distance to centre - 28.25) × 0.92 =
+           start (432, 590) 47.6 px, vertex (488, 646) 64.3 px, end (584, 550) 45.9 px. -->
+      <path class="on-accent" d="M 432 590 L 488 646 L 584 550"/>
     </g>
   </g>
 </svg>

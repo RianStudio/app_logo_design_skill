@@ -2,8 +2,10 @@
   <!--
     Rian app icon (line style), built from assets/template.svg.
     Ledgerly, a bookkeeping app: log one expense a day and see at month end where the money went.
-    The month's spending as a pie chart; the biggest category, 40 % of the pie (144°), is pulled out
+    Final: the month's spending as a pie chart; the biggest category, one third of the pie (120°), is pulled out
     and filled green: "this is where the money went".
+    Rules: references/style.md. Layers, attributes and variants: references/construction.md.
+    Variants (dark, tinted, favicon) come from python3 scripts/render.py examples/ledgerly.svg plus the variants flag.
   -->
   <defs>
     <!-- bg: light #FFFFFF → #EEEEEB -->
@@ -11,8 +13,9 @@
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <!-- accent: green #6FD3A6 → #23A36B; y1/y2 = the accent shape's top (198) and bottom (549) -->
-    <linearGradient id="accent" x1="0" y1="198" x2="0" y2="549" gradientUnits="userSpaceOnUse">
+    <!-- accent: green (财务), light → main. Fixed span 480 px (k = 1, so 480 in source units),
+         centred on the slice's vertical centre: slice y 185..525, centre 355, so y1 115, y2 595 -->
+    <linearGradient id="accent" x1="0" y1="115" x2="0" y2="595" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#6FD3A6"/>
       <stop offset="1" stop-color="#23A36B"/>
     </linearGradient>
@@ -26,25 +29,37 @@
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- transform: drawn at final size, k = 1, no offset. Pie centre (466, 563), R 263.
-       The slice (-120° → 24°, bisector -48°) is pulled out by (92, -102) ≈ 137 px along its bisector,
-       so each of its straight edges runs 130.7 / 130.6 px (centre to centre) from the matching body edge:
-       a clear gap of 78 px between the 52 px strokes.
-       Outline incl. stroke: x 177..847 (670), y 172..852 (680), bounding box centred on (512, 512). -->
-  <g id="subject" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
-    <!-- accent shape: the pulled-out 40 %, -120° → 24° sector, r 263, all corners rounded 52
-         (python3 scripts/shapes.py sector 558 461 263 -120 24 52); its edges sit on the slice outline's
-         centre line, so the visible green has inner corners of 52 - 26 = 26 px. -->
+  <!-- k = 1: drawn at final size, stroke 52. data-shape circle: a solid pie, outer diameter (R 276 + 26) × 2 = 604.
+       Pie centre (478, 546). The slice (-105° → 15°, bisector -45°) is pulled out along its bisector by
+       104 / sin 60° = 120.1, i.e. (+84.9, -84.9), so its straight edges run 104 px (centre to centre)
+       from the matching body edges: a clear gap of 52, the split rule for two parts of one object.
+       Outline with stroke: x 176..865, y 159..848 (689 × 689).
+       The pie centre is placed so the filled silhouette's centroid lands on (512, 512); the bounding box then sits
+       8 px up and right of centre, which balances the heavier body against the slice.
+       Size: r 276 is the smallest pie whose 120° slice reaches the 15 % accent share (the share hardly grows with r),
+       and the silhouette is then about 1.09 × Tide, close to the 1.10 limit, so keep r between 276 and 277.
+       render.py: silhouette 1.09 × Tide, accent 15.0 % of the hull, split gap 52, centroid offset 0, r_max 374. -->
+  <g id="subject" data-shape="circle" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- backing: the body outline (same path as the body line, on its centre line); keeps the lift shadow
+         out of the empty body. The slice needs none: the accent fills it. -->
+    <path id="backing" fill="url(#bg)"
+          d="M 507.0 553.8 L 711.7 608.6 A 32 32 0 0 1 732.9 651.8 A 276 276 0 1 1 372.2 291.1 A 32 32 0 0 1 415.4 312.3 L 470.2 517.0 A 52 52 0 0 0 507.0 553.8 Z"/>
+    <!-- accent shape: the pulled-out third, -105° → 15° sector at (562.9, 461.1), r 276,
+         python3 scripts/shapes.py sector 562.9 461.1 276 -105 15 32, with the apex fillet then tightened
+         to r 20 (tangent points 11.5 from the apex = 20 / tan 60°). Same path as the slice outline, so
+         every edge sits under the line. -->
     <path id="accent-shape" fill="url(#accent)"
-          d="M 549.6 446.4 L 455.8 283.9 A 52.0 52.0 0 0 1 486.7 207.9 A 263.0 263.0 0 0 1 817.2 505.5 A 52.0 52.0 0 0 1 744.8 544.2 L 573.4 467.9 A 52.0 52.0 0 0 1 549.6 446.4 Z"/>
-    <!-- lines: one stroke width 52 (k = 1 → 52/1); round caps and joins -->
+          d="M 559.9 449.9 L 500.3 227.4 A 32 32 0 0 1 527.1 187.4 A 276 276 0 0 1 836.6 496.9 A 32 32 0 0 1 796.6 523.7 L 574.1 464.1 A 20 20 0 0 1 559.9 449.9 Z"/>
+    <!-- lines: one stroke width 52 (k = 1); round caps and joins -->
     <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
-      <!-- pie body: the other 60 %, 24° → 240° sector at (466, 563), r 263, rim corners rounded 52;
-           the inner (reflex) corner rounded by a radius-52 concave arc centred in the notch
-           (tangent points 16.9 px from the centre = 52 / tan 72°), so the stroke's notch side is r 26 -->
-      <path d="M 481.4 569.9 L 652.8 646.2 A 52 52 0 0 1 672.5 725.9 A 263 263 0 1 1 282.4 374.7 A 52 52 0 0 1 363.8 385.9 L 457.6 548.4 A 52 52 0 0 0 481.4 569.9 Z"/>
+      <!-- pie body: the other two thirds, 15° → 255° sector at (478, 546), r 276, rim corners rounded 32.
+           The reflex corner is rounded by a concave arc r 52 centred in the notch (60.0 out along -45°,
+           tangent points 30.0 from the centre = 52 / tan 60°), so the stroke's notch side is r 26. -->
+      <path data-part="split"
+            d="M 507.0 553.8 L 711.7 608.6 A 32 32 0 0 1 732.9 651.8 A 276 276 0 1 1 372.2 291.1 A 32 32 0 0 1 415.4 312.3 L 470.2 517.0 A 52 52 0 0 0 507.0 553.8 Z"/>
       <!-- slice outline: same path as the accent -->
-      <path d="M 549.6 446.4 L 455.8 283.9 A 52.0 52.0 0 0 1 486.7 207.9 A 263.0 263.0 0 0 1 817.2 505.5 A 52.0 52.0 0 0 1 744.8 544.2 L 573.4 467.9 A 52.0 52.0 0 0 1 549.6 446.4 Z"/>
+      <path data-part="split"
+            d="M 559.9 449.9 L 500.3 227.4 A 32 32 0 0 1 527.1 187.4 A 276 276 0 0 1 836.6 496.9 A 32 32 0 0 1 796.6 523.7 L 574.1 464.1 A 20 20 0 0 1 559.9 449.9 Z"/>
     </g>
   </g>
 </svg>

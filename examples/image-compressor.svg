@@ -1,20 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
     Image Compressor: a portrait photo (frame + two-peak mountain line) squeezed from both sides by two
-    inward chevrons. Accent: the sky above the mountains, blue (default tool colour, natural sky colour).
-    Drawn at final size (k = 1), so stroke-width 52 = 52 / 1.
-    Geometry: frame 348 x 480 rx 78 (outer 400 x 532); chevron tips 130 from frame (clear 78); ground clear at the ends 88 px,
-    under the valley 108 px; second peak rises 64 px above the valley; sky clear above the high peak 178 px.
-    Chevron arms at a 1:2 slope (36 run / 72 rise). Width moved out of the chevrons (was 44 x 176) into the frame (was 330 x 450).
-    Accent: visible sky about 28% of the subject silhouette, about 6% of the canvas.
+    inward 90 deg chevrons. Accent: the sky above the mountains, blue (default tool colour, natural sky colour).
+    Drawn at final size (k = 1): stroke-width 52 = 52 / 1, and every number below is a final pixel.
+    data-shape="open": a photo body plus two separate outer parts, so the size check uses the convex hull.
+    Frame: centreline 320 x 500, rx 72 (22.5% of the width), outer 372 x 552, centred on (512, 512).
+    Chevrons: 52 deep x 104 tall, tips 130 from the frame side centrelines (130 = 26 + 78 clear + 26).
+    Width budget: 320 frame + 2 x 130 to the tips + 2 x 52 depth + 52 stroke = 736 long side (limit 740).
+    Mountain line: 56 flat at each end, so it meets the frame at 90 deg on both sides and the sky
+    keeps a flat bottom about 20 px wide next to the frame instead of a sharp blue wedge; all slopes 45 deg.
+    Accent: visible sky about 23% of the subject convex hull.
+    No class="detail" parts: the frame, the mountain line and the chevrons are all needed to read the icon.
   -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <!-- accent: blue, light -> main; y1 = frame top 272, y2 = lowest sky edge (mountain ends) 612 -->
-    <linearGradient id="accent" x1="0" y1="272" x2="0" y2="612" gradientUnits="userSpaceOnUse">
+    <!-- accent: blue, light to main. Sky spans y 262 to 612, centre 437; fixed span 480: y1 = 437 - 240, y2 = 437 + 240 -->
+    <linearGradient id="accent" x1="0" y1="197" x2="0" y2="677" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#7AAEFF"/>
       <stop offset="1" stop-color="#3B7BEA"/>
     </linearGradient>
@@ -27,19 +31,22 @@
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- k = 1: outer extent x 146..878 (732 wide), y 246..778 (532 tall); bbox centre (512, 512) -->
-  <g id="subject" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
-    <!-- accent: sky = frame interior above the mountain line; edges on the frame and mountain centre lines -->
+  <!-- k = 1: outer extent x 144..880 (736 wide), y 236..788 (552 tall); bbox centre (512, 512) -->
+  <g id="subject" data-shape="open" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- backing: the frame on its centreline, filled with the background, so the lift only falls outside the frame -->
+    <rect id="backing" x="352" y="262" width="320" height="500" rx="72" fill="url(#bg)"/>
+    <!-- accent: sky = frame interior above the mountain line; every edge sits on a frame or mountain centreline -->
     <path id="accent-shape" fill="url(#accent)"
-          d="M 338 612 V 350 A 78 78 0 0 1 416 272 H 608 A 78 78 0 0 1 686 350 V 612 L 602 528 L 538 592 L 448 502 Z"/>
+          d="M 352 612 V 334 A 72 72 0 0 1 424 262 H 600 A 72 72 0 0 1 672 334 V 612 H 616 L 556 552 L 528 580 L 484 536 L 408 612 Z"/>
     <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
-      <!-- photo: 348 x 480 centreline rect centred on (512, 512), rx 78 (22.4% of width); 348:480 ~ 8:11, the Google portrait keyline -->
-      <rect x="338" y="272" width="348" height="480" rx="78"/>
-      <!-- mountains, every segment at 45 deg (rise = run): ends (338, 612) and (686, 612); peak (448, 502), valley (538, 592), peak (602, 528);
-           runs 110 / 90 / 64 / 84 (up runs 110 + 64 = down runs 90 + 84 = 174 = half the frame width) -->
-      <path d="M 338 612 L 448 502 L 538 592 L 602 528 L 686 612"/>
-      <!-- chevrons: 36 deep, 144 tall, centred on y 512; tips 130 px from the frame side centrelines (78 px clear) -->
-      <path d="M 172 440 L 208 512 L 172 584 M 852 440 L 816 512 L 852 584"/>
+      <!-- photo: frame x 352..672, y 262..762 -->
+      <rect x="352" y="262" width="320" height="500" rx="72"/>
+      <!-- mountains, ground y 612 (150 above the frame bottom, 98 clear inside): flat 352..408, up 76 to peak (484, 536),
+           down 44 to valley (528, 580), up 28 to peak (556, 552), down 60 to (616, 612), flat 616..672.
+           Up runs 76 + 28 = down runs 44 + 60 = 104; peaks 76 and 60 above the ground, valley 32 -->
+      <path d="M 352 612 H 408 L 484 536 L 528 580 L 556 552 L 616 612 H 672"/>
+      <!-- chevrons, 90 deg: tips (222, 512) and (802, 512); arms run 52 out and 52 up or down -->
+      <path d="M 170 460 L 222 512 L 170 564 M 854 460 L 802 512 L 854 564"/>
     </g>
   </g>
 </svg>

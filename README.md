@@ -1,8 +1,8 @@
 # rian-app-icon
 
-一个 Claude skill：把一句产品描述变成一枚可以上架的 app 图标（1024 SVG 母版 + PNG + 评审对照图）。
+一个 Claude skill：把一句产品描述变成一枚可以上架的 app 图标（1024 SVG 母版，浅色、深色、着色三种外观，评审对照图，各平台导出文件）。
 
-风格只有一种：**极简线条**。一笔粗细统一的墨线画出物件，一块强调色点出重点，圆头圆角；线条和留白学 Notion，几何和关键线学 Google 产品图标，柔和渐变和轻微立体学 Apple。每枚图标都是同样的三层：很淡的中性色背景、一个强调色块、一组 52 px 的墨线。
+风格只有一种：**极简线条**。一笔粗细统一的墨线画出物件，一块强调色点出重点，圆头圆角；线条和留白学 Notion，几何和关键线学 Google 产品图标，柔和渐变和轻微立体学 Apple。每枚图标都是同样的四层：很淡的中性色背景、挡住内投影的衬底、一个强调色块、一组墨线。
 
 ![示例](examples/renders/overview.png)
 
@@ -14,11 +14,11 @@
 | QR Code Scanner | 蓝 | 取景框加扫描线 |
 | Image Compressor | 蓝 | 相框和两侧向内收的箭头 |
 | Ledgerly 记账 | 绿 | 饼图，抽出一块填色的切片 |
-| Streak 习惯打卡 | 绿 | 日历页上一枚打勾的印章（由一个只读过 skill 的新 Claude 画出，用来验证 skill） |
+| Streak 习惯打卡 | 绿 | 日历页上一枚打勾的圆形徽章（最初由一个只读过 skill 的新 Claude 画出，用来验证 skill；后来按评审调小了尺寸、加大了留白） |
 
 ## 姊妹 skill：App UI 主题
 
-用同一套强调色生成整套 UI 主题（浅色和深色 token、字号、圆角、毛玻璃材质，导出 CSS、SwiftUI、Compose、Tailwind），在单独的仓库：[RianStudio/app_ui_design_skill](https://github.com/RianStudio/app_ui_design_skill)。
+用同一套强调色生成整套 UI 主题（浅色和深色 token、字号、圆角、毛玻璃材质，导出 CSS、SwiftUI、Compose、Tailwind），在单独的仓库：[RianStudio/app_ui_design_skill](https://github.com/RianStudio/app_ui_design_skill)。图标的强调色是蓝、绿、紫时，界面主色跟图标同色；其余用蓝。
 
 ## 安装
 
@@ -29,7 +29,7 @@
 渲染脚本需要一次性安装：
 
 ```bash
-pip install playwright && playwright install chromium
+pip install playwright pillow numpy && playwright install chromium
 ```
 
 ## 用法
@@ -38,17 +38,26 @@ pip install playwright && playwright install chromium
 
 > 给我做一个 app 图标：「Tide」，把待办拆成 25 分钟专注块的计时器。
 
-Claude 会读懂产品、定隐喻和配色、从模板画 SVG、渲染对照图自检，然后交付。
+Claude 会读懂产品、自己选定隐喻和配色、从模板画 SVG、渲染并按指标自检（最多两轮），然后交付浅色、深色、着色三种外观。
+
+也可以自己渲染：
+
+```bash
+python3 scripts/render.py icon.svg -o renders              # 1024 PNG + 对照图 + 指标报告
+python3 scripts/render.py icon.svg -o renders --variants   # 另出深色版和着色版
+python3 scripts/render.py icon.svg -o renders --export     # 另出 iOS、Android、PWA、favicon 文件
+python3 scripts/render.py icon.svg -o renders --json       # 指标另存为 JSON
+```
 
 ## 结构
 
 ```
-SKILL.md                    工作流程（入口）
-references/style.md         风格原则、参数、配色、禁忌、验收清单
-references/construction.md  图层结构、几何速查、平台规格
+SKILL.md                    工作流程（入口）、示例索引
+references/style.md         风格原则、全部数字和测量口径、配色、禁忌、验收清单
+references/construction.md  图层结构、属性和类、几何速查、变体配方、平台导出、渲染参数
 references/sources.md       参考来源与致谢
 assets/template.svg         图标模板：只改 TODO 的地方
-scripts/render.py           SVG → 1024 PNG + 对照图（Chromium 渲染）
+scripts/render.py           SVG → 1024 PNG、对照图、指标报告；变体和平台导出（Chromium 渲染）
 scripts/shapes.py           圆角扇形等需要做圆角的色块路径
 examples/                   七枚示例和它们的渲染图
 ```

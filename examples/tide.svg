@@ -1,21 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Rian app icon template (line style). Copy this file and change only the parts marked TODO.
-    Example: Tide, a focus timer: an ink stopwatch with 25 of 60 minutes filled in coral.
-    Rules: references/style.md. Recipe and platform specs: references/construction.md.
+    Tide, a focus timer: an ink stopwatch with 25 of 60 minutes filled in coral.
+    Same geometry as assets/template.svg, and the size reference for the set: render.py measures every other
+    icon's silhouette and convex hull against this file.
+    Rules and numbers: references/style.md. Layers, attributes and variants: references/construction.md.
   -->
   <defs>
-    <!-- TODO bg: light (default) #FFFFFF → #EEEEEB; dark #3A3A3D → #1C1C1E -->
+    <!-- bg: light #FFFFFF → #EEEEEB; render.py makes the dark and tinted variants -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <!-- TODO accent: ONE colour from the palette, light → main; y1/y2 = the accent shape's top and bottom -->
-    <linearGradient id="accent" x1="0" y1="300" x2="0" y2="750" gradientUnits="userSpaceOnUse">
+    <!-- accent: coral (timer, focus), light #FF9C86 → main #EC5B45.
+         Span 480 px after scaling = 480 ÷ 1.08 ≈ 444 in source units, centred on the sector:
+         the sector runs y 299..755 (centre 527), so y1 305, y2 749 (final y 265..744). -->
+    <linearGradient id="accent" x1="0" y1="305" x2="0" y2="749" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FF9C86"/>
       <stop offset="1" stop-color="#EC5B45"/>
     </linearGradient>
-    <!-- lift: one faint shadow under the whole subject. TODO flood-opacity: light .10, dark .35 -->
+    <!-- lift: one faint shadow under the whole subject (light .10) -->
     <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
       <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
@@ -25,20 +28,28 @@
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- TODO transform: scale k so the subject's long side (with stroke) is about 680 px; ty for optical centring -->
-  <g id="subject" transform="translate(512 512) scale(1.08) translate(-512 -512) translate(0 -24)" filter="url(#lift)">
-    <!-- TODO accent shape: one closed shape, under the lines.
-         Example: 25 of 60 minutes = 150° sector from 12 o'clock, r 250, corners rounded 24
-         (python3 scripts/shapes.py sector 512 548 250 -90 60 24) -->
+  <!-- transform: k = 1.08, then up 22 source units (final y = 1.08 × (y − 22) − 41).
+       Circle keyline: case outer diameter (250 + 24) × 2 × 1.08 = 592 px; case centre (512, 527), on the
+       body-centre line y 530 ± 6 that applies because the crown sticks out on top.
+       Outer box x 216..808, y 100.5..823 (crown cap to case bottom): 592 × 723 px, long side 723 ≤ 740;
+       the cap top at 100.5 stays inside the safe area (y ≥ 100). -->
+  <g id="subject" data-shape="circle" transform="translate(512 512) scale(1.08) translate(-512 -512) translate(0 -22)" filter="url(#lift)">
+    <!-- backing: the case circle again (r 250 at 512, 548, on the line's centre line), filled with the background,
+         so the lift shadow falls only outside the case and the white dial stays clean -->
+    <circle id="backing" cx="512" cy="548" r="250" fill="url(#bg)"/>
+    <!-- accent shape: 25 of 60 minutes = 25 ÷ 60 × 360° = 150°, from 12 o'clock (−90°) clockwise to 60°,
+         r 250 at the case centre, corners rounded 24 (python3 scripts/shapes.py sector 512 548 250 -90 60 24).
+         The rim sits on the case's centre line; the two radii are free edges that end on it. -->
     <path id="accent-shape" fill="url(#accent)"
           d="M 512.0 541.6 L 512.0 323.3 A 24.0 24.0 0 0 1 538.5 299.4 A 250.0 250.0 0 0 1 659.3 750.0 A 24.0 24.0 0 0 1 624.4 742.6 L 515.2 553.6 A 24.0 24.0 0 0 1 512.0 541.6 Z"/>
-    <!-- TODO lines: one stroke width, 52 after scaling = 52 ÷ k before (here 52 ÷ 1.08 ≈ 48); round caps and joins. Dark version: stroke #F5F5F7.
-         A closed line shape that must hide the accent gets fill="#FFFFFF" (dark: #2A2A2C) instead of none. -->
+    <!-- lines: stroke 48 in source units = 52 ÷ 1.08, so 52 px after scaling; round caps and joins -->
     <g id="line" fill="none" stroke="#1C1C1E" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
       <!-- case: circle r 250 at (512, 548) -->
       <circle cx="512" cy="548" r="250"/>
-      <!-- crown: stem from the case to y 214, cap 120 wide at y 196 -->
-      <path d="M 512 272 V 214 M 452 196 H 572"/>
+      <!-- crown: stem from the case top (y 272, inside the case line) up to the cap's centre line y 177; cap 120 long
+           (x 452..572, 168 with round ends). The stem joins both, a T-junction; the cap's lower edge (201) still clears
+           the case's outer edge (274) by (274 − 201) × 1.08 = 78.8 px -->
+      <path d="M 512 272 V 177 M 452 177 H 572"/>
     </g>
   </g>
 </svg>

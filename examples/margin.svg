@@ -1,9 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
     Margin, a notes app: quick notes and longer writing.
-    Final: an ink sheet of paper (portrait, Google-keyline-like 0.77 ratio) whose left margin is filled yellow
+    Final: an ink sheet of paper (portrait, tall keyline) whose left margin is filled yellow
     (the app's name, and where notes start); three lines of writing sit at the top, open paper below for longer writing.
-    Rules: references/style.md. Recipe and platform specs: references/construction.md.
+    Rules: references/style.md. Layers, attributes and variants: references/construction.md.
+    Variants (dark, tinted, favicon) come from python3 scripts/render.py examples/margin.svg plus the variants flag.
   -->
   <defs>
     <!-- bg: light #FFFFFF → #EEEEEB -->
@@ -11,8 +12,9 @@
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <!-- accent: yellow #FFD978 → #F2AE2E; y1/y2 = the margin strip's top (218) and bottom (806) -->
-    <linearGradient id="accent" x1="0" y1="218" x2="0" y2="806" gradientUnits="userSpaceOnUse">
+    <!-- accent: yellow (笔记), light → main. Fixed span 480 px (k = 1, so 480 in source units),
+         centred on the margin strip's vertical centre: strip y 222..802, centre 512, so y1 272, y2 752 -->
+    <linearGradient id="accent" x1="0" y1="272" x2="0" y2="752" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFD978"/>
       <stop offset="1" stop-color="#F2AE2E"/>
     </linearGradient>
@@ -26,22 +28,29 @@
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- transform: drawn at final size, k = 1. Page outer box (with stroke) 492 × 640 (x 266–758, y 192–832), centred on (512, 512) -->
-  <g id="subject" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
-    <!-- accent shape: the margin strip. Left, top and bottom edges sit on the page centreline (x 292, y 218 / 806,
-         corners rx 90 = the page's); the right edge at x 418 is free inside the page, like Tide's sector edges.
-         Visible yellow 100 × 536 (inner edges x 318–418, y 244–780), about 26 % of the inner width, ≈ 17 % of the silhouette -->
+  <!-- k = 1: drawn at final size, stroke 52. data-shape tall: a solid portrait page.
+       Page outer box (with stroke) 508 × 632 (x 258..766, y 196..828), centred on (512, 512); aspect 0.80 like the
+       tall keyline 480 × 600, a little larger so the writing lines can be long.
+       render.py: silhouette 1.07 × Tide, accent 16.4 % of the hull, r_max 357. -->
+  <g id="subject" data-shape="tall" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- backing: same rounded rect as the page outline, on its centre line; keeps the lift shadow outside the page -->
+    <rect id="backing" x="284" y="222" width="456" height="580" rx="96" fill="url(#bg)"/>
+    <!-- accent shape: the margin strip. Left, top and bottom edges sit on the page centreline (x 284, y 222 / 802,
+         corners rx 96 = the page's); the right edge at x 410 is a free edge, a straight line with both ends on the
+         page's centre line (like Tide's sector radii).
+         Visible yellow 100 × 528 (page inner edge x 310 to 410, y 248..776). -->
     <path id="accent-shape" fill="url(#accent)"
-          d="M 418 218 H 382 A 90 90 0 0 0 292 308 V 716 A 90 90 0 0 0 382 806 H 418 Z"/>
+          d="M 410 222 H 380 A 96 96 0 0 0 284 318 V 706 A 96 96 0 0 0 380 802 H 410 Z"/>
     <!-- lines: one stroke width 52 (k = 1); round caps and joins -->
     <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
-      <!-- page: centreline rect x 292–732, y 218–806 (440 × 588), rx 90 = 20.5 % of 440 -->
-      <rect x="292" y="218" width="440" height="588" rx="90"/>
-      <!-- writing: three lines at y 360 / 490 / 620 (130 apart = 78 clear), centrelines x 522–602:
-           caps x 496–628 sit 78 clear of the yellow edge (418) and of the page's inner right edge (706),
-           so the text block is centred in the white part of the page. Top cap 90 clear of the inner top edge (244),
-           134 of open paper below. The last line is short (to x 562), a paragraph ending. -->
-      <path d="M 522 360 H 602 M 522 490 H 602 M 522 620 H 562"/>
+      <!-- page: centreline rect x 284..740, y 222..802 (456 × 580), rx 96 = 21 % of 456 -->
+      <rect x="284" y="222" width="456" height="580" rx="96"/>
+      <!-- writing: three lines at y 362 / 492 / 622 (130 apart = 78 clear). Centrelines x 492..610, caps x 466..636
+           (170 long, so they read as writing, not as pills). The last line is short (to x 550, 110 long), a paragraph ending.
+           Caps 56 clear of the yellow edge (x 410; at least 40, and writing starts close to the margin) and
+           78 clear of the page's inner right edge (x 714). Top cap 88 below the inner top edge (248),
+           128 of open paper below (648 to 776). Inner detail: dropped in the favicon and small sizes. -->
+      <path class="detail" d="M 492 362 H 610 M 492 492 H 610 M 492 622 H 550"/>
     </g>
   </g>
 </svg>
