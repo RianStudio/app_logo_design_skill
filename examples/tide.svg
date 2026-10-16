@@ -64,18 +64,18 @@
       <rect width="1024" height="1024" fill="url(#bg)"/>
       <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
     </g>
-    <!-- liubai: the subject is drawn at 88% so the ground breathes -->
-    <g id="glyph" transform="translate(512 512) scale(0.88) translate(-512 -512) translate(-23 17)">
+    <!-- subject scaled ×1.27 about the centre to sit on the Apple / Material keyline grid -->
+    <g id="glyph" transform="translate(512 512) scale(1.27) translate(-512 -512) translate(-23 17)">
       <!-- focus block (cinnabar 朱砂): 150° sector r 250, corners softened by a 24 px round-join stroke -->
       <g filter="url(#elevate)"><path d="M 560 470 L 560 220 A 250 250 0 0 1 685 686.5 Z" fill="url(#solid)" filter="url(#inner-solid)" stroke="url(#solid)" stroke-width="24" stroke-linejoin="round"/></g>
     </g>
   </g>
 
   <!-- glaze: shadow base, blurred scene, celadon body, pooling, broad sheen, a fine lip of light -->
-  <g id="glaze" transform="translate(512 512) scale(0.88) translate(-512 -512) translate(-23 17)">
+  <g id="glaze" transform="translate(512 512) scale(1.27) translate(-512 -512) translate(-23 17)">
     <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
     <g clip-path="url(#glaze-clip)">
-      <use href="#scene" transform="translate(23 -17) translate(512 512) scale(1.13636) translate(-512 -512)" filter="url(#through-glaze)"/>
+      <use href="#scene" transform="translate(23 -17) translate(512 512) scale(0.78740) translate(-512 -512)" filter="url(#through-glaze)"/>
       <use href="#glaze-shape" fill="url(#glaze)"/>
       <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
       <ellipse cx="420" cy="420" rx="130" ry="60" fill="#fff" opacity=".42" filter="url(#soft)"/>

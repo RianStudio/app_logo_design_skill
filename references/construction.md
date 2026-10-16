@@ -22,7 +22,7 @@
 
 要点：
 
-- `#glyph` 和 `#glaze` 用同一个 transform：`translate(512 512) scale(0.88) translate(-512 -512) translate(tx ty)`，其中 tx、ty 用来把主体视觉居中。釉里面的 `<use href="#scene">` 必须用它的**逆变换**：`translate(-tx -ty) translate(512 512) scale(1.13636) translate(-512 -512)`。
+- `#glyph` 和 `#glaze` 用同一个 transform：`translate(512 512) scale(k) translate(-512 -512) translate(tx ty)`。先在 1024 画布上按方便的尺寸画好主体，再用 k 把它放大到 `style.md` 规定的尺寸（主体长边约 720 px，k = 720 ÷ 原始长边），tx、ty 用来把主体视觉居中。釉里面的 `<use href="#scene">` 必须用它的**逆变换**：`translate(-tx -ty) translate(512 512) scale(1/k) translate(-512 -512)`。
 - glaze、lip 渐变的 y 坐标对准釉形状自己的上下沿；釉光椭圆放在釉形状左上三分之一处，宽度约为形状宽度的 70%。
 - 实色是多个形状组合时（比如纸页加两行线），把它们放进一个 `<g filter="url(#inner-solid)">`，再整体包 `elevate`。
 - 根节点只写 `viewBox`，不写宽高。不嵌入位图，不用 `<text>`。
@@ -49,7 +49,7 @@
 | iOS / iPadOS / macOS | 1024 × 1024 PNG，不透明，无圆角 | Xcode 单尺寸 App Icon；或者把三层导入 Icon Composer |
 | iOS 深色模式 | 底色换成墨，实色和釉保持 | 从同一份 SVG 改 `#bg` 渐变即可 |
 | iOS 着色模式 | 透明背景上的白色剪影 | 实色 + 釉合并成一个白色剪影 |
-| Android 自适应图标 | 108 dp 画布，前景在中心 66 dp 圆内 | 等价于 1024 画布中心约 626 px 的圆，600 关键线框天然满足 |
+| Android 自适应图标 | 108 dp 画布，前景在中心 66 dp 圆内 | 等价于 1024 画布中心约 626 px 的圆：导出 Android 版时把 k 再乘 0.85 左右，让主体落进这个圆 |
 | Android 单色图标 | 主体单色剪影 | 同 iOS 着色模式 |
 | Web favicon | `icon.svg` + 32 px ICO + 180 px apple-touch-icon | 16/32 px 时去掉釉的模糊和釉光，只保留两个色块 |
 | PWA | 192 / 512 PNG + maskable 512 | 内容在中心 80% 圆内 |

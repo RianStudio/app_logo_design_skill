@@ -7,7 +7,7 @@ description: Design app icons and logo marks as production SVG in Rian's house s
 
 把一句产品描述变成一枚可以直接上架的 app 图标：1024×1024 全出血 SVG 母版、PNG 导出和一张评审对照图。
 
-只有一种风格：**简洁、明确、有质感，带东方气质**。构造学 Google（几何、关键线、自信的色块），光影学 Apple（体积、多层投影），材质和颜色来自中国美学（青瓷釉、传统色、留白）。详细规则在 `references/style.md`，SVG 配方和平台规格在 `references/construction.md`。动笔前两份都要读。
+只有一种风格：**简洁、明确、有质感，带东方气质**。构造学 Google（几何、关键线、自信的色块），光影学 Apple（体积、多层投影），材质和颜色来自中国美学（青瓷釉、传统色）。详细规则在 `references/style.md`，SVG 配方和平台规格在 `references/construction.md`。动笔前两份都要读。
 
 ## 风格的签名
 
@@ -17,7 +17,7 @@ description: Design app icons and logo marks as production SVG in Rian's house s
 2. **实色图形**：一个有体积感的传统色几何形，在后面
 3. **瓷釉**：一个青瓷釉质的几何形，叠在前面，背后的颜色微微晕出；下沿积釉，上方一片柔光
 
-实色和瓷釉的**重叠处**是图标的视觉焦点，也是这个风格的签名。主体按 88% 缩放，四周留白。示例见 `examples/`。
+实色和瓷釉的**重叠处**是图标的视觉焦点，也是这个风格的签名。主体尺寸按 Apple 和 Google 的图标网格，长边约占画布 70%，饱满不空。示例见 `examples/`。
 
 ## 工作流程
 
@@ -46,7 +46,7 @@ description: Design app icons and logo marks as production SVG in Rian's house s
 
 从 `assets/template.svg` 复制开始，只改标了 TODO 的地方：颜色、实色图形、釉的形状、渐变和釉光坐标、整体 transform。滤镜和瓷釉配方就是这个风格的质感来源，不要重写，也不要删减。
 
-- 主体（实色 + 釉）在缩放前落在中心 600 × 600 内，模板会整体缩到 88%；视觉重心在画布中心。
+- 主体（实色 + 釉）用模板的整体 transform 缩放到长边约 720 px（见 `style.md` 的「主体尺寸」），视觉重心在画布中心。
 - 釉的形状必须是**一个闭合轮廓**；由多个形状拼成时先合并成一条 path，否则重叠处颜色会加深。
 - 坐标、半径、角度用整齐的数字，并在注释里写出几何关系。
 
@@ -64,6 +64,7 @@ python3 scripts/render.py path/to/icon.svg -o renders
 | 釉面一片灰，看不出背后的颜色 | 釉要压在实色的**色块**上，而不是压在实色里的浅色细节（山、线条）上；移动釉或实色，让重叠区里主色占大半 |
 | 釉像塑料 | 检查积釉深带和左上釉光是否都在，釉光要大、要软 |
 | 重叠处没看头 | 让实色和釉重叠 25%–45% 面积；太少没焦点，太多实色被吞掉 |
+| 主体显得小、四周太空 | 加大 transform 里的 scale，让长边到 720 px 左右 |
 | 小尺寸糊成一团 | 加大两层的明度差，减少釉形状上的凹凸细节 |
 | 看起来很平、不高级 | 对照 `style.md` 的「质感从哪里来」六件事逐项检查 |
 | 颜色廉价、不够东方 | 换回传统色板里的颜色；底色压深、实色降饱和 |

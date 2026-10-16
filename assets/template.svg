@@ -80,8 +80,8 @@
       <rect width="1024" height="1024" fill="url(#bg)"/>
       <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
     </g>
-    <!-- liubai: the subject is drawn at 88% so the ground breathes -->
-    <g id="glyph" transform="translate(512 512) scale(0.88) translate(-512 -512) translate(-18 32)">
+    <!-- TODO scale: size the subject on the Apple / Material keyline grid (long side ≈ 720 px, see references/style.md); keep the inverse on the glaze's <use href="#scene"> in sync -->
+    <g id="glyph" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-18 32)">
       <circle cx="440" cy="430" r="250" fill="url(#glow)"/>
       <!-- TODO solid shape. Example: sun (gamboge 藤黄): sphere r 170 -->
       <g filter="url(#elevate)"><circle cx="440" cy="430" r="170" fill="url(#solid)" filter="url(#inner-solid)"/></g>
@@ -89,10 +89,10 @@
   </g>
 
   <!-- glaze: shadow base, blurred scene, celadon body, pooling, broad sheen, a fine lip of light -->
-  <g id="glaze" transform="translate(512 512) scale(0.88) translate(-512 -512) translate(-18 32)">
+  <g id="glaze" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-18 32)">
     <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
     <g clip-path="url(#glaze-clip)">
-      <use href="#scene" transform="translate(18 -32) translate(512 512) scale(1.13636) translate(-512 -512)" filter="url(#through-glaze)"/>
+      <use href="#scene" transform="translate(18 -32) translate(512 512) scale(0.73529) translate(-512 -512)" filter="url(#through-glaze)"/>
       <use href="#glaze-shape" fill="url(#glaze)"/>
       <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
       <!-- TODO sheen: a broad soft highlight over the upper-left third of the glaze shape -->
