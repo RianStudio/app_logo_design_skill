@@ -56,5 +56,5 @@
 ## 接入
 
 - **Web**：先引入 `theme.css`，用 `var(--c-primary)` 等变量；`<html data-theme="dark">` 强制深色，不写则跟随系统。Tailwind 项目在 `presets` 里加 `tailwind.preset.js`，即可用 `bg-surface`、`text-text-2`、`shadow-e2`、`rounded-lg`。
-- **SwiftUI**：把 `Theme.swift` 加进项目，用 `Palette.primary`、`Radius.lg`、`Space.s4`，浮层加 `.glaze()`。
+- **SwiftUI**：把 `Theme.swift` 加进项目，用 `Palette.primary`、`Radius.lg`、`Space.s4`，浮层加 `.glaze()`。需要 iOS 15 以上。
 - **Jetpack Compose**：把 `Theme.kt` 放进 `theme` 包，用 `AppTheme { … }` 包住界面，组件自动取 `MaterialTheme.colorScheme`。
