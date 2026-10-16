@@ -83,7 +83,7 @@ Android 和 PWA 的缩放由 render.py 自动算并套用，母版不用改：
 
 ```
 r_max         = 主体任一像素（含线宽）到 (512, 512) 的最远距离
-android_scale = 313 / r_max      313 = 66 dp 安全圆在 1024 画布上的半径
+android_scale = 290 / r_max      290 = 66 dp 安全圆（半径 313）往里收 23 px，图标不贴着裁切边
 pwa_scale     = 409.6 / r_max    409.6 = maskable 安全区（中心 80% 的圆）的半径
 ```
 

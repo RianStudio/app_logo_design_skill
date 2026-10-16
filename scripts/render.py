@@ -16,7 +16,7 @@ Exit code 0 even when a check fails (1 only when an SVG cannot be read).
               ios-1024.png (opaque), icon-1024-transparent.png, android-foreground-432.png,
               android-monochrome-432.png, pwa-192.png, pwa-512.png, pwa-maskable-512.png,
               apple-touch-180.png, favicon-16.png, favicon-32.png, favicon.ico, favicon.svg
-              Android layers are scaled by 313 / r_max, the PWA maskable icon by 409.6 / r_max.
+              Android layers are scaled by 290 / r_max (23 px inside the 313 px safe circle), the PWA maskable icon by 409.6 / r_max.
   --json      also writes <name>-metrics.json
 
 All numbers are final pixels on the 1024 canvas (after the #subject transform). Areas are compared with
@@ -78,7 +78,8 @@ CENTROID_MAX = 12             # filled-silhouette centroid to (512, 512)
 BODY_CENTRE = (512, 530)      # with a top protrusion: the body's own centre
 BODY_TOL = 6
 PROTRUSION_W = 80             # parts thinner than this (an opening of radius 40) count as protrusions
-ANDROID_R = 313.0             # 66 dp safe circle of a 108 dp layer on the 1024 canvas
+ANDROID_SAFE_R = 313.0        # 66 dp safe circle of a 108 dp layer on the 1024 canvas
+ANDROID_R = 290.0             # target r_max: 23 px (~2.4 dp) inside the safe circle so the icon doesn't touch the mask
 PWA_R = 409.6                 # maskable: centre 80 % circle
 KEYLINES = {"circle": "⌀ 600", "square": "540 × 540", "tall": "480 × 600", "wide": "600 × 480",
             "open": "+10% 以内"}
@@ -1056,7 +1057,7 @@ def measure(renderer, text, root, name, ref):
     t_r = ref.get("r_max")
     tide_note = f" · Tide r_max {t_r:.0f} ×{ANDROID_R / t_r:.3f}" if t_r else ""
     C.append(check("android", "安卓安全圆",
-                   f"r_max {r_max:.0f} {'>' if r_max > ANDROID_R else '≤'} 313 → ×{a_s:.3f}" + tide_note,
+                   f"r_max {r_max:.0f} {'>' if r_max > ANDROID_R else '≤'} {ANDROID_R:.0f}（安全圆 {ANDROID_SAFE_R:.0f}）→ ×{a_s:.3f}" + tide_note,
                    "导出自动缩放", "INFO"))
     C.append(check("pwa", "PWA 遮罩圆", f"r_max {r_max:.0f} {'>' if r_max > PWA_R else '≤'} 409.6 → ×{p_s:.3f}",
                    "导出自动缩放", "INFO"))
