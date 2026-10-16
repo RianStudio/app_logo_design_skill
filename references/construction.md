@@ -49,7 +49,7 @@ render.py 靠这些标记选检查项和生成变体，画的时候顺手写上�
 | 云 | 一条闭合 path：左圆 → 凹角圆弧 → 顶部大圆 → 凹角圆弧 → 右圆 → 平底，见 `examples/halo.svg` |
 | 气泡 | `python3 scripts/shapes.py bubble X Y W H R TAIL [left\|right]`：圆角矩形 + 尾巴。尾巴是左下（或右下）角往下延伸出的 55° 楔形，尖端靠 round join 磨圆，和底边相接处是 r 52 的反向圆弧。线和色块用同一条 path |
 | 凹角 | 两条边之间插一段反向圆弧（`A r r 0 0 0`），圆心在凹口里，见 `examples/ledgerly.svg` |
-| 对勾、箭头 | 折线 `M … L … L …`，round join 磨圆拐角外侧，内侧的尖角允许 |
+| 对勾、箭头 | 折线 `M … L … L …`，round join 磨圆拐角外侧，内侧的尖角允许。带杆的箭头：杆接在箭头尖上算接头，两翼和杆的夹角要 ≥ 60°（箭头头张开 ≥ 120°）；要 90° 的箭头头就只画不带杆的折线（`examples/image-compressor.svg` 的 › ‹） |
 
 ## 变体
 
