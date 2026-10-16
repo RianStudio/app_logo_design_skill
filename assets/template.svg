@@ -36,7 +36,8 @@
        crown top 153 → 100.5 px after scaling, inside the safe area; long side 723. -->
   <g id="subject" data-shape="circle" transform="translate(512 512) scale(1.08) translate(-512 -512) translate(0 -22)" filter="url(#lift)">
     <!-- TODO backing: the FIRST child, same shape as the outer outline (on the line's centre line), fill url(#bg).
-         It keeps the lift shadow outside the outline. Leave it out only when there is no enclosed body (bare brackets). -->
+         It keeps the lift shadow outside the outline. Leave it out only when nothing enclosed is left blank:
+         bare brackets (QR), or closed areas already filled by the accent and a knock-out fill (Halo). -->
     <circle id="backing" cx="512" cy="548" r="250" fill="url(#bg)"/>
     <!-- TODO accent shape: one closed shape, under the lines. Its edge sits on a line's centre line, or keeps the
          accent clearance from every line (free edges: straight or a full arc, both ends on a line's centre line).

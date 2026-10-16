@@ -38,7 +38,8 @@
        8 px up and right of centre, which balances the heavier body against the slice.
        Size: r 276 is the smallest pie whose 120° slice reaches the 15 % accent share (the share hardly grows with r),
        and the silhouette is then about 1.09 × Tide, close to the 1.10 limit, so keep r between 276 and 277.
-       render.py: silhouette 1.09 × Tide, accent 15.0 % of the hull, split gap 52, centroid offset 0, r_max 374. -->
+       render.py: silhouette 1.09 × Tide, accent 15.0 % of the hull, split gap 51.8 (≥ 52 within the 1 px tolerance),
+       centroid offset 0, r_max 374. -->
   <g id="subject" data-shape="circle" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
     <!-- backing: the body outline (same path as the body line, on its centre line); keeps the lift shadow
          out of the empty body. The slice needs none: the accent fills it. -->

@@ -47,6 +47,7 @@ render.py 靠这些标记选检查项和生成变体，画的时候顺手写上�
 | 圆弧 | `M 起点 A r r 0 大弧标志 1 终点`，角度 > 180° 时大弧标志为 1 |
 | 胶囊 | `<rect rx="高度/2">` |
 | 云 | 一条闭合 path：左圆 → 凹角圆弧 → 顶部大圆 → 凹角圆弧 → 右圆 → 平底，见 `examples/halo.svg` |
+| 气泡 | `python3 scripts/shapes.py bubble X Y W H R TAIL [left\|right]`：圆角矩形 + 尾巴。尾巴是左下（或右下）角往下延伸出的 55° 楔形，尖端靠 round join 磨圆，和底边相接处是 r 52 的反向圆弧。线和色块用同一条 path |
 | 凹角 | 两条边之间插一段反向圆弧（`A r r 0 0 0`），圆心在凹口里，见 `examples/ledgerly.svg` |
 | 对勾、箭头 | 折线 `M … L … L …`，round join 磨圆拐角外侧，内侧的尖角允许 |
 
@@ -93,6 +94,7 @@ r_max 和两个系数都在指标报告里。
 ```bash
 pip install playwright pillow numpy && playwright install chromium   # 第一次
 python3 scripts/render.py ICON.svg [-o DIR] [--variants] [--export] [--json]
+python3 scripts/overview.py examples/tide.svg icon.svg -o renders/compare.png   # 新图标和 Tide 并排，看轻重
 ```
 
 | 参数 | 输出 |
@@ -102,6 +104,6 @@ python3 scripts/render.py ICON.svg [-o DIR] [--variants] [--export] [--json]
 | `--export` | `DIR/export/` 下的各平台文件，见「平台导出」 |
 | `--json` | `<name>-metrics.json`，内容和终端报告相同 |
 
-- **指标报告**：每项一行，写数值、目标和 PASS / FAIL / INFO：有效线宽、长边、和 Tide 比的剪影或凸包面积、色块占比、线与线最小净空、色块与线净空、色块上的线到色块边缘的净空、重心偏移、r_max 和 Android / PWA 系数、色块渐变跨度、`#backing` 在不在、用到的颜色是否都在色板里。有 FAIL 时退出码仍是 0，靠读报告判断。
+- **指标报告**：每项一行，写数值、目标和 PASS / FAIL / INFO：有效线宽、长边、外框比关键线大多少、和 Tide 比的剪影或凸包面积、色块占比、线与线最小净空、色块与线净空、色块上的线到色块边缘的净空、重心偏移、r_max 和 Android / PWA 系数（Android 一行附 Tide 的值）、色块渐变跨度、`#backing` 在不在、用到的颜色是否都在色板里。有 FAIL 时退出码仍是 0，靠读报告判断。
 - **对照图**：iOS 遮罩下的母版；180 / 120 / 80 / 60 / 40 / 29 px；和 Tide 同尺寸并排；深色版和着色版。
 - 用 Chromium 渲染，和浏览器一致。机器上已有 Chromium 时设 `CHROMIUM_PATH` 跳过下载。

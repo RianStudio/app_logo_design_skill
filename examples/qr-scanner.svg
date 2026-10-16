@@ -32,9 +32,9 @@
        data-shape open: four separate brackets, so the size check is the convex hull vs Tide (0.90 to 1.15).
        Frame outer box 214..810 (596) = square keyline 540 + 10 % for an open shape; with the beam ends 644 wide.
        The frame cannot grow: code box 344..680 (336) = 2 × 90 block + 2 × 42 + 72 beam, plus 2 × 78 clearance
-       and 2 × 26 half stroke = 544 centre line. A larger frame pushes the hull past 1.15 × Tide.
+       and 2 × 26 half stroke = 544 centre line. A frame more than about 2% larger pushes the hull past 1.15 × Tide.
        No #backing: the brackets enclose nothing, so the lift shadow already falls only outside the lines.
-       render.py: hull 1.13 × Tide, beam 13 % of the hull, centroid 10 px off centre, r_max 364
+       render.py: hull 1.10 × Tide, beam 13 % of the hull, centroid 10 px off centre, r_max 364
        (export scales Android by 313 / 364 = 0.86 and the PWA maskable icon by 409.6 / 364 = 1.13). -->
   <g id="subject" data-shape="open" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
     <!-- accent: the scan beam, a line-like accent (data-accent line: 8 to 15 % of the hull).

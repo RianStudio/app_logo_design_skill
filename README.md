@@ -2,7 +2,7 @@
 
 一个 Claude skill：把一句产品描述变成一枚可以上架的 app 图标（1024 SVG 母版，浅色、深色、着色三种外观，评审对照图，各平台导出文件）。
 
-风格只有一种：**极简线条**。一笔粗细统一的墨线画出物件，一块强调色点出重点，圆头圆角；线条和留白学 Notion，几何和关键线学 Google 产品图标，柔和渐变和轻微立体学 Apple。每枚图标都是同样的四层：很淡的中性色背景、挡住内投影的衬底、一个强调色块、一组墨线。
+风格只有一种：**极简线条**。一笔粗细统一的墨线画出物件，一块强调色点出重点，圆头圆角；线条和留白学 Notion，几何和关键线学 Google 产品图标，柔和渐变和轻微立体学 Apple。每枚图标都是同样的四层：很淡的中性色背景、挡住内投影的衬底、一个强调色块、一组墨线（没有封闭的空白时省掉衬底）。
 
 ![示例](examples/renders/overview.png)
 
@@ -47,6 +47,7 @@ python3 scripts/render.py icon.svg -o renders              # 1024 PNG + 对照�
 python3 scripts/render.py icon.svg -o renders --variants   # 另出深色版和着色版
 python3 scripts/render.py icon.svg -o renders --export     # 另出 iOS、Android、PWA、favicon 文件
 python3 scripts/render.py icon.svg -o renders --json       # 指标另存为 JSON
+python3 scripts/overview.py examples/tide.svg icon.svg -o renders/compare.png   # 新图标和 Tide 并排，看轻重
 ```
 
 ## 结构
@@ -58,7 +59,8 @@ references/construction.md  图层结构、属性和类、几何速查、变体�
 references/sources.md       参考来源与致谢
 assets/template.svg         图标模板：只改 TODO 的地方
 scripts/render.py           SVG → 1024 PNG、对照图、指标报告；变体和平台导出（Chromium 渲染）
-scripts/shapes.py           圆角扇形等需要做圆角的色块路径
+scripts/shapes.py           圆角扇形、对话气泡等需要做圆角的路径
+scripts/overview.py         七枚示例并排的总览图（README 顶部那张），--dark 出深色版
 examples/                   七枚示例和它们的渲染图
 ```
 

@@ -7,7 +7,7 @@ description: Design app icons as production SVG in Rian's house style, which is 
 
 把一句产品描述变成一枚可以直接上架的 app 图标：1024 全出血 SVG 母版，浅色、深色、着色三种外观，一张评审对照图；需要时再导出各平台文件。
 
-只有一种风格：**极简线条**。一笔粗细统一的墨线画出物件，一块强调色点出重点，圆头圆角，衬在很淡的中性色背景上。每一枚都是同样的四层：背景、衬底、强调色块、墨线。
+只有一种风格：**极简线条**。一笔粗细统一的墨线画出物件，一块强调色点出重点，圆头圆角，衬在很淡的中性色背景上。每一枚都是同样的四层：背景、衬底、强调色块、墨线（没有封闭的空白时省掉衬底）。
 
 **动笔前只读 `references/style.md`**，所有规则和数字都在那里。需要几何写法、图层属性或平台规格时，再查 `references/construction.md`。
 
@@ -50,7 +50,7 @@ description: Design app icons as production SVG in Rian's house style, which is 
 
 | 品类 | 画什么 | 色块 |
 |---|---|---|
-| 翻译 | 两个错开叠放的对话气泡 | 前一个气泡填色，挡住后一个；后一个只画露出来的那段线 |
+| 翻译 | 两个错开叠放的对话气泡（`scripts/shapes.py bubble`） | 前一个气泡填色，挡住后一个；后一个只画露出来的那段线，线端停在前一个气泡轮廓的中心线上（算 T 形接头，圆头藏在它的描边下） |
 | 字体 | 钢笔尖 | 填满笔尖，中缝是一条 `class="on-accent"` 的线 |
 | 词典 | 一本合着的书 | 从书顶垂下的书签 |
 | 输入法 | 一排三个圆角键帽 | 中间按下去的那个键 |
@@ -79,12 +79,12 @@ python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants
 
 终端逐条打印指标，每条标 PASS / FAIL / INFO。再打开 `*-sheet.png` 亲眼看：80 px 下认不认得出，和 Tide 并排是否一样大，深色版和着色版的含义还在不在。
 
-**节奏**：第一次渲染后只修报告里 FAIL 的项和验收清单里没过的项，最多 2 轮。剩下的写进交付的「可再调」，不要无限打磨。打磨时不加东西，只调准已有的东西：比例、间距、色块位置。
+**节奏**：第一次渲染后只修报告里 FAIL 的项和验收清单里没过的项，最多 2 轮。猜错用途时换方向也算 1 轮；2 轮用完就交付，把没画的方向写进「可再调」。剩下的问题也写进「可再调」，不要无限打磨。打磨时不加东西，只调准已有的东西：比例、间距、色块位置。
 
 | 看到 | 哪项指标会报 | 改 |
 |---|---|---|
 | 小尺寸糊成一团 | 线与线净空、切开净空 | 拉开间距；删掉最细碎的几笔，或标 `class="detail"` |
-| 主体显得小、显得重，和 Tide 不一样大 | 长边、剪影比或凸包比 | 按关键线调 transform 的 scale |
+| 主体显得小、显得重，和 Tide 不一样大 | 长边、形状（比关键线大多少）、剪影比或凸包比 | 按关键线调 transform 的 scale |
 | 线条粗细看起来不一样 | 有效线宽 | `stroke-width` 写成线宽 ÷ k；不给单条线设线宽；线都在 `#subject` 里 |
 | 色块边缘露出一条细边 | 色块与线净空 | 色块边缘落在线的中心线上，或者往里收 |
 | 色块太抢或太弱 | 色块占比 | 改色块范围，不动线 |
@@ -93,9 +93,9 @@ python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants
 | 物件里面有一圈灰影 | 对照图 | 加 `#backing` |
 | 看起来太平、太廉价 | 色板颜色 | 背景渐变、色块渐变、lift 投影都要在；颜色只从色板来 |
 | Android 圆形遮罩会裁到 | r_max | 不改母版，`--export` 按系数自动缩放 |
-| 和同名系统符号一模一样 | 对照图（和 SF Symbol 叠放） | 在轮廓或结构上改一处，见第 2 步 |
+| 和同名系统符号一模一样 | 无（凭记忆比对） | 在轮廓或结构上改一处，见第 2 步 |
 | 认不出来 | 对照图 80 px | 换更具体的物件，或把色块挪到最能说明用途的那一处 |
-| 认得出物件，但猜错用途 | 对照图 80 px | 回第 2 步换方向 |
+| 认得出物件，但猜错用途 | 对照图 80 px | 回第 2 步换方向（算 1 轮） |
 | 两轮后仍不满意 | 无 | 交付，并写明还差什么 |
 
 ### 6. 交付
@@ -106,6 +106,6 @@ python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants
 - 三行设计说明：画了什么物件、色块点在哪、用的强调色
 - 另外两个方向，各一行
 - 「可再调」：没修完的问题，没有就省略
-- 一行界面主色，按 `style.md` 颜色表的「界面主色」列（蓝、绿、紫同色，其余用蓝）。要做 UI 主题时用 `rian-app-theme`：`python3 <rian-app-theme 目录>/scripts/build.py --name <名字> --accent <界面主色> -o themes/<名字>`，预览的 `--icon` 用本次的 `<name>-1024.png`
+- 一行界面主色，按 `style.md` 颜色表的「界面主色」列（蓝、绿、紫同色，其余用蓝）。要做 UI 主题时用 `rian-app-theme`：`python3 <rian-app-theme 目录>/scripts/build.py --name <名字> --accent <图标强调色> -o themes/<名字>`（传图标的强调色，脚本自己换算界面主色）。预览用 `python3 <rian-app-theme 目录>/scripts/preview.py themes/<名字> --screen <timer|notes|list> --icon renders/<name>-1024.png --icon-dark renders/<name>-dark.png`（深色版来自 `--variants`）
 
 要上架文件时加 `--export`（iOS、Android、PWA、favicon），见 `construction.md`「平台导出」。迭代时只改用户点名的部分。

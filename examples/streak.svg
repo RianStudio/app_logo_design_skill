@@ -30,7 +30,7 @@
        Unscaled page outer box (half stroke 28.25): x 195.75..828.25 (632.5), y 267.75..854.25 (586.5);
        ring tops at 203.75. Scaled: page 582 × 540, 598 tall with the rings; final x 221..803, y 202..800.
        Optical centring: the page body centre y 561 goes to (561 - 29 - 512) × 0.92 + 512 ≈ 530.
-       render.py: silhouette 1.07 × Tide, accent 17 % of the hull, r_max 357. -->
+       render.py: silhouette 1.06 × Tide, accent 17 % of the hull, r_max 357. -->
   <g id="subject" data-shape="square" transform="translate(512 512) scale(0.92) translate(-512 -512) translate(0 -29)" filter="url(#lift)">
     <!-- backing: same rounded rect as the page outline, on its centre line; keeps the lift shadow outside the page -->
     <rect id="backing" x="224" y="296" width="576" height="530" rx="108" fill="url(#bg)"/>

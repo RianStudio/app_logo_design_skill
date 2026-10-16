@@ -22,7 +22,7 @@ Exit code 0 even when a check fails (1 only when an SVG cannot be read).
 All numbers are final pixels on the 1024 canvas (after the #subject transform). Areas are compared with
 examples/tide.svg, measured at run time. Layers are rasterised separately in headless Chromium
 (Playwright) and measured with numpy. Install once with:
-  pip install playwright && playwright install chromium
+  pip install playwright pillow numpy && playwright install chromium
 If a Chromium build already exists on the machine, set CHROMIUM_PATH to its executable.
 
 SVG conventions read here (see references/construction.md):
@@ -82,6 +82,9 @@ ANDROID_R = 313.0             # 66 dp safe circle of a 108 dp layer on the 1024 
 PWA_R = 409.6                 # maskable: centre 80 % circle
 KEYLINES = {"circle": "⌀ 600", "square": "540 × 540", "tall": "480 × 600", "wide": "600 × 480",
             "open": "+10% 以内"}
+KEYLINE_WH = {"circle": (600, 600), "square": (540, 540), "tall": (480, 600), "wide": (600, 480)}
+KEYLINE_NAME = {"square": "方形", "tall": "竖矩形", "wide": "横矩形"}
+OPEN_EXTRA = 1.10             # open shapes may be 10 % larger than the keyline of their overall form
 SHAPES = ("circle", "square", "tall", "wide", "open")
 
 INK = "#1C1C1E"
@@ -99,7 +102,7 @@ TINT_ACCENT_OPACITY = ".4"
 SMALL_STROKE = 72.0
 
 # Tide reference used only when examples/tide.svg cannot be found next to this script.
-TIDE_FALLBACK = {"silhouette": 288000.0, "hull": 315800.0}
+TIDE_FALLBACK = {"silhouette": 288000.0, "hull": 315800.0, "r_max": 417.0}
 
 NS = "http://www.w3.org/2000/svg"
 ET.register_namespace("", NS)
@@ -830,7 +833,9 @@ def tide_reference(renderer, cache={}):
             text, _ = load_svg(TIDE_SVG)
             m = measure_masks(renderer.layers(text, ["line", "accent"]))
             if m["sil"].any():
+                ys, xs = np.nonzero(m["sil"])
                 ref = {"silhouette": float(fill_holes(m["sil"]).sum()), "hull": float(hull_area(m["sil"])),
+                       "r_max": float(np.sqrt((xs + 0.5 - 512) ** 2 + (ys + 0.5 - 512) ** 2).max()),
                        "source": str(TIDE_SVG)}
         except (OSError, ValueError) as e:
             print(f"WARNING Tide reference: {e}", file=sys.stderr)
@@ -842,6 +847,25 @@ def tide_reference(renderer, cache={}):
 
 def check(key, label_, value, target, status, **data):
     return {"key": key, "label": label_, "value": value, "target": target, "status": status, "data": data}
+
+
+def keyline_note(shape, w, h, body):
+    """Outer box against the shape's keyline, in percent. Keylines are drafting sizes: INFO only,
+    the silhouette or hull ratio decides."""
+    bw, bh = (body["bbox"][2] - body["bbox"][0], body["bbox"][3] - body["bbox"][1]) if body else (w, h)
+    if shape == "open":
+        base = "wide" if w > 1.1 * h else "tall" if h > 1.1 * w else "square"
+        kw, kh = (round(v * OPEN_EXTRA) for v in KEYLINE_WH[base])
+        target = f"关键线 {kw} × {kh}（{KEYLINE_NAME[base]} +10%）"
+    else:
+        kw, kh = KEYLINE_WH[shape]
+        target = f"关键线 {KEYLINES[shape]}"
+    if shape == "circle":
+        over = f"比关键线 {max(bw, bh) / kw - 1:+.0%}"
+    else:
+        over = f"比关键线 宽 {bw / kw - 1:+.0%} 高 {bh / kh - 1:+.0%}"
+    box = f"外框 {w} × {h}" + (f" · 不计凸起 {bw} × {bh}" if body else "")
+    return f"{shape} · {box} · {over}", target
 
 
 def measure(renderer, text, root, name, ref):
@@ -877,16 +901,18 @@ def measure(renderer, text, root, name, ref):
     C.append(check("long_side", "长边", f"{max(w, h)} px ({w} × {h})", f"≤ {LONG_SIDE_MAX}",
                    "PASS" if max(w, h) <= LONG_SIDE_MAX else "FAIL"))
 
+    filled = fill_holes(sil)
+    body = top_protrusion(filled)
     shape = info["shape"]
     if shape in SHAPES:
-        C.append(check("shape", "形状", f"{shape} · 外框 {w} × {h}", f"关键线 {KEYLINES[shape]}", "INFO"))
+        val, target = keyline_note(shape, w, h, body)
+        C.append(check("shape", "形状", val, target, "INFO"))
     elif shape is None:
         C.append(check("shape", "形状", "没写 data-shape，按实心算", "circle|square|tall|wide|open", "INFO"))
     else:
         C.append(check("shape", "形状", f'data-shape="{shape}" 不认识', "circle|square|tall|wide|open", "FAIL"))
     is_open = shape == "open"
 
-    filled = fill_holes(sil)
     sil_area = float(filled.sum())
     hull = float(hull_area(sil))
     sr, hr = sil_area / ref["silhouette"], hull / ref["hull"]
@@ -1012,7 +1038,6 @@ def measure(renderer, text, root, name, ref):
     cx, cy = float(xs.mean() + 0.5), float(ys.mean() + 0.5)
     off = math.hypot(cx - 512, cy - 512)
     raw.update(centroid=[cx, cy], centroid_offset=off)
-    body = top_protrusion(filled)
     if body:
         bx, by = body["centre"]
         ok = abs(bx - BODY_CENTRE[0]) <= BODY_TOL and abs(by - BODY_CENTRE[1]) <= BODY_TOL
@@ -1028,7 +1053,10 @@ def measure(renderer, text, root, name, ref):
     r_max = float(np.sqrt((xs + 0.5 - 512) ** 2 + (ys + 0.5 - 512) ** 2).max())
     a_s, p_s = ANDROID_R / r_max, PWA_R / r_max
     raw.update(r_max=r_max, android_scale=a_s, pwa_scale=p_s)
-    C.append(check("android", "安卓安全圆", f"r_max {r_max:.0f} {'>' if r_max > ANDROID_R else '≤'} 313 → ×{a_s:.3f}",
+    t_r = ref.get("r_max")
+    tide_note = f" · Tide r_max {t_r:.0f} ×{ANDROID_R / t_r:.3f}" if t_r else ""
+    C.append(check("android", "安卓安全圆",
+                   f"r_max {r_max:.0f} {'>' if r_max > ANDROID_R else '≤'} 313 → ×{a_s:.3f}" + tide_note,
                    "导出自动缩放", "INFO"))
     C.append(check("pwa", "PWA 遮罩圆", f"r_max {r_max:.0f} {'>' if r_max > PWA_R else '≤'} 409.6 → ×{p_s:.3f}",
                    "导出自动缩放", "INFO"))
@@ -1063,7 +1091,7 @@ def measure(renderer, text, root, name, ref):
             C.append(check("backing", "背衬", f"缺 #backing，围出的空白 {holes / 1000:.0f}k px²", "#subject 第一个子元素",
                            "FAIL"))
         else:
-            C.append(check("backing", "背衬", "没有封闭主体，可以不加", "#subject 第一个子元素", "PASS"))
+            C.append(check("backing", "背衬", "没有封闭的空白，可以不加", "#subject 第一个子元素", "PASS"))
     else:
         ok = b["first"] and url_id(b["fill"]) is not None
         why = "" if ok else (" · 不是第一个子元素" if not b["first"] else " · fill 要 url(#bg)")
