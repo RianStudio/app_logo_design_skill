@@ -22,8 +22,9 @@
 
 要点：
 
-- `#glyph` 和 `#glaze` 用同一个 transform：`translate(512 512) scale(k) translate(-512 -512) translate(tx ty)`。先在 1024 画布上按方便的尺寸画好主体，再用 k 把它放大到 `style.md` 规定的尺寸（主体长边约 720 px，k = 720 ÷ 原始长边），tx、ty 用来把主体视觉居中。釉里面的 `<use href="#scene">` 必须用它的**逆变换**：`translate(-tx -ty) translate(512 512) scale(1/k) translate(-512 -512)`。
-- glaze、lip 渐变的 y 坐标对准釉形状自己的上下沿；釉光椭圆放在釉形状左上三分之一处，宽度约为形状宽度的 70%。
+- `#glyph` 和 `#glaze` 用同一个 transform：`translate(512 512) scale(k) translate(-512 -512) translate(tx ty)`。先在 1024 画布上按方便的尺寸画好主体，再用 k 把它放大到 `style.md` 规定的尺寸（主体长边约 720 px，k = 720 ÷ 原始长边），tx、ty 用来把主体视觉居中。直接按最终尺寸画也可以：k = 1、tx = ty = 0，transform 留着不删，以后好调。釉里面的 `<use href="#scene">` 必须用它的**逆变换**：`translate(-tx -ty) translate(512 512) scale(1/k) translate(-512 -512)`。
+- glaze、lip 渐变的 y 坐标对准釉形状自己的上下沿；釉光椭圆贴在釉形状上沿内侧、略偏左，宽约为形状宽度的 60%，高约为自身宽度的 30%。
+- 釉形状要圆角时不能靠 round-join 描边（描边不改变填充和裁切），要把圆角算进 path 里。圆角扇形用 `python3 scripts/shapes.py sector CX CY R A0 A1 圆角半径`。
 - 实色是多个形状组合时（比如纸页加两行线），把它们放进一个 `<g filter="url(#inner-solid)">`，再整体包 `elevate`。
 - 根节点只写 `viewBox`，不写宽高。不嵌入位图，不用 `<text>`。
 
@@ -40,6 +41,7 @@
 | 扇形 | `M cx cy L 起点 A r r 0 大弧标志 1 终点 Z`，角度 > 180° 时大弧标志为 1 |
 | 胶囊 | `<rect rx="高度/2">` |
 | 云（胶囊 + 圆凸起） | 用一条 path 写：左半圆弧 → 凸起大圆弧 → 右半圆弧 → 底边（见 `examples/halo.svg`） |
+| 圆角扇形（饼图的一块） | `python3 scripts/shapes.py sector 512 512 300 -90 30 28` |
 | 两个形合并 | 计算交点后写成一条 path；不要用两个重叠的形状当釉 |
 
 ## 平台规格

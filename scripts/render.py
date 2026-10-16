@@ -5,7 +5,7 @@ Render app icon SVGs into PNG exports and a review contact sheet.
 For each input SVG this writes, next to an output directory:
   <name>-1024.png        full-bleed square master (what App Store Connect / Icon Composer wants)
   <name>-sheet.png       contact sheet: masked icon on light + dark wallpaper, real home-screen
-                         sizes (180 / 120 / 60 / 40 px), a monochrome test and a 16 px favicon test
+                         sizes (180 / 120 / 80 px), a monochrome test and 32 / 16 pt favicon tests
 
 Rendering uses headless Chromium through Playwright so SVG filters, blend modes and
 gradients look exactly like they will in a browser. Install once with:

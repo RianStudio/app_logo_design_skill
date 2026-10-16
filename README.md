@@ -43,7 +43,8 @@ references/construction.md  图层结构、几何速查、平台规格
 references/sources.md       参考来源与致谢
 assets/template.svg         图标模板：只改 TODO 的地方
 scripts/render.py           SVG → 1024 PNG + 对照图（Chromium 渲染）
-examples/                   三枚示例和它们的渲染图
+scripts/shapes.py           圆角扇形等需要做圆角的釉形状路径
+examples/                   五枚示例和它们的渲染图
 ```
 
 ## 许可
