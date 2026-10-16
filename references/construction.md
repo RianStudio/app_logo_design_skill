@@ -5,24 +5,26 @@
 `assets/template.svg` 已经搭好，结构如下：
 
 ```
-<defs>      渐变、elevate 投影、frost 模糊、glass-shape、glass-clip
+<defs>        bg 渐变、grain 颗粒、solid 渐变、inner-solid 内阴影、elevate 三层投影、
+              frost 模糊、veil、rim-top / rim-bottom、inner-glass、glass-shape、glass-clip
 #scene
-  #background   背景渐变 + 顶部径向光
-  #glyph        实色图形（带 elevate 投影）
-#glass          磨砂玻璃（不在 #scene 里）
-  1. glass-shape 白色实心 + elevate 投影   → 玻璃的厚度和阴影
+  #background   bg 渐变 + 颗粒
+  #glyph        （可选柔光）+ 实色图形：solid 渐变 + inner-solid，外面包 elevate
+#glass          不在 #scene 里
+  1. glass-shape 白色实心 + elevate        → 玻璃的阴影
   2. 裁切到 glass-shape 内：
-     <use href="#scene"> + frost 模糊       → 透出背后的模糊颜色
-     glass-shape + veil 颜色                → 让玻璃变亮、变「白」
-  3. glass-shape 描边 rim，裁切到内部        → 上沿高光
+     <use href="#scene"> + frost            → 透出背后的模糊颜色
+     glass-shape + veil                     → 让玻璃变亮
+     glass-shape + inner-glass              → 上沿下方的厚度阴影
+  3. rim-top 7 px、rim-bottom 4 px 描边，裁切到内部 → 上下两道边缘光
 ```
 
 要点：
 
-- `#glyph` 和 `#glass` 用同一个 `translate` 做整体居中；玻璃里的 `<use href="#scene">` 用**相反**的 translate，这样透出来的画面位置才对。
-- 玻璃的模糊来自真的「背后画面」，所以实色图形挪动时，玻璃里的颜色会自动跟着变，不需要手画。
+- `#glyph` 和 `#glass` 用同一个 `translate` 整体居中；玻璃里的 `<use href="#scene">` 用**相反**的 translate。
+- veil、rim 渐变的 y 坐标要对准玻璃形状自己的上下沿，光才会落在正确的位置。
+- 实色是多个形状组合时（比如纸页加两行线），把它们放进一个 `<g filter="url(#inner-solid)">`，再整体包 `elevate`。
 - 根节点只写 `viewBox`，不写宽高。不嵌入位图，不用 `<text>`。
-- 渐变用 `gradientUnits="userSpaceOnUse"` 写绝对坐标。
 
 ## 分层与 Icon Composer
 

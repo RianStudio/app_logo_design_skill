@@ -1,53 +1,90 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7480FF"/><stop offset="1" stop-color="#3B43D2"/>
-    </linearGradient>
-    <linearGradient id="solid" x1="0" y1="220" x2="0" y2="740" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FF9A6B"/><stop offset="1" stop-color="#FF5A3C"/>
-    </linearGradient>
-    <radialGradient id="lift" cx="512" cy="0" r="760" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <!-- background: one hue, lit from above, deepening toward the corners -->
+    <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6E74F0"/>
+      <stop offset=".45" stop-color="#2E31A6"/>
+      <stop offset="1" stop-color="#0F1046"/>
     </radialGradient>
-    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".95"/>
-      <stop offset=".35" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <!-- two-part elevation shadow (Material): wide ambient + tight key, tinted with the hue's dark tone -->
-    <filter id="elevate" x="-30%" y="-30%" width="160%" height="170%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="a"/>
-      <feOffset in="a" dy="20" result="a"/>
-      <feFlood flood-color="#161A7A" flood-opacity=".32"/>
-      <feComposite in2="a" operator="in" result="ambient"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="k"/>
-      <feOffset in="k" dy="4" result="k"/>
-      <feFlood flood-color="#161A7A" flood-opacity=".22"/>
-      <feComposite in2="k" operator="in" result="key"/>
-      <feMerge><feMergeNode in="ambient"/><feMergeNode in="key"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <!-- grain: a whisper of texture so the surface reads as a material, not a fill -->
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
     </filter>
-    <filter id="frost" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="18"/></filter>
-    <!-- the dial: frosted disc r 220, overlapping the block -->
+    <!-- solid: lit surface, highlight toward the light (top-left) -->
+    <linearGradient id="solid" x1="560" y1="220" x2="760" y2="690" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFC2A0"/>
+      <stop offset=".4" stop-color="#FF8A5C"/>
+      <stop offset="1" stop-color="#E5482E"/>
+    </linearGradient>
+    <!-- inner shade: the lower-right edge of the solid turns away from the light -->
+    <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
+      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+      <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
+      <feFlood flood-color="#A3241A" flood-opacity=".5"/>
+      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
+      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
+    </filter>
+    <!-- elevation: far + mid + contact shadow, tinted with the background's deepest tone -->
+    <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="a"/><feOffset in="a" dy="36" result="a"/>
+      <feFlood flood-color="#05062A" flood-opacity=".42"/><feComposite in2="a" operator="in" result="far"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
+      <feFlood flood-color="#05062A" flood-opacity=".28"/><feComposite in2="b" operator="in" result="mid"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
+      <feFlood flood-color="#05062A" flood-opacity=".22"/><feComposite in2="c" operator="in" result="near"/>
+      <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- glass: blur what is behind and lift its colour (vibrancy) -->
+    <filter id="frost" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="30"/>
+      <feColorMatrix type="saturate" values="1.25"/>
+    </filter>
+    <linearGradient id="veil" x1="0" y1="330" x2="0" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#ECEEFF" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="rim-top" x1="0" y1="330" x2="0" y2="550" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rim-bottom" x1="0" y1="550" x2="0" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".55"/>
+    </linearGradient>
+    <!-- glass thickness: a soft shade just under the top edge -->
+    <filter id="inner-glass" x="-10%" y="-10%" width="120%" height="120%">
+      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+      <feOffset dy="-12"/><feGaussianBlur stdDeviation="14" result="s"/>
+      <feFlood flood-color="#2E31A6" flood-opacity=".3"/>
+      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
+    </filter>
+    <!-- dial: disc r 220 -->
     <circle id="glass-shape" cx="480" cy="550" r="220"/>
     <clipPath id="glass-clip"><use href="#glass-shape"/></clipPath>
   </defs>
+
   <g id="scene">
     <g id="background">
       <rect width="1024" height="1024" fill="url(#bg)"/>
-      <rect width="1024" height="1024" fill="url(#lift)"/>
+      <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
     </g>
-    <g id="glyph" transform="translate(-23 17)" filter="url(#elevate)">
-      <!-- the focus block: 25 of 60 minutes = 150° sector, r 250 -->
-      <path d="M 560 470 L 560 220 A 250 250 0 0 1 685 686.5 Z" fill="url(#solid)"/>
+    <g id="glyph" transform="translate(-23 17)">
+      <!-- focus block: 150° sector, r 250, corners softened by a 24 px round-join stroke -->
+      <g filter="url(#elevate)"><path d="M 560 470 L 560 220 A 250 250 0 0 1 685 686.5 Z" fill="url(#solid)" filter="url(#inner-solid)" stroke="url(#solid)" stroke-width="24" stroke-linejoin="round"/></g>
     </g>
   </g>
-  <!-- frosted glass: opaque base casts the shadow, the scene behind is blurred inside it, a tinted veil lightens it, a rim catches the light -->
+
+  <!-- frosted glass: opaque base for the shadow, blurred scene inside, veil, thickness, two rims -->
   <g id="glass" transform="translate(-23 17)">
     <use href="#glass-shape" fill="#fff" filter="url(#elevate)"/>
     <g clip-path="url(#glass-clip)">
       <use href="#scene" transform="translate(23 -17)" filter="url(#frost)"/>
-      <use href="#glass-shape" fill="#F4F5FF" fill-opacity=".58"/>
+      <use href="#glass-shape" fill="url(#veil)"/>
+      <use href="#glass-shape" fill="#000" filter="url(#inner-glass)"/>
     </g>
-    <use href="#glass-shape" fill="none" stroke="url(#rim)" stroke-width="8" clip-path="url(#glass-clip)"/>
+    <use href="#glass-shape" fill="none" stroke="url(#rim-top)" stroke-width="7" clip-path="url(#glass-clip)"/>
+    <use href="#glass-shape" fill="none" stroke="url(#rim-bottom)" stroke-width="4" clip-path="url(#glass-clip)"/>
   </g>
 </svg>
