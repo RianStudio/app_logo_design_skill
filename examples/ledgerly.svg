@@ -1,66 +1,63 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Rian app icon (line style), built from assets/template.svg.
-    Ledgerly, a bookkeeping app: log one expense a day and see at month end where the money went.
-    Final: the month's spending as a pie chart; the biggest category, one third of the pie (120°), is pulled out
-    and filled green: "this is where the money went".
-    Rules: references/style.md. Layers, attributes and variants: references/construction.md.
-    Variants (dark, tinted, favicon) come from python3 scripts/render.py examples/ledgerly.svg plus the variants flag.
+    Ledgerly, a bookkeeping app: log every expense and see at month end where the money went.
+    The month's spending as a pie chart; one 72° slice is pulled out to the upper right and filled green:
+    "this is where the money went". 2 pieces: the 288° pie and the slice.
+    72°, not 90°: the accent share drops from 22 % to 17.5 % (level with Tide and Halo), and the mark moves away
+    from SF Symbols' chart.pie.fill, whose pulled-out piece is the upper right quarter.
+    Drawn at final size: k = 1, every coordinate is a 1024-canvas pixel before translate.
+    Rules and numbers: references/style.md. Layers, attributes and variants: references/construction.md.
   -->
   <defs>
-    <!-- bg: light #FFFFFF → #EEEEEB -->
+    <!-- bg: graphite, fixed (#26282B → #191C1F) -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#EEEEEB"/>
+      <stop offset="0" stop-color="#26282B"/>
+      <stop offset="1" stop-color="#191C1F"/>
     </linearGradient>
-    <!-- accent: green (财务), light → main. Fixed span 480 px (k = 1, so 480 in source units),
-         centred on the slice's vertical centre: slice y 185..525, centre 355, so y1 115, y2 595 -->
-    <linearGradient id="accent" x1="0" y1="115" x2="0" y2="595" gradientUnits="userSpaceOnUse">
+    <!-- body: fixed #F8F9FB → #C6C8CB. Span 600 centred on the pie: y 524 − 280 = 244 to 804, centre 524,
+         so y1 224, y2 824 -->
+    <linearGradient id="body-fill" x1="0" y1="224" x2="0" y2="824" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8F9FB"/>
+      <stop offset="1" stop-color="#C6C8CB"/>
+    </linearGradient>
+    <!-- accent: green (finance), light #6FD3A6 → main #23A36B.
+         Span 480 centred on the slice: y 194.3 (top of its rim fillet) to 461.4 (bottom of its apex fillet),
+         centre 327.8, so y1 87.8, y2 567.8 -->
+    <linearGradient id="accent" x1="0" y1="87.8" x2="0" y2="567.8" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#6FD3A6"/>
       <stop offset="1" stop-color="#23A36B"/>
     </linearGradient>
-    <!-- lift: one faint shadow under the whole subject (light .10) -->
-    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
-      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    <!-- glow-blur: the accent's main colour #23A36B at .16, blur 24, no offset -->
+    <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
+      <feFlood flood-color="#23A36B" flood-opacity="0.16"/>
+      <feComposite in2="b" operator="in"/>
     </filter>
   </defs>
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- k = 1: drawn at final size, stroke 52. data-shape circle: a solid pie, outer diameter (R 276 + 26) × 2 = 604.
-       Pie centre (478, 546). The slice (-105° → 15°, bisector -45°) is pulled out along its bisector by
-       104 / sin 60° = 120.1, i.e. (+84.9, -84.9), so its straight edges run 104 px (centre to centre)
-       from the matching body edges: a clear gap of 52, the split rule for two parts of one object.
-       Outline with stroke: x 176..865, y 159..848 (689 × 689).
-       The pie centre is placed so the filled silhouette's centroid lands on (512, 512); the bounding box then sits
-       8 px up and right of centre, which balances the heavier body against the slice.
-       Size: r 276 is the smallest pie whose 120° slice reaches the 15 % accent share (the share hardly grows with r),
-       and the silhouette is then about 1.09 × Tide, close to the 1.10 limit, so keep r between 276 and 277.
-       render.py: silhouette 1.09 × Tide, accent 15.0 % of the hull, split gap 51.8 (≥ 52 within the 1 px tolerance),
-       centroid offset 0, r_max 374. -->
-  <g id="subject" data-shape="circle" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
-    <!-- backing: the body outline (same path as the body line, on its centre line); keeps the lift shadow
-         out of the empty body. The slice needs none: the accent fills it. -->
-    <path id="backing" fill="url(#bg)"
-          d="M 507.0 553.8 L 711.7 608.6 A 32 32 0 0 1 732.9 651.8 A 276 276 0 1 1 372.2 291.1 A 32 32 0 0 1 415.4 312.3 L 470.2 517.0 A 52 52 0 0 0 507.0 553.8 Z"/>
-    <!-- accent shape: the pulled-out third, -105° → 15° sector at (562.9, 461.1), r 276,
-         python3 scripts/shapes.py sector 562.9 461.1 276 -105 15 32, with the apex fillet then tightened
-         to r 20 (tangent points 11.5 from the apex = 20 / tan 60°). Same path as the slice outline, so
-         every edge sits under the line. -->
-    <path id="accent-shape" fill="url(#accent)"
-          d="M 559.9 449.9 L 500.3 227.4 A 32 32 0 0 1 527.1 187.4 A 276 276 0 0 1 836.6 496.9 A 32 32 0 0 1 796.6 523.7 L 574.1 464.1 A 20 20 0 0 1 559.9 449.9 Z"/>
-    <!-- lines: one stroke width 52 (k = 1); round caps and joins -->
-    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
-      <!-- pie body: the other two thirds, 15° → 255° sector at (478, 546), r 276, rim corners rounded 32.
-           The reflex corner is rounded by a concave arc r 52 centred in the notch (60.0 out along -45°,
-           tangent points 30.0 from the centre = 52 / tan 60°), so the stroke's notch side is r 26. -->
-      <path data-part="split"
-            d="M 507.0 553.8 L 711.7 608.6 A 32 32 0 0 1 732.9 651.8 A 276 276 0 1 1 372.2 291.1 A 32 32 0 0 1 415.4 312.3 L 470.2 517.0 A 52 52 0 0 0 507.0 553.8 Z"/>
-      <!-- slice outline: same path as the accent -->
-      <path data-part="split"
-            d="M 559.9 449.9 L 500.3 227.4 A 32 32 0 0 1 527.1 187.4 A 276 276 0 0 1 836.6 496.9 A 32 32 0 0 1 796.6 523.7 L 574.1 464.1 A 20 20 0 0 1 559.9 449.9 Z"/>
+  <!-- transform: k = 1, then translate (−6, 6), which puts the filled silhouette's centroid on (512, 512):
+       the pie centre lands on (494, 530); the outer box sits up and right of centre because the slice sticks out.
+       Circle keyline 580: the pie is 2 × 280 = 560 across and the slice reaches out past it. Outer box x 214..824
+       (pie's left edge to the slice's right corner), y 200..810 (slice top to pie bottom): 610 × 610.
+       render.py: silhouette 0.96 × Tide, ink 1.17 × Tide (a solid pie), cut 47.6 (along the cut p50 48 / p90 52,
+       a parallel cut), accent 17.5 % of the hull, r_max 336 (Android ×0.72 and PWA ×1.016, both capped). -->
+  <g id="subject" data-shape="circle" data-cut="48" transform="translate(512 512) scale(1) translate(-512 -512) translate(-6 6)">
+    <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
+    <g id="body" fill="url(#body-fill)">
+      <!-- pie: centre (500, 524), r 280, with the −81° → −9° sector taken out (72°, bisector −45°), 288° left.
+           The notch's straight edges are that sector's radii (python3 scripts/shapes.py sector 500 524 280 -81 -9 24
+           gives the same edge lines); the two rim corners are rounded 24.
+           The notch's inner corner is a reverse arc r 72 centred at (586.6, 437.4), the centre of the moved
+           slice's apex fillet (r 24): 72 = 24 + 48, so the cut keeps its 48 around the corner too
+           (with r 24 there the gap would bulge to about 68). -->
+      <path d="M 597.9 508.5 L 751.7 484.1 A 24 24 0 0 1 779.4 506.3 A 280 280 0 1 1 517.7 244.6 A 24 24 0 0 1 539.9 272.3 L 515.5 426.1 A 72 72 0 0 0 597.9 508.5 Z"/>
     </g>
+    <!-- accent shape: the same 72° sector, r 280, all three corners rounded 24, moved out along its bisector
+         (−45°) by 48 / sin 36° = 81.7, that is (+57.7, −57.7): each straight edge then runs exactly 48 from the
+         notch edge it faces. Centre (557.74, 466.26).
+         python3 scripts/shapes.py sector 557.74 466.26 280 -81 -9 24 -->
+    <path id="accent-shape" fill="url(#accent)" d="M 562.9 433.6 L 597.6 214.5 A 24 24 0 0 1 627.3 195.0 A 280 280 0 0 1 829.0 396.7 A 24 24 0 0 1 809.5 426.4 L 590.4 461.1 A 24 24 0 0 1 562.9 433.6 Z"/>
   </g>
 </svg>

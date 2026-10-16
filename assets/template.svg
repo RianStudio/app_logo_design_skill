@@ -1,66 +1,106 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Rian app icon template (minimal line style). Copy this file and change only the parts marked TODO.
-    Example: Tide, a focus timer: an ink stopwatch with 25 of 60 minutes filled in coral.
-    Every number (keylines, gaps, accent share) lives in references/style.md. Layers, attributes and variants:
+    Rian app icon template (graphite style). Copy this file and change only the parts marked TODO.
+    Example: Tide, a focus timer: a stopwatch whose coral ring segment is 25 of 60 minutes (examples/tide.svg).
+    The style: 2 to 5 SOLID pieces on a graphite gradient, neighbours separated by 48 px negative-space cuts,
+    exactly one accent piece, no strokes, no letters, no shadows.
+    Every number lives in references/style.md. Layers, attributes, geometry recipes and variants:
     references/construction.md. Check with python3 scripts/render.py icon.svg -o renders plus the variants flag
-    (one metrics line per rule, PASS / FAIL / INFO). Never put two hyphens in a row inside a comment: the SVG stops loading.
+    (one metrics line per rule, PASS / FAIL / INFO). Never put two hyphens in a row inside a comment:
+    the SVG stops loading.
   -->
   <defs>
-    <!-- bg: light #FFFFFF → #EEEEEB. Draw the light version only; render.py makes dark and tinted (variants flag). -->
+    <!-- bg: graphite #26282B → #191C1F, fixed: do not change. Draw the default look only;
+         render.py makes the light, dark, mono and small versions (variants flag). -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#EEEEEB"/>
+      <stop offset="0" stop-color="#26282B"/>
+      <stop offset="1" stop-color="#191C1F"/>
     </linearGradient>
-    <!-- TODO accent: ONE colour from the palette, light → main.
-         Fixed span: 480 px after scaling = 480 ÷ k in source units, centred on the accent shape's vertical centre.
-         Here k = 1.08, span 444; the sector runs y 299..755 (centre 527), so y1 305, y2 749. -->
-    <linearGradient id="accent" x1="0" y1="305" x2="0" y2="749" gradientUnits="userSpaceOnUse">
+    <!-- TODO body gradient: colours fixed (#F8F9FB → #C6C8CB, a top light), only y1 and y2 change.
+         Span 600 px after scaling = 600 ÷ k in source units, centred on the vertical range of ALL body pieces.
+         Here k = 1: crown top y 114 to ring bottom 826, centre 470, so y1 170, y2 770.
+         When it is off, render.py's 主体渐变 line prints the y1 and y2 to write.
+         The id stays body-fill (body is the group's id; a duplicate id FAILs). Two opaque stops, nothing between. -->
+    <linearGradient id="body-fill" x1="0" y1="170" x2="0" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8F9FB"/>
+      <stop offset="1" stop-color="#C6C8CB"/>
+    </linearGradient>
+    <!-- TODO accent gradient: ONE colour from the palette in style.md, light → main.
+         Span 480 ÷ k, centred on the accent shape's vertical range.
+         Here: coral #FF9C86 → #EC5B45; the segment runs y 247..774 (centre 510.5), so y1 270.5, y2 750.5.
+         Two opaque stops, exactly the palette pair: a third colour or a highlight band FAILs. -->
+    <linearGradient id="accent" x1="0" y1="270.5" x2="0" y2="750.5" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FF9C86"/>
       <stop offset="1" stop-color="#EC5B45"/>
     </linearGradient>
-    <!-- lift: one faint shadow under the whole subject (light .10; the dark variant uses .35, tinted and favicon drop it) -->
-    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
-      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    <!-- TODO glow (optional): flood-color = the accent's MAIN colour, flood-opacity ≤ 0.16,
+         stdDeviation 24 ÷ k (at most 28 ÷ k), no feOffset. The id stays glow-blur (#glow is the use below).
+         No glow: delete this filter and the use id="glow". -->
+    <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
+      <feFlood flood-color="#EC5B45" flood-opacity="0.16"/>
+      <feComposite in2="b" operator="in"/>
     </filter>
+    <!-- TODO cut mask (optional drafting aid; Tide does not use it, its cuts are baked into the paths):
+         white keeps, black cuts. To use it, add mask="url(#cut)" to #body or #accent-shape (never #subject)
+         and put lines into #cuts, both ends past the outline, e.g. from scripts/shapes.py cutline 512 536 -90 182 316:
+           <line x1="512" y1="354" x2="512" y2="220"/>
+         For a cut around an accent that sits on the body, put a copy of the accent's path here (outside #cuts)
+         with fill and stroke #000 and stroke-width 96 ÷ k. stroke-width of #cuts = 48 ÷ k.
+         Before delivery bake the cuts into the paths (a mask turns the Icon Composer layer into a PNG), then
+         delete this mask. A bubble or rounded rectangle on the body: scripts/shapes.py minus "BODY" "GROWN",
+         where GROWN is the accent from bubble or rrect with the grow flag 48 (see construction.md). -->
+    <mask id="cut" maskUnits="userSpaceOnUse" x="-512" y="-512" width="2048" height="2048">
+      <rect x="-512" y="-512" width="2048" height="2048" fill="#fff"/>
+      <g id="cuts" stroke="#000" stroke-width="48" stroke-linecap="butt" fill="none"/>
+    </mask>
   </defs>
 
+  <!-- background: this one rect, 0 0 1024 1024, nothing inside it; no other graphics beside it and #subject -->
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- TODO transform: translate(512 512) scale(k) translate(-512 -512) translate(tx ty) puts the subject on its keyline.
-       TODO data-shape: circle | square | tall | wide, or open for open / composite shapes (viewfinder, brackets,
-       a body with separate outer parts). It picks the size check: silhouette vs Tide, or convex hull vs Tide.
-       Here: case outer diameter (250 + 24) × 2 × 1.08 = 592 (circle keyline); case centre (512, 527);
-       crown top 153 → 100.5 px after scaling, inside the safe area; long side 723. -->
-  <g id="subject" data-shape="circle" transform="translate(512 512) scale(1.08) translate(-512 -512) translate(0 -22)" filter="url(#lift)">
-    <!-- TODO backing: the FIRST child, same shape as the outer outline (on the line's centre line), fill url(#bg).
-         It keeps the lift shadow outside the outline. Leave it out only when nothing enclosed is left blank:
-         bare brackets (QR), or closed areas already filled by the accent and a knock-out fill (Halo). -->
-    <circle id="backing" cx="512" cy="548" r="250" fill="url(#bg)"/>
-    <!-- TODO accent shape: one closed shape, under the lines. Its edge sits on a line's centre line, or keeps the
-         accent clearance from every line (free edges: straight or a full arc, both ends on a line's centre line).
-         A line-like accent (a scan beam) adds data-accent="line" here.
-         Example: 25 of 60 minutes = 150° sector from 12 o'clock, r 250, corners rounded 24; its rim sits on the case's
-         centre line, the two radii are free edges ending on it.
-         (python3 scripts/shapes.py sector 512 548 250 -90 60 24) -->
-    <path id="accent-shape" fill="url(#accent)"
-          d="M 512.0 541.6 L 512.0 323.3 A 24.0 24.0 0 0 1 538.5 299.4 A 250.0 250.0 0 0 1 659.3 750.0 A 24.0 24.0 0 0 1 624.4 742.6 L 515.2 553.6 A 24.0 24.0 0 0 1 512.0 541.6 Z"/>
-    <!-- TODO lines: one stroke width, 52 after scaling = 52 ÷ k before (here 52 ÷ 1.08 ≈ 48); round caps and joins.
-         Never set a stroke width or colour on a single line; render.py swaps colours for the variants.
-         Marks on single lines:
-           class="on-accent"  a line lying inside the accent: kept clear of the accent edge, stays #1C1C1E in dark
-           class="detail"     an inner detail dropped in the favicon and small sizes
-           data-part="split"  both parts of one object cut apart (exploded pie slice): the smaller split gap applies
-         A closed line shape that must hide the accent (a cloud over a sun) gets the knock-out fill #FFFFFF
-         instead of none; render.py turns it into #3A3A3D (dark) or a mask (tinted). -->
-    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
-      <!-- case: circle r 250 at (512, 548) -->
-      <circle cx="512" cy="548" r="250"/>
-      <!-- crown: stem from the case up to the cap's centre line y 177, cap 120 wide.
-           Cap bottom edge 201, case top edge 274: (274 - 201) × 1.08 = 78.8 clear, though a T-junction would not count -->
-      <path d="M 512 272 V 177 M 452 177 H 572"/>
+  <!-- TODO data-shape: circle | square | tall | wide, or open for composite shapes (cloud plus sun).
+       It picks the size check: filled silhouette 0.90 to 1.10 × Tide's, or for open the convex hull
+       0.90 to 1.15 × Tide's hull. Keylines to start from: circle 580, square 520 × 520, tall 464 × 580,
+       wide 580 × 464; open is sized by its hull (about 300k px², an outer box near 690 × 580); long side ≤ 720.
+       data-cut stays 48.
+       TODO transform: translate(512 512) scale(k) translate(-512 -512) translate(tx ty). Draw in final pixels
+       with k = 1. When the size line FAILs it prints the k to use; then redo the cut and corner paths with
+       shapes.py and its k flag. translate puts the filled silhouette's centroid within 12 of (512, 512) (open:
+       across, the midpoint of the centroid and the outer box's centre; a thin top protrusion under 80 wide:
+       the body's own centre on (512, 530 ± 6)); when it FAILs the centroid line prints the translate to write.
+       Everything in source units is final ÷ k.
+       Here: k = 1, up 4; ring 580 across, outer box 580 × 712, centroid (512, 512). -->
+  <g id="subject" data-shape="circle" data-cut="48" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 -4)">
+    <!-- glow: keep as it is (first child, the accent's blurred copy), or delete it with the filter -->
+    <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
+    <!-- TODO body: every body piece inside this one group, no fill, opacity or stroke of their own.
+         Rules: 2 to 5 pieces in all (accent included); neighbouring pieces exactly 48 apart at their narrowest
+         point (pieces you do not want to touch at least 96 apart); every cut runs through, both ends outside the
+         outline; free cuts 45°
+         (top left to bottom right); thinnest part ≥ 72 (rings ≥ 84); corners: rounded rectangles rx ≥ 20 % of
+         the short side, sector corners 24, concave corners r ≥ 24; the body truly knocked out where the accent is.
+         Paths from scripts/shapes.py (ring, segment, sector, rrect, bands, bubble, minus); circle, ellipse,
+         rect and polygon bake too. Marks on single pieces:
+           class="detail"     dropped at 64 px and below; only a fragment under 2 % of the hull or the shortest
+                              band (on a bigger piece it FAILs the piece count)
+           data-part="band"   one of 2 or 3 parallel 45° bands (72 wide, 48 apart, shorter further out) -->
+    <g id="body" fill="url(#body-fill)">
+      <!-- dial: disc r 158 at the ring centre (512, 536); 206 − 158 = 48 to the ring (concentric cut) -->
+      <circle cx="512" cy="536" r="158"/>
+      <!-- ring segment 60° → 270°, outer r 290, inner r 206 (84 thick). Both ends are straight lines parallel to
+           the seam radius, 24 into the segment, so the seams are 48 wide radial cuts with no mask.
+           python3 scripts/shapes.py ring 512 536 290 206 60 270, gap flag 48 -->
+      <path d="M 635.7 798.3 A 290 290 0 1 1 488.0 247.0 L 488.0 331.4 A 206 206 0 1 0 593.5 725.2 Z"/>
+      <!-- crown: capsule 152 × 84, rx 42, y 114..198; the ring top is y 246, 48 below -->
+      <rect x="436" y="114" width="152" height="84" rx="42"/>
     </g>
+    <!-- TODO accent shape: ONE element (path, or g of paths), fill url(#accent), drawn after #body.
+         Best the most meaningful part of the object (the progress, the sun, the pulled-out slice); 48 from the body
+         at the nearest point, never touching or overlapping it; 10 to 25 % of the silhouette's convex hull (a band
+         accent: data-accent="band", 4 to 15 %). No opacity of its own.
+         Here: 25 of 60 minutes = 150°, from 12 o'clock (−90°) clockwise to 60°, the same ring and seams.
+         python3 scripts/shapes.py ring 512 536 290 206 -90 60, gap flag 48 -->
+    <path id="accent-shape" fill="url(#accent)" d="M 536.0 247.0 A 290 290 0 0 1 677.3 774.3 L 635.1 701.2 A 206 206 0 0 0 536.0 331.4 Z"/>
   </g>
 </svg>

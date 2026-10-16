@@ -1,55 +1,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Tide, a focus timer: an ink stopwatch with 25 of 60 minutes filled in coral.
+    Tide, a focus timer: a stopwatch. The coral ring segment is 25 of 60 minutes; solid dial; crown on top.
     Same geometry as assets/template.svg, and the size reference for the set: render.py measures every other
-    icon's silhouette and convex hull against this file.
+    icon's silhouette and convex hull against this file (and falls back to its built-in Tide numbers,
+    silhouette 278 700 px², hull 298 700 px², r_max 403, when this file is missing).
+    Graphite style: 4 solid pieces (dial, body ring segment, coral ring segment, crown), every neighbouring pair
+    48 apart, no strokes. Drawn at final size: k = 1, every coordinate is a 1024-canvas pixel before translate.
     Rules and numbers: references/style.md. Layers, attributes and variants: references/construction.md.
   -->
   <defs>
-    <!-- bg: light #FFFFFF → #EEEEEB; render.py makes the dark and tinted variants -->
+    <!-- bg: graphite, fixed (#26282B → #191C1F). Only the default look is drawn; render.py makes light, dark, mono, small -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#EEEEEB"/>
+      <stop offset="0" stop-color="#26282B"/>
+      <stop offset="1" stop-color="#191C1F"/>
+    </linearGradient>
+    <!-- body: top light, fixed colours #F8F9FB → #C6C8CB, one gradient for every body piece.
+         Span 600 (k = 1) centred on the body's vertical range: crown top y 114 to ring bottom 826,
+         centre 470, so y1 170, y2 770 -->
+    <linearGradient id="body-fill" x1="0" y1="170" x2="0" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8F9FB"/>
+      <stop offset="1" stop-color="#C6C8CB"/>
     </linearGradient>
     <!-- accent: coral (timer, focus), light #FF9C86 → main #EC5B45.
-         Span 480 px after scaling = 480 ÷ 1.08 ≈ 444 in source units, centred on the sector:
-         the sector runs y 299..755 (centre 527), so y1 305, y2 749 (final y 265..744). -->
-    <linearGradient id="accent" x1="0" y1="305" x2="0" y2="749" gradientUnits="userSpaceOnUse">
+         Span 480 centred on the coral segment: y 247..774 (centre 510.5), so y1 270.5, y2 750.5 -->
+    <linearGradient id="accent" x1="0" y1="270.5" x2="0" y2="750.5" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FF9C86"/>
       <stop offset="1" stop-color="#EC5B45"/>
     </linearGradient>
-    <!-- lift: one faint shadow under the whole subject (light .10) -->
-    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
-      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    <!-- glow-blur: the accent's main colour #EC5B45 at .16, blur 24 (= 24 / k), no offset -->
+    <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
+      <feFlood flood-color="#EC5B45" flood-opacity="0.16"/>
+      <feComposite in2="b" operator="in"/>
     </filter>
   </defs>
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- transform: k = 1.08, then up 22 source units (final y = 1.08 × (y − 22) − 41).
-       Circle keyline: case outer diameter (250 + 24) × 2 × 1.08 = 592 px; case centre (512, 527), on the
-       body-centre line y 530 ± 6 that applies because the crown sticks out on top.
-       Outer box x 216..808, y 100.5..823 (crown cap to case bottom): 592 × 723 px, long side 723 ≤ 740;
-       the cap top at 100.5 stays inside the safe area (y ≥ 100). -->
-  <g id="subject" data-shape="circle" transform="translate(512 512) scale(1.08) translate(-512 -512) translate(0 -22)" filter="url(#lift)">
-    <!-- backing: the case circle again (r 250 at 512, 548, on the line's centre line), filled with the background,
-         so the lift shadow falls only outside the case and the white dial stays clean -->
-    <circle id="backing" cx="512" cy="548" r="250" fill="url(#bg)"/>
-    <!-- accent shape: 25 of 60 minutes = 25 ÷ 60 × 360° = 150°, from 12 o'clock (−90°) clockwise to 60°,
-         r 250 at the case centre, corners rounded 24 (python3 scripts/shapes.py sector 512 548 250 -90 60 24).
-         The rim sits on the case's centre line; the two radii are free edges that end on it. -->
-    <path id="accent-shape" fill="url(#accent)"
-          d="M 512.0 541.6 L 512.0 323.3 A 24.0 24.0 0 0 1 538.5 299.4 A 250.0 250.0 0 0 1 659.3 750.0 A 24.0 24.0 0 0 1 624.4 742.6 L 515.2 553.6 A 24.0 24.0 0 0 1 512.0 541.6 Z"/>
-    <!-- lines: stroke 48 in source units = 52 ÷ 1.08, so 52 px after scaling; round caps and joins -->
-    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
-      <!-- case: circle r 250 at (512, 548) -->
-      <circle cx="512" cy="548" r="250"/>
-      <!-- crown: stem from the case top (y 272, inside the case line) up to the cap's centre line y 177; cap 120 long
-           (x 452..572, 168 with round ends). The stem joins both, a T-junction; the cap's lower edge (201) still clears
-           the case's outer edge (274) by (274 − 201) × 1.08 = 78.8 px -->
-      <path d="M 512 272 V 177 M 452 177 H 572"/>
+  <!-- transform: k = 1, then up 4: the ring centre (512, 536) lands on (512, 532), the crown top on y 110.
+       Circle keyline 580: the ring's outer diameter is 2 × 290 = 580. Outer box x 222..802, y 110..822
+       (crown top to ring bottom): 580 × 712, long side 712 ≤ 720.
+       The crown is 84 tall (≥ 80), so render.py does not treat it as a top protrusion and checks the filled
+       silhouette's centroid: (512, 512).
+       render.py: 4 pieces, cuts 47.5 to 49.0 over 5 neighbouring pairs (along the cut p50 54 / p90 65 at the
+       crown, whose flat bottom faces the round ring), accent 16.9 % of the hull, r_max 403 (Android ×0.719 and
+       PWA ×1.016: the caps every other icon shares come from here). Tide is the size reference: ink 1.00. -->
+  <g id="subject" data-shape="circle" data-cut="48" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 -4)">
+    <!-- glow: the coral segment's blurred copy, first child, under everything else -->
+    <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
+    <g id="body" fill="url(#body-fill)">
+      <!-- dial: solid disc r 158 at the ring centre; 206 − 158 = 48 to the ring's inner edge (concentric cut) -->
+      <circle cx="512" cy="536" r="158"/>
+      <!-- body ring segment: 60° → 270° (210°, the 35 minutes still to go), outer r 290, inner r 206, so 84 thick
+           (rings ≥ 84: the small version's erode 8 still leaves 68). Both ends are straight lines parallel to the
+           seam radius, 24 into the segment: the two seams are 48 wide radial cuts baked into the paths.
+           python3 scripts/shapes.py ring 512 536 290 206 60 270, gap flag 48 -->
+      <path d="M 635.7 798.3 A 290 290 0 1 1 488.0 247.0 L 488.0 331.4 A 206 206 0 1 0 593.5 725.2 Z"/>
+      <!-- crown: capsule 152 × 84 (rx 42 = half the height), x 436..588, y 114..198;
+           the ring top is y 536 − 290 = 246, so 48 below the crown -->
+      <rect x="436" y="114" width="152" height="84" rx="42"/>
     </g>
+    <!-- accent shape: 25 of 60 minutes = 150°, from 12 o'clock (−90°) clockwise to 60°, same ring and seams.
+         python3 scripts/shapes.py ring 512 536 290 206 -90 60, gap flag 48 -->
+    <path id="accent-shape" fill="url(#accent)" d="M 536.0 247.0 A 290 290 0 0 1 677.3 774.3 L 635.1 701.2 A 206 206 0 0 0 536.0 331.4 Z"/>
   </g>
 </svg>
