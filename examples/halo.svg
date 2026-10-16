@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Halo, a weather app: today's forecast at a glance. Partly sunny: a yellow sun behind an ink cloud.
-    The cloud is ONE closed line shape with the knock-out fill #FFFFFF, so it hides the sun's lower left.
-    Drawn at final size: k = 1, stroke 52, every coordinate is a 1024-canvas pixel before the translate below.
+    Halo, a weather app: today's forecast at a glance. Partly sunny: a yellow sun right behind an ink cloud,
+    sharing the centre of the cloud's top bump, so only an even rim of sun shows around the cloud top, like a halo.
+    The cloud is ONE closed line shape with the knock-out fill #FFFFFF, so it hides the lower part of the sun.
+    The sun has no ink outline and no rays: the accent is the second object, its visible edge is a free edge.
+    Drawn at final size: k = 1, stroke 52, every coordinate is a 1024-canvas pixel.
     Rules and numbers: references/style.md. Layers, attributes and variants: references/construction.md.
   -->
   <defs>
@@ -12,8 +14,8 @@
       <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
     <!-- accent: yellow (weather), light #FFD978 → main #F2AE2E.
-         Span 480 (k = 1) centred on the sun disc's vertical centre 426: y1 186, y2 666. -->
-    <linearGradient id="accent" x1="0" y1="186" x2="0" y2="666" gradientUnits="userSpaceOnUse">
+         Span 480 (k = 1) centred on the accent shape's vertical range y 207..570 (centre 388.5): y1 149, y2 629. -->
+    <linearGradient id="accent" x1="0" y1="149" x2="0" y2="629" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFD978"/>
       <stop offset="1" stop-color="#F2AE2E"/>
     </linearGradient>
@@ -27,34 +29,33 @@
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- transform: k = 1, moved left 12 and up 18 px.
-       Wide shape: outer box 680 × 581 px (centre-line x 183..811, y 235..764, plus 26 of stroke on each side).
-       That is larger than the 600 × 480 keyline because sun and cloud only partly overlap; the filled silhouette
-       is what counts, 0.95 × Tide's.
-       Placement: centring the box would leave the silhouette centroid low right, at about (544, 546): the sun and
-       the right lobe stack two arcs on the right and the flat base is heavy. After the move the outer box is
-       x 145..825, y 191..772 and the silhouette centroid is about (516, 516), within 12 px of (512, 512).
-       No #backing: the sun disc and the knock-out cloud fill every enclosed area, so the lift shadow already
+  <!-- transform: k = 1, no move; the geometry below is already placed.
+       Wide shape: outer box 700 × 543 px (x 168..868: lobe edges plus 26 of stroke; y 207..750: top of the sun
+       to the base's outer edge). That is larger than the 600 × 480 keyline because the sun rim stands out around
+       the cloud top; the filled silhouette is what counts, 1.01 × Tide's. Silhouette centroid about (513, 513).
+       No #backing: the knock-out cloud and the sun fill every enclosed area, so the lift shadow already
        falls only outside. -->
-  <g id="subject" data-shape="wide" transform="translate(512 512) scale(1) translate(-512 -512) translate(-12 -18)" filter="url(#lift)">
-    <!-- accent shape: the sun disc, r 191 at (620, 426); its whole edge sits on the sun line's centre line.
-         The cloud hides its lower left. -->
-    <circle id="accent-shape" fill="url(#accent)" cx="620" cy="426" r="191"/>
+  <g id="subject" data-shape="wide" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- accent shape: the sun, a disc r 270 at (505, 477), the same centre as the cloud's top bump (r 153), so its
+         visible edge runs parallel to the bump: an even rim of 270 − 153 − 26 = 91 px of yellow outside the line.
+         The disc would come out under the cloud's base (477 + 270 = 747 > 724), so it is cut flat by a chord at
+         y 570, x 251.5..758.5. The chord and its two corners lie deep inside the knock-out cloud (the ends sit
+         69 and 52 px from the left and right lobe centres, well within r 112 and r 128), so they never show.
+         Free edge: the arc leaves the cloud line at (238.8, 522.4) on the left lobe and (774.9, 483.4) on the
+         right lobe, both at 62.8° / 62.9° to the lobe's centre line (117° on the other side), so no thin wedge
+         of yellow is left at either end. -->
+    <path id="accent-shape" fill="url(#accent)" d="M 251.5 570.0 A 270 270 0 1 1 758.5 570.0 Z"/>
     <!-- lines: stroke 52 (k = 1); round caps and joins -->
     <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
-      <!-- sun: circle r 191 at (620, 426), same as the accent disc -->
-      <circle cx="620" cy="426" r="191"/>
       <!-- cloud: ONE closed path, knock-out fill #FFFFFF.
-           Left lobe r 97 at (280, 667); top bump r 150 at (438, 587); right lobe r 115 at (623, 649).
-           The left and right lobes sit on the flat base y 764 (cy = 764 − r), so the bottom corners are full round ends.
-           Each valley is a concave fillet r 52 tangent to both lobes it joins: centres (246.8, 521.7) and (610.8, 482.4),
-           each r_lobe + 52 from both lobe centres; tangent points (258.4, 572.4), (296.0, 538.5) on the left and
-           (566.3, 509.4), (614.6, 534.3) on the right. The stroke's outer edge in each valley keeps radius 52 − 26 = 26.
-           Z closes along the base.
-           The sun ring crosses the cloud twice, at (429.3, 437.3) on the top bump and (720.7, 588.3) on the right lobe,
-           both at right angles (the radii meet at 90°), so no thin wedge of yellow or background is left at either
-           crossing. The right valley lies inside the disc, so the visible yellow is one region. -->
-      <path fill="#FFFFFF" d="M 280.0 764.0 A 97 97 0 0 1 258.4 572.4 A 52 52 0 0 0 296.0 538.5 A 150 150 0 0 1 566.3 509.4 A 52 52 0 0 0 614.6 534.3 A 115 115 0 0 1 623.0 764.0 Z"/>
+           Left lobe r 112 at (306, 612); top bump r 153 at (505, 477); right lobe r 128 at (714, 596).
+           The left and right lobes sit on the flat base y 724 (cy = 724 − r), so the bottom corners are full round ends.
+           Each valley is a concave fillet r 52 tangent to both lobes it joins: centres (302.1, 448.0) and (700.9, 416.5),
+           each r_lobe + 52 from both lobe centres; tangent points (303.3, 500.0), (353.5, 455.4) on the left and
+           (651.2, 431.8), (704.7, 468.3) on the right. The stroke's outer edge in each valley keeps radius 52 − 26 = 26.
+           The right lobe's arc runs 184° (large-arc flag 1), the left lobe's 179°.
+           Z closes along the base. -->
+      <path fill="#FFFFFF" d="M 306.0 724.0 A 112 112 0 0 1 303.3 500.0 A 52 52 0 0 0 353.5 455.4 A 153 153 0 0 1 651.2 431.8 A 52 52 0 0 0 704.7 468.3 A 128 128 0 1 1 714.0 724.0 Z"/>
     </g>
   </g>
 </svg>

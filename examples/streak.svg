@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Streak, a daily habit check-in app: an ink calendar page with today ticked off on a green badge.
-    Built from assets/template.svg (line style). Scaled by k = 0.92 so stroke = 52 ÷ 0.92 ≈ 56.5 before scaling.
+    Streak, a daily habit check-in app: an ink calendar page crossed by a green run of days. The run comes in from
+    under the page's left edge (the streak began before this page) and ends in a round cap: today, ticked off.
+    Built from assets/template.svg (line style). k = 1: drawn at final size, stroke 52.
     Variants (dark, tinted, favicon) come from python3 scripts/render.py examples/streak.svg plus the variants flag.
   -->
   <defs>
@@ -10,9 +11,9 @@
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <!-- accent: green (完成), light → main. Fixed span 480 px after scaling = 480 ÷ 0.92 ≈ 521.7 in source units,
-         centred on the badge's vertical centre y 589: y1 = 589 - 260.9 = 328.1, y2 = 589 + 260.9 = 849.9 -->
-    <linearGradient id="accent" x1="0" y1="328.1" x2="0" y2="849.9" gradientUnits="userSpaceOnUse">
+    <!-- accent: green (完成), light → main. Fixed span 480 (k = 1), centred on the run's vertical centre y 530:
+         y1 290, y2 770 -->
+    <linearGradient id="accent" x1="0" y1="290" x2="0" y2="770" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#6FD3A6"/>
       <stop offset="1" stop-color="#23A36B"/>
     </linearGradient>
@@ -26,30 +27,34 @@
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- k = 0.92, ty = -29. data-shape square: the page is the body, the binder rings are a top protrusion.
-       Unscaled page outer box (half stroke 28.25): x 195.75..828.25 (632.5), y 267.75..854.25 (586.5);
-       ring tops at 203.75. Scaled: page 582 × 540, 598 tall with the rings; final x 221..803, y 202..800.
-       Optical centring: the page body centre y 561 goes to (561 - 29 - 512) × 0.92 + 512 ≈ 530.
-       render.py: silhouette 1.06 × Tide, accent 17 % of the hull, r_max 357. -->
-  <g id="subject" data-shape="square" transform="translate(512 512) scale(0.92) translate(-512 -512) translate(0 -29)" filter="url(#lift)">
+  <!-- k = 1. data-shape square: the page is the body, the binder rings are a top protrusion.
+       Page centre line x 248..776, y 286..774; outer box x 222..802, y 260..800 (580 × 540, the square keyline);
+       ring tops at 200 (60 above the page), inside the safe area. Body centre (512, 530), the body-centre line
+       for a top protrusion. render.py: silhouette 1.06 × Tide, accent 24 % of the hull, r_max 356. -->
+  <g id="subject" data-shape="square" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
     <!-- backing: same rounded rect as the page outline, on its centre line; keeps the lift shadow outside the page -->
-    <rect id="backing" x="224" y="296" width="576" height="530" rx="108" fill="url(#bg)"/>
-    <!-- today badge: circle r 160 at (512, 589), entirely inside the page (edge case 2: clear of every line).
-         Bottom: page line inner edge 826 - 28.25 = 797.75, badge bottom 749 → 48.75 × 0.92 = 44.9 px clear.
-         Top: ring ends 352 + 28.25 = 380.25, badge top 429 → 48.75 × 0.92 = 44.9 px clear. -->
-    <circle id="accent-shape" fill="url(#accent)" cx="512" cy="589" r="160"/>
-    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="56.5" stroke-linecap="round" stroke-linejoin="round">
-      <!-- page: 576 × 530 at (224, 296), rx 108 (≥ 20 % of the short side 530 = 106, on the centre line) -->
-      <rect x="224" y="296" width="576" height="530" rx="108"/>
-      <!-- binder rings: two stubs at x = 512 ± 144, from y 232 (above the page) to 352 (inside); they cross the
-           page's top line, so they are connected lines (no clearance check). Inner detail: dropped in the favicon. -->
-      <path class="detail" d="M 368 232 V 352 M 656 232 V 352"/>
-      <!-- tick: lies inside the badge (on-accent: stays #1C1C1E in the dark variant).
-           Short arm 56 × 56 into the vertex (488, 646), long arm 96 × 96 up to the right; set slightly left and low
-           of the badge centre because the long arm carries the weight up and right.
-           Clear of the badge edge: (160 - distance to centre - 28.25) × 0.92 =
-           start (432, 590) 47.6 px, vertex (488, 646) 64.3 px, end (584, 550) 45.9 px. -->
-      <path class="on-accent" d="M 432 590 L 488 646 L 584 550"/>
+    <rect id="backing" x="248" y="286" width="528" height="488" rx="100" fill="url(#bg)"/>
+    <!-- accent shape: the streak, a run of days 224 tall (y 418..642, centred on the page at 530).
+         Left edge: straight, on the page's left centre line x 248 and inside the side's straight part (y 386..674),
+         so both of its corners sit under the line. Top, bottom and the round right end (r 112, centre (572, 530),
+         end x 684) are one free edge of two straight lines and a whole half circle, both ends on the left centre line.
+         Clear of the lines: top 418 to the ring ends' outer edge 362 = 56; bottom 642 to the inner edge 748 = 106;
+         right end 684 to the inner edge 750 = 66. Visible green x 274..684. -->
+    <path id="accent-shape" fill="url(#accent)" d="M 248 418 H 572 A 112 112 0 0 1 572 642 H 248 Z"/>
+    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+      <!-- page: 528 × 488 at (248, 286), rx 100 (≥ 20 % of the short side 488 = 97.6, on the centre line) -->
+      <rect x="248" y="286" width="528" height="488" rx="100"/>
+      <!-- binder rings: two stubs at x = 512 ± 144, from y 226 (above the page) to 336 (inside); they cross the
+           page's top line at 90°, so they are connected lines. Inner detail: dropped in the favicon. -->
+      <path class="detail" d="M 368 226 V 336 M 656 226 V 336"/>
+      <!-- tick: today, set in the run's round end, not in the middle of the page, so the green to its left reads
+           as the days before (on-accent: stays #1C1C1E in the dark variant).
+           Short arm 40 × 40 into the vertex (544, 570), long arm 64 × 64 up to (608, 506). With its stroke the tick
+           spans x 478..634 (centre 556, within 20 of the round end's centre 572); the green left of it, x 274..478,
+           is the run so far. Clear of the run's edge (stroke edge 26 from the centre line):
+           vertex bottom 596 to the bottom edge 642 = 46 px; start (504, 530) top 504 to 418 = 86 px;
+           the end (608, 506) is 43.3 from the round end's centre (572, 530) → 112 − 43.3 − 26 = 42.7 px. -->
+      <path class="on-accent" d="M 504 530 L 544 570 L 608 506"/>
     </g>
   </g>
 </svg>
