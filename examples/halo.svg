@@ -40,17 +40,17 @@
     <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->
     <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur stdDeviation="34"/>
-      <feColorMatrix type="saturate" values="1.5"/>
+      <feColorMatrix type="saturate" values="1.8"/>
     </filter>
     <linearGradient id="glaze" x1="0" y1="380" x2="0" y2="700" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#EEF3F1" stop-opacity="0.74"/>
-      <stop offset="1" stop-color="#C9D8D6" stop-opacity="0.66"/>
+      <stop offset="0" stop-color="#F4F8F6" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#D6E3E1" stop-opacity="0.82"/>
     </linearGradient>
     <!-- glaze pools thicker toward the lower edge: a soft darker band inside the bottom -->
     <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
       <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
       <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
-      <feFlood flood-color="#5E7A86" flood-opacity=".45"/>
+      <feFlood flood-color="#5E7A86" flood-opacity=".32"/>
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
     </filter>
     <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
@@ -69,7 +69,7 @@
       <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
     </g>
     <!-- subject scaled ×1.36 about the centre to sit on the Apple / Material keyline grid -->
-    <g id="glyph" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-18 32)">
+    <g id="glyph" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-24 20)">
       <circle cx="440" cy="430" r="250" fill="url(#glow)"/>
       <!-- sun (gamboge 藤黄): sphere r 170 -->
       <g filter="url(#elevate)"><circle cx="440" cy="430" r="170" fill="url(#solid)" filter="url(#inner-solid)"/></g>
@@ -77,13 +77,13 @@
   </g>
 
   <!-- glaze: shadow base, blurred scene, celadon body, pooling, broad sheen, a fine lip of light -->
-  <g id="glaze" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-18 32)">
+  <g id="glaze" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-24 20)">
     <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
     <g clip-path="url(#glaze-clip)">
-      <use href="#scene" transform="translate(18 -32) translate(512 512) scale(0.73529) translate(-512 -512)" filter="url(#through-glaze)"/>
+      <use href="#scene" transform="translate(24 -20) translate(512 512) scale(0.73529) translate(-512 -512)" filter="url(#through-glaze)"/>
       <use href="#glaze-shape" fill="url(#glaze)"/>
       <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
-      <ellipse cx="500" cy="470" rx="150" ry="50" fill="#fff" opacity=".42" filter="url(#soft)"/>
+      <ellipse cx="500" cy="470" rx="160" ry="56" fill="#fff" opacity=".55" filter="url(#soft)"/>
     </g>
     <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="4" clip-path="url(#glaze-clip)"/>
   </g>
