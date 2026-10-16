@@ -1,23 +1,23 @@
 ---
 name: rian-app-icon
-description: Design app icons and logo marks as production SVG in Rian's house style, which is simple, clear and tactile and draws on Apple and Google icon design (a saturated geometric solid behind a frosted-glass shape). Use when asked to create, redesign, or iterate on an app icon, app logo, or logo mark. 用于按 Rian 的风格生成 app 图标 / logo（SVG）。
+description: Design app icons and logo marks as production SVG in Rian's house style, which is simple, clear and tactile and draws on Apple and Google icon design with a Chinese aesthetic (a geometric solid in a traditional colour behind a celadon-glaze shape, with generous empty space). Use when asked to create, redesign, or iterate on an app icon, app logo, or logo mark. 用于按 Rian 的风格生成 app 图标 / logo（SVG）。
 ---
 
 # Rian App Icon
 
 把一句产品描述变成一枚可以直接上架的 app 图标：1024×1024 全出血 SVG 母版、PNG 导出和一张评审对照图。
 
-只有一种风格：**简洁、明确、有质感**。构造方式学 Google（几何、关键线、自信的色块），材质学 Apple（有体积的光影、多层投影、带厚度的磨砂玻璃）。详细规则在 `references/style.md`，SVG 配方和平台规格在 `references/construction.md`。动笔前两份都要读。
+只有一种风格：**简洁、明确、有质感，带东方气质**。构造学 Google（几何、关键线、自信的色块），光影学 Apple（体积、多层投影），材质和颜色来自中国美学（青瓷釉、传统色、留白）。详细规则在 `references/style.md`，SVG 配方和平台规格在 `references/construction.md`。动笔前两份都要读。
 
 ## 风格的签名
 
 每一枚图标都由同样的三层构成：
 
-1. **背景**：单一色相，三档色调的径向渐变加细颗粒
-2. **实色图形**：一个有体积感的饱和几何形，在后面
-3. **磨砂玻璃**：一个有厚度和上下边缘光的几何形，叠在前面，透出背后模糊的颜色
+1. **底色**：一种传统色，三档色调的径向渐变，加宣纸般的细颗粒
+2. **实色图形**：一个有体积感的传统色几何形，在后面
+3. **瓷釉**：一个青瓷釉质的几何形，叠在前面，背后的颜色微微晕出；下沿积釉，上方一片柔光
 
-实色和玻璃的**重叠处**是图标的视觉焦点，也是这个风格的签名。示例见 `examples/`。
+实色和瓷釉的**重叠处**是图标的视觉焦点，也是这个风格的签名。主体按 88% 缩放，四周留白。示例见 `examples/`。
 
 ## 工作流程
 
@@ -31,23 +31,23 @@ description: Design app icons and logo marks as production SVG in Rian's house s
 
 这个风格追求**一眼看懂**，像 Apple 和 Google 自己的 app 一样：天气就是太阳和云，笔记就是一页纸。
 
-- 先写出 3 个方向，每个一行：**画的是什么 → 实色是哪个形、玻璃是哪个形 → 为什么一眼能懂**。
-- 允许具象的对象，但必须简化到 1 个实色形 + 1 个玻璃形，每个都能用圆、圆角矩形、胶囊、扇形这些基本几何拼出来。
-- 不用字母，不用文字，不用 ✦ 闪光这类 AI 套路符号。
+- 先写出 3 个方向，每个一行：**画的是什么 → 实色是哪个形、釉是哪个形 → 为什么一眼能懂**。
+- 允许具象的对象，但必须简化到 1 个实色形 + 1 个釉形，每个都能用圆、圆角矩形、胶囊、扇形这些基本几何拼出来。
+- 不用字母，不用文字，不用 ✦ 闪光这类 AI 套路符号，也不用龙凤、祥云、回纹这类「中国元素」图案：东方感来自材质和颜色。
 - 选最明确的那个方向往下做；用户要求多方案时，3 个都画。
 
 ### 3. 定颜色
 
-- 背景一个色相，实色图形一个色相，最多就这两个。玻璃没有自己的颜色，它透出背后的颜色。
-- 背景和实色要拉开：冷暖对比（蓝底配黄、靛底配珊瑚），或者白底配一个饱和色。
-- 推荐色板见 `references/style.md`。产品有品牌色时，品牌色做实色或背景。
+- 只从 `references/style.md` 的传统色板里选：一个底色、一个实色、一个釉色。
+- 底色和实色要拉开：深底配暖色（墨配朱砂、黛蓝配藤黄），或者浅底配一个浓色（宣纸配朱砂）。
+- 产品有品牌色时，从色板里选最接近的传统色，不要直接用西式亮色。
 
 ### 4. 画 SVG
 
-从 `assets/template.svg` 复制开始，只改标了 TODO 的地方：颜色、实色图形、玻璃形状、渐变坐标、两组 translate。滤镜和玻璃配方就是这个风格的质感来源，不要重写，也不要删减。
+从 `assets/template.svg` 复制开始，只改标了 TODO 的地方：颜色、实色图形、釉的形状、渐变和釉光坐标、整体 transform。滤镜和瓷釉配方就是这个风格的质感来源，不要重写，也不要删减。
 
-- 主体（实色 + 玻璃）落在中心 600 × 600 关键线框内，整体视觉重心在画布中心。
-- 玻璃形状必须是**一个闭合轮廓**；由多个形状拼成时先合并成一条 path，否则重叠处颜色会加深。
+- 主体（实色 + 釉）在缩放前落在中心 600 × 600 内，模板会整体缩到 88%；视觉重心在画布中心。
+- 釉的形状必须是**一个闭合轮廓**；由多个形状拼成时先合并成一条 path，否则重叠处颜色会加深。
 - 坐标、半径、角度用整齐的数字，并在注释里写出几何关系。
 
 ### 5. 渲染、自检、打磨
@@ -60,16 +60,17 @@ python3 scripts/render.py path/to/icon.svg -o renders
 
 | 看到 | 改 |
 |---|---|
-| 玻璃发灰、发闷 | 玻璃大部分压在背景上时，把 veil 提到 0.86 → 0.60 |
-| 重叠处没看头 | 让实色和玻璃重叠 25%–45% 面积；太少没焦点，太多实色被吞掉 |
-| 小尺寸糊成一团 | 加大两层的明度差，减少玻璃形状上的凹凸细节 |
-| 看起来很平、不高级 | 对照 `style.md` 的「质感」五件事逐项检查：背景三档色调和颗粒、实色高光和内阴影、三层投影、玻璃模糊和 veil、上下两道边缘光 |
-| 颜色廉价 | 背景换成更深的三档色调，实色用「高光 → 主色 → 暗部」三段渐变 |
+| 釉透出的颜色发脏 | 降低釉色透明度 0.05–0.1，让背后颜色多透一点；冷釉压暖色时最容易脏 |
+| 釉像塑料 | 检查积釉深带和左上釉光是否都在，釉光要大、要软 |
+| 重叠处没看头 | 让实色和釉重叠 25%–45% 面积；太少没焦点，太多实色被吞掉 |
+| 小尺寸糊成一团 | 加大两层的明度差，减少釉形状上的凹凸细节 |
+| 看起来很平、不高级 | 对照 `style.md` 的「质感从哪里来」六件事逐项检查 |
+| 颜色廉价、不够东方 | 换回传统色板里的颜色；底色压深、实色降饱和 |
 
 打磨时**不加东西，只调准已有的东西**：比例、重叠量、颜色明度、阴影浓度。
 
 ### 6. 交付
 
-给用户：对照图、三行设计说明（画了什么、两种颜色、关键尺寸）、SVG 和 1024 PNG 的路径。需要时再给深色/着色模式、Android 自适应图标、favicon，规格在 `construction.md`。
+给用户：对照图、三行设计说明（画了什么、用了哪三种传统色、关键尺寸）、SVG 和 1024 PNG 的路径。需要时再给深色/着色模式、Android 自适应图标、favicon，规格在 `construction.md`。
 
 迭代时只改用户点名的部分。

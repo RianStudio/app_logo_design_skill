@@ -1,68 +1,62 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <!-- background: one hue, lit from above, deepening toward the corners -->
+    <!-- ground: a traditional colour in three tones, lit from above -->
     <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#6E74F0"/>
-      <stop offset=".45" stop-color="#2E31A6"/>
-      <stop offset="1" stop-color="#0F1046"/>
+      <stop offset="0" stop-color="#4A4D55"/>
+      <stop offset=".45" stop-color="#26282E"/>
+      <stop offset="1" stop-color="#0D0E11"/>
     </radialGradient>
-    <!-- grain: a whisper of texture so the surface reads as a material, not a fill -->
+    <!-- grain: like the tooth of xuan paper or unglazed clay -->
     <filter id="grain" x="0" y="0" width="100%" height="100%">
       <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0"/>
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .06 0"/>
       <feComposite in2="SourceGraphic" operator="in"/>
     </filter>
-    <!-- solid: lit surface, highlight toward the light (top-left) -->
     <linearGradient id="solid" x1="560" y1="220" x2="760" y2="690" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFC2A0"/>
-      <stop offset=".4" stop-color="#FF8A5C"/>
-      <stop offset="1" stop-color="#E5482E"/>
+      <stop offset="0" stop-color="#F08A6E"/>
+      <stop offset=".45" stop-color="#D9473A"/>
+      <stop offset="1" stop-color="#A52A22"/>
     </linearGradient>
-    <!-- inner shade: the lower-right edge of the solid turns away from the light -->
     <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
       <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
       <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
-      <feFlood flood-color="#A3241A" flood-opacity=".5"/>
+      <feFlood flood-color="#6E1712" flood-opacity=".45"/>
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
       <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
     </filter>
-    <!-- elevation: far + mid + contact shadow, tinted with the background's deepest tone -->
     <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="a"/><feOffset in="a" dy="36" result="a"/>
-      <feFlood flood-color="#05062A" flood-opacity=".42"/><feComposite in2="a" operator="in" result="far"/>
+      <feFlood flood-color="#000000" flood-opacity=".38"/><feComposite in2="a" operator="in" result="far"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#05062A" flood-opacity=".28"/><feComposite in2="b" operator="in" result="mid"/>
+      <feFlood flood-color="#000000" flood-opacity=".26"/><feComposite in2="b" operator="in" result="mid"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#05062A" flood-opacity=".22"/><feComposite in2="c" operator="in" result="near"/>
+      <feFlood flood-color="#000000" flood-opacity=".2"/><feComposite in2="c" operator="in" result="near"/>
       <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <!-- glass: blur what is behind and lift its colour (vibrancy) -->
-    <filter id="frost" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="30"/>
-      <feColorMatrix type="saturate" values="1.25"/>
+    <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->
+    <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="34"/>
+      <feColorMatrix type="saturate" values="1.5"/>
     </filter>
-    <linearGradient id="veil" x1="0" y1="330" x2="0" y2="770" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.86"/>
-      <stop offset="1" stop-color="#ECEEFF" stop-opacity="0.6"/>
+    <linearGradient id="glaze" x1="0" y1="330" x2="0" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#CFE3DE" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#8FB5AE" stop-opacity="0.7"/>
     </linearGradient>
-    <linearGradient id="rim-top" x1="0" y1="330" x2="0" y2="550" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="rim-bottom" x1="0" y1="550" x2="0" y2="770" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".55"/>
-    </linearGradient>
-    <!-- glass thickness: a soft shade just under the top edge -->
-    <filter id="inner-glass" x="-10%" y="-10%" width="120%" height="120%">
+    <!-- glaze pools thicker toward the lower edge: a soft darker band inside the bottom -->
+    <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
       <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dy="-12"/><feGaussianBlur stdDeviation="14" result="s"/>
-      <feFlood flood-color="#2E31A6" flood-opacity=".3"/>
+      <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
+      <feFlood flood-color="#3E6B66" flood-opacity=".45"/>
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
     </filter>
-    <!-- dial: disc r 220 -->
-    <circle id="glass-shape" cx="480" cy="550" r="220"/>
-    <clipPath id="glass-clip"><use href="#glass-shape"/></clipPath>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
+    <linearGradient id="lip" x1="0" y1="330" x2="0" y2="550" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- dial (sky-after-rain celadon 天青): disc r 220 -->
+    <circle id="glaze-shape" cx="480" cy="550" r="220"/>
+    <clipPath id="glaze-clip"><use href="#glaze-shape"/></clipPath>
   </defs>
 
   <g id="scene">
@@ -70,21 +64,22 @@
       <rect width="1024" height="1024" fill="url(#bg)"/>
       <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
     </g>
-    <g id="glyph" transform="translate(-23 17)">
-      <!-- focus block: 150° sector, r 250, corners softened by a 24 px round-join stroke -->
+    <!-- liubai: the subject is drawn at 88% so the ground breathes -->
+    <g id="glyph" transform="translate(512 512) scale(0.88) translate(-512 -512) translate(-23 17)">
+      <!-- focus block (cinnabar 朱砂): 150° sector r 250, corners softened by a 24 px round-join stroke -->
       <g filter="url(#elevate)"><path d="M 560 470 L 560 220 A 250 250 0 0 1 685 686.5 Z" fill="url(#solid)" filter="url(#inner-solid)" stroke="url(#solid)" stroke-width="24" stroke-linejoin="round"/></g>
     </g>
   </g>
 
-  <!-- frosted glass: opaque base for the shadow, blurred scene inside, veil, thickness, two rims -->
-  <g id="glass" transform="translate(-23 17)">
-    <use href="#glass-shape" fill="#fff" filter="url(#elevate)"/>
-    <g clip-path="url(#glass-clip)">
-      <use href="#scene" transform="translate(23 -17)" filter="url(#frost)"/>
-      <use href="#glass-shape" fill="url(#veil)"/>
-      <use href="#glass-shape" fill="#000" filter="url(#inner-glass)"/>
+  <!-- glaze: shadow base, blurred scene, celadon body, pooling, broad sheen, a fine lip of light -->
+  <g id="glaze" transform="translate(512 512) scale(0.88) translate(-512 -512) translate(-23 17)">
+    <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
+    <g clip-path="url(#glaze-clip)">
+      <use href="#scene" transform="translate(23 -17) translate(512 512) scale(1.13636) translate(-512 -512)" filter="url(#through-glaze)"/>
+      <use href="#glaze-shape" fill="url(#glaze)"/>
+      <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
+      <ellipse cx="420" cy="420" rx="130" ry="60" fill="#fff" opacity=".42" filter="url(#soft)"/>
     </g>
-    <use href="#glass-shape" fill="none" stroke="url(#rim-top)" stroke-width="7" clip-path="url(#glass-clip)"/>
-    <use href="#glass-shape" fill="none" stroke="url(#rim-bottom)" stroke-width="4" clip-path="url(#glass-clip)"/>
+    <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="4" clip-path="url(#glaze-clip)"/>
   </g>
 </svg>
