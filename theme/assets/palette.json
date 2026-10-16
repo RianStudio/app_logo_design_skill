@@ -1,0 +1,21 @@
+{
+  "_comment": "Same traditional colours as the rian-app-icon skill. ground = icon background (light/mid/deep), solid = icon solid (highlight/main/shade), glaze = icon glaze (top/bottom/pool).",
+  "ground": {
+    "玄青": {"en": "xuanqing", "tones": ["#3C4854", "#1A222B", "#070A0E"], "shadow": "#000000"},
+    "黛蓝": {"en": "dailan",   "tones": ["#56708A", "#2A3D52", "#0E1724"], "shadow": "#060B14"},
+    "霜白": {"en": "shuangbai","tones": ["#F6F8F8", "#E5EAEB", "#C6CFD2"], "shadow": "#1E2A33"},
+    "苍绿": {"en": "canglv",   "tones": ["#5F7A74", "#2C413D", "#0E1817"], "shadow": "#050B0A"}
+  },
+  "solid": {
+    "银白":   {"en": "silver",    "tones": ["#F3F6F7", "#B8C3CA", "#6F7C86"]},
+    "黛":     {"en": "dai",       "tones": ["#7D90A6", "#3E526A", "#1F2C3D"]},
+    "石青":   {"en": "shiqing",   "tones": ["#9CC3E0", "#3F7FB5", "#1F4A78"]},
+    "淡藤黄": {"en": "tenghuang", "tones": ["#F4ECD4", "#D9B46A", "#A57F3A"]},
+    "淡朱砂": {"en": "zhusha",    "tones": ["#E4836E", "#BF4639", "#8A2A23"]}
+  },
+  "glaze": {
+    "天青": {"en": "tianqing", "tones": ["#DCEDE8", "#A5C7C0", "#3E6B66"]},
+    "月白": {"en": "yuebai",   "tones": ["#F4F8F6", "#D6E3E1", "#5E7A86"]},
+    "粉青": {"en": "fenqing",  "tones": ["#E3EFE8", "#B3CFC3", "#4E7A6C"]}
+  }
+}

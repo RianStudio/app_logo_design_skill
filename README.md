@@ -15,9 +15,17 @@
 | Image Compressor | 霜白 · 石青 · 月白釉 | 风景照，右上角一块更小的釉面副本 |
 | Ledgerly 记账 | 苍绿 · 淡藤黄 · 天青釉 | 饼图，抽出一块釉面切片（由一个只读过 skill 的新 Claude 画出，用来验证 skill） |
 
+## 姊妹 skill：App UI 主题
+
+`theme/` 是第二个 skill（`rian-app-theme`）：用图标的三种传统色生成整套 UI 主题，包括浅色和深色颜色 token、字号、间距、圆角、投影和青瓷釉材质，导出 CSS 变量、SwiftUI、Jetpack Compose 和 Tailwind，并渲染样例界面。所有颜色自动通过 WCAG 对比度检查。
+
+![Tide 主题](theme/examples/tide/preview.png)
+
+安装：把 `theme/` 文件夹复制到 `~/.claude/skills/rian-app-theme/`，然后对 Claude 说「给 Tide 做一套 UI 主题」。
+
 ## 安装
 
-**Claude Code**：把整个仓库复制到 `~/.claude/skills/rian-app-icon/`（个人）或项目里的 `.claude/skills/rian-app-icon/`。
+**Claude Code**：把整个仓库复制到 `~/.claude/skills/rian-app-icon/`（个人）或项目里的 `.claude/skills/rian-app-icon/`。UI 主题 skill 另外把 `theme/` 复制到 `~/.claude/skills/rian-app-theme/`。
 
 **Claude.ai / Claude 桌面版**：把仓库打成 zip，在 Settings → Capabilities → Skills 上传。
 
