@@ -13,6 +13,7 @@
 | Margin 笔记 | 宣纸 · 朱砂 · 月白釉 | 红笺，釉面便签 |
 | QR Code Scanner | 墨 · 藤黄 · 天青釉 | 二维码，釉面扫描条 |
 | Image Compressor | 宣纸 · 石青 · 月白釉 | 风景照，右上角一块更小的釉面副本 |
+| Ledgerly 记账 | 苍绿 · 藤黄 · 月白釉 | 饼图，抽出一块釉面切片（由一个只读过 skill 的新 Claude 画出，用来验证 skill） |
 
 ## 安装
 
@@ -44,7 +45,7 @@ references/sources.md       参考来源与致谢
 assets/template.svg         图标模板：只改 TODO 的地方
 scripts/render.py           SVG → 1024 PNG + 对照图（Chromium 渲染）
 scripts/shapes.py           圆角扇形等需要做圆角的釉形状路径
-examples/                   五枚示例和它们的渲染图
+examples/                   六枚示例和它们的渲染图
 ```
 
 ## 许可

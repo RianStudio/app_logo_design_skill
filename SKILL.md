@@ -19,7 +19,7 @@ description: Design app icons and logo marks as production SVG in Rian's house s
 
 实色和瓷釉的**重叠处**是图标的视觉焦点，也是这个风格的签名。主体尺寸按 Apple 和 Google 的图标网格，长边约占画布 70%，饱满不空。
 
-`examples/` 里有五枚示例（README 有对照表）。动笔前打开和你的题材最接近的一两枚 SVG，看实色、釉、重叠和釉光是怎么摆的；只借构图思路，不要照抄图形。
+`examples/` 里有六枚示例（README 有对照表）。动笔前打开和你的题材最接近的一两枚 SVG，看实色、釉、重叠和釉光是怎么摆的；只借构图思路，不要照抄图形。
 
 ## 工作流程
 
