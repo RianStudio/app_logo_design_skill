@@ -1,86 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Image Compressor: a portrait photo (frame + two-peak mountain line) squeezed from both sides by two
+    inward chevrons. Accent: the sky above the mountains, blue (default tool colour, natural sky colour).
+    Drawn at final size (k = 1), so stroke-width 52 = 52 / 1.
+    Geometry: frame 348 x 480 rx 78 (outer 400 x 532); chevron tips 130 from frame (clear 78); ground clear at the ends 88 px,
+    under the valley 108 px; second peak rises 64 px above the valley; sky clear above the high peak 178 px.
+    Chevron arms at a 1:2 slope (36 run / 72 rise). Width moved out of the chevrons (was 44 x 176) into the frame (was 330 x 450).
+    Accent: visible sky about 28% of the subject silhouette, about 6% of the canvas.
+  -->
   <defs>
-    <!-- ground: a traditional colour in three tones, lit from above -->
-    <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F6F8F8"/>
-      <stop offset=".45" stop-color="#E5EAEB"/>
-      <stop offset="1" stop-color="#C6CFD2"/>
-    </radialGradient>
-    <!-- grain: like the tooth of xuan paper or unglazed clay -->
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .1  0 0 0 .03 0"/>
-      <feComposite in2="SourceGraphic" operator="in"/>
-    </filter>
-    <linearGradient id="solid" x1="280" y1="330" x2="640" y2="690" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7D90A6"/>
-      <stop offset=".45" stop-color="#3E526A"/>
-      <stop offset="1" stop-color="#1F2C3D"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
-      <feFlood flood-color="#121B27" flood-opacity=".28"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
-      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
-    </filter>
-    <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="28" result="a"/><feOffset in="a" dy="24" result="a"/>
-      <feFlood flood-color="#1E2A33" flood-opacity="0.17"/><feComposite in2="a" operator="in" result="far"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#1E2A33" flood-opacity="0.16"/><feComposite in2="b" operator="in" result="mid"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#1E2A33" flood-opacity="0.12"/><feComposite in2="c" operator="in" result="near"/>
-      <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->
-    <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="26"/>
-      <feColorMatrix type="saturate" values="1.25"/>
-    </filter>
-    <linearGradient id="glaze" x1="0" y1="250" x2="0" y2="470" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F4F8F6" stop-opacity="0.56"/>
-      <stop offset="1" stop-color="#D6E3E1" stop-opacity="0.48"/>
+    <!-- accent: blue, light -> main; y1 = frame top 272, y2 = lowest sky edge (mountain ends) 612 -->
+    <linearGradient id="accent" x1="0" y1="272" x2="0" y2="612" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7AAEFF"/>
+      <stop offset="1" stop-color="#3B7BEA"/>
     </linearGradient>
-    <!-- glaze pools thicker toward the lower edge: a soft darker band inside the bottom -->
-    <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
-      <feFlood flood-color="#5E7A86" flood-opacity=".16"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
+      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
-    <linearGradient id="lip" x1="0" y1="250" x2="0" y2="360" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <!-- the compressed copy (moon-white glaze 月白) 220×220, rx 52: clearly smaller, over the sky only, so the blue blurs through it -->
-    <rect id="glaze-shape" x="520" y="250" width="220" height="220" rx="52"/>
-    <clipPath id="glaze-clip"><use href="#glaze-shape"/></clipPath>
   </defs>
 
-  <g id="scene">
-    <g id="background">
-      <rect width="1024" height="1024" fill="url(#bg)"/>
-      <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
-    </g>
-    <!-- subject scaled ×1.55 about the centre to sit on the Apple / Material keyline grid -->
-    <g id="glyph" transform="translate(512 512) scale(1.55) translate(-512 -512) translate(2 42)">
-      <!-- photo (ink blue 黛) 360×360, rx 72: two peaks in rice-paper white, open sky above -->
-      <g filter="url(#elevate)"><g filter="url(#inner-solid)"><rect x="280" y="330" width="360" height="360" rx="72" fill="url(#solid)"/>
-        <path d="M 324 632 L 410 526 L 462 586 L 526 500 L 598 632 Z" fill="#EEF2F3" stroke="#EEF2F3" stroke-width="20" stroke-linejoin="round"/></g></g>
-    </g>
-  </g>
+  <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- glaze: shadow base, blurred scene, celadon body, pooling, broad sheen, a fine lip of light -->
-  <g id="glaze" transform="translate(512 512) scale(1.55) translate(-512 -512) translate(2 42)">
-    <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
-    <g clip-path="url(#glaze-clip)">
-      <use href="#scene" transform="translate(-2 -42) translate(512 512) scale(0.64516) translate(-512 -512)" filter="url(#through-glaze)"/>
-      <use href="#glaze-shape" fill="url(#glaze)"/>
-      <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
-      <ellipse cx="590" cy="300" rx="90" ry="32" fill="#fff" opacity=".3" filter="url(#soft)"/>
+  <!-- k = 1: outer extent x 146..878 (732 wide), y 246..778 (532 tall); bbox centre (512, 512) -->
+  <g id="subject" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- accent: sky = frame interior above the mountain line; edges on the frame and mountain centre lines -->
+    <path id="accent-shape" fill="url(#accent)"
+          d="M 338 612 V 350 A 78 78 0 0 1 416 272 H 608 A 78 78 0 0 1 686 350 V 612 L 602 528 L 538 592 L 448 502 Z"/>
+    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+      <!-- photo: 348 x 480 centreline rect centred on (512, 512), rx 78 (22.4% of width); 348:480 ~ 8:11, the Google portrait keyline -->
+      <rect x="338" y="272" width="348" height="480" rx="78"/>
+      <!-- mountains, every segment at 45 deg (rise = run): ends (338, 612) and (686, 612); peak (448, 502), valley (538, 592), peak (602, 528);
+           runs 110 / 90 / 64 / 84 (up runs 110 + 64 = down runs 90 + 84 = 174 = half the frame width) -->
+      <path d="M 338 612 L 448 502 L 538 592 L 602 528 L 686 612"/>
+      <!-- chevrons: 36 deep, 144 tall, centred on y 512; tips 130 px from the frame side centrelines (78 px clear) -->
+      <path d="M 172 440 L 208 512 L 172 584 M 852 440 L 816 512 L 852 584"/>
     </g>
-    <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="2.5" clip-path="url(#glaze-clip)"/>
   </g>
 </svg>

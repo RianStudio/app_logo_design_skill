@@ -1,94 +1,50 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Ledgerly: a pie chart of the month's spending; one slice lifts out of the pie in celadon glaze.
-    Ground 霜白 · solid 黛 (the pie) · glaze 月白 (the lifted quarter slice).
-    Geometry (drawn at final size, k = 1):
-      pie   = circle C(498, 510) r 352
-      slice = 120° sector (one third) of the same radius, from 12 o'clock to 4 o'clock (−90°→30°),
-              apex lifted 36 px out along its bisector (−30°) to A(529.2, 492); corners filleted r 28
-      bbox  = x 146..880, y 140..861 → 734 × 721 (round subject ≈ 740), centre (513, 500): lifted ~10 px
+    Rian app icon (line style), built from assets/template.svg.
+    Ledgerly, a bookkeeping app: log one expense a day and see at month end where the money went.
+    The month's spending as a pie chart; the biggest category, 40 % of the pie (144°), is pulled out
+    and filled green: "this is where the money went".
   -->
   <defs>
-    <!-- ground: 霜白 -->
-    <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F6F8F8"/>
-      <stop offset=".45" stop-color="#E5EAEB"/>
-      <stop offset="1" stop-color="#C6CFD2"/>
-    </radialGradient>
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .1  0 0 0 .03 0"/>
-      <feComposite in2="SourceGraphic" operator="in"/>
-    </filter>
-    <!-- solid: 黛, highlight at the pie's upper left -->
-    <linearGradient id="solid" x1="240" y1="200" x2="780" y2="840" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7D90A6"/>
-      <stop offset=".35" stop-color="#3E526A"/>
-      <stop offset="1" stop-color="#1F2C3D"/>
+    <!-- bg: light #FFFFFF → #EEEEEB -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
-      <feFlood flood-color="#121B27" flood-opacity=".28"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
-      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
-    </filter>
-    <!-- elevate: 霜白 shadow colour, light-ground opacities -->
-    <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="28" result="a"/><feOffset in="a" dy="24" result="a"/>
-      <feFlood flood-color="#1E2A33" flood-opacity=".17"/><feComposite in2="a" operator="in" result="far"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#1E2A33" flood-opacity=".16"/><feComposite in2="b" operator="in" result="mid"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#1E2A33" flood-opacity=".12"/><feComposite in2="c" operator="in" result="near"/>
-      <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="26"/>
-      <feColorMatrix type="saturate" values="1.25"/>
-    </filter>
-    <!-- glaze 月白: the slice sits ~85% on dark 黛, so .90 / .82; y1/y2 = slice top 141 / bottom 667 -->
-    <linearGradient id="glaze" x1="0" y1="141" x2="0" y2="667" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F4F8F6" stop-opacity="0.9"/>
-      <stop offset="1" stop-color="#D6E3E1" stop-opacity="0.82"/>
+    <!-- accent: green #6FD3A6 → #23A36B; y1/y2 = the accent shape's top (198) and bottom (549) -->
+    <linearGradient id="accent" x1="0" y1="198" x2="0" y2="549" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6FD3A6"/>
+      <stop offset="1" stop-color="#23A36B"/>
     </linearGradient>
-    <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
-      <feFlood flood-color="#5E7A86" flood-opacity=".16"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
+    <!-- lift: one faint shadow under the whole subject (light .10) -->
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
+      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
-    <linearGradient id="lip" x1="0" y1="141" x2="0" y2="301" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <!-- glaze-shape: 120° sector, apex A(529.2, 492), r 352, all three corners filleted r 28
-         (arc-end fillet centres sit 324 = 352 − 28 from A; apex fillet tangents 28 / tan 60° = 16.2 from A) -->
-    <path id="glaze-shape" d="M 529.2 475.8 L 529.2 169.2 A 28 28 0 0 1 559.6 141.3 A 352 352 0 0 1 848.1 641.0 A 28 28 0 0 1 808.7 653.4 L 543.2 500.1 A 28 28 0 0 1 529.2 475.8 Z"/>
-    <clipPath id="glaze-clip"><use href="#glaze-shape"/></clipPath>
   </defs>
 
-  <g id="scene">
-    <g id="background">
-      <rect width="1024" height="1024" fill="url(#bg)"/>
-      <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
-    </g>
-    <!-- drawn at final size: k = 1, no offset -->
-    <g id="glyph" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)">
-      <g filter="url(#elevate)"><circle cx="498" cy="510" r="352" fill="url(#solid)" filter="url(#inner-solid)"/></g>
-    </g>
-  </g>
+  <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <g id="glaze" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)">
-    <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
-    <g clip-path="url(#glaze-clip)">
-      <use href="#scene" transform="translate(0 0) translate(512 512) scale(1) translate(-512 -512)" filter="url(#through-glaze)"/>
-      <use href="#glaze-shape" fill="url(#glaze)"/>
-      <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
-      <!-- sheen: slice width 351 → rx ≈ 123 (70% / 2), ry ≈ 37; upper-left third of the slice -->
-      <ellipse cx="640" cy="240" rx="123" ry="37" fill="#fff" opacity=".3" filter="url(#soft)"/>
+  <!-- transform: drawn at final size, k = 1, no offset. Pie centre (466, 563), R 263.
+       The slice (-120° → 24°, bisector -48°) is pulled out by (92, -102) ≈ 137 px along its bisector,
+       so each of its straight edges runs 130.7 / 130.6 px (centre to centre) from the matching body edge:
+       a clear gap of 78 px between the 52 px strokes.
+       Outline incl. stroke: x 177..847 (670), y 172..852 (680), bounding box centred on (512, 512). -->
+  <g id="subject" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- accent shape: the pulled-out 40 %, -120° → 24° sector, r 263, all corners rounded 52
+         (python3 scripts/shapes.py sector 558 461 263 -120 24 52); its edges sit on the slice outline's
+         centre line, so the visible green has inner corners of 52 - 26 = 26 px. -->
+    <path id="accent-shape" fill="url(#accent)"
+          d="M 549.6 446.4 L 455.8 283.9 A 52.0 52.0 0 0 1 486.7 207.9 A 263.0 263.0 0 0 1 817.2 505.5 A 52.0 52.0 0 0 1 744.8 544.2 L 573.4 467.9 A 52.0 52.0 0 0 1 549.6 446.4 Z"/>
+    <!-- lines: one stroke width 52 (k = 1 → 52/1); round caps and joins -->
+    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+      <!-- pie body: the other 60 %, 24° → 240° sector at (466, 563), r 263, rim corners rounded 52;
+           the inner (reflex) corner rounded by a radius-52 concave arc centred in the notch
+           (tangent points 16.9 px from the centre = 52 / tan 72°), so the stroke's notch side is r 26 -->
+      <path d="M 481.4 569.9 L 652.8 646.2 A 52 52 0 0 1 672.5 725.9 A 263 263 0 1 1 282.4 374.7 A 52 52 0 0 1 363.8 385.9 L 457.6 548.4 A 52 52 0 0 0 481.4 569.9 Z"/>
+      <!-- slice outline: same path as the accent -->
+      <path d="M 549.6 446.4 L 455.8 283.9 A 52.0 52.0 0 0 1 486.7 207.9 A 263.0 263.0 0 0 1 817.2 505.5 A 52.0 52.0 0 0 1 744.8 544.2 L 573.4 467.9 A 52.0 52.0 0 0 1 549.6 446.4 Z"/>
     </g>
-    <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="2.5" clip-path="url(#glaze-clip)"/>
   </g>
 </svg>

@@ -1,90 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Halo, a weather app: today's forecast at a glance. Partly sunny: a yellow sun behind an ink cloud;
+    the cloud is ONE closed line shape filled with the background white, so it hides the sun's lower left.
+    Drawn at final size: k = 1, every coordinate below is a 1024-canvas pixel, stroke 52.
+    Rules: references/style.md. Recipe and platform specs: references/construction.md.
+  -->
   <defs>
-    <!-- ground: a traditional colour in three tones, lit from above -->
-    <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#56708A"/>
-      <stop offset=".45" stop-color="#2A3D52"/>
-      <stop offset="1" stop-color="#0E1724"/>
-    </radialGradient>
-    <!-- grain: like the tooth of xuan paper or unglazed clay -->
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .03 0"/>
-      <feComposite in2="SourceGraphic" operator="in"/>
-    </filter>
-    <radialGradient id="solid" cx="390" cy="350" r="250" fx="380" fy="330" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F4ECD4"/>
-      <stop offset=".4" stop-color="#D9B46A"/>
-      <stop offset="1" stop-color="#A57F3A"/>
-    </radialGradient>
-    <radialGradient id="glow" cx=".5" cy=".5" r=".5">
-      <stop offset="0" stop-color="#D9B46A" stop-opacity=".28"/>
-      <stop offset="1" stop-color="#D9B46A" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
-      <feFlood flood-color="#8A5510" flood-opacity=".28"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
-      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
-    </filter>
-    <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="28" result="a"/><feOffset in="a" dy="24" result="a"/>
-      <feFlood flood-color="#060B14" flood-opacity="0.29"/><feComposite in2="a" operator="in" result="far"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#060B14" flood-opacity="0.26"/><feComposite in2="b" operator="in" result="mid"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#060B14" flood-opacity="0.2"/><feComposite in2="c" operator="in" result="near"/>
-      <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->
-    <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="26"/>
-      <feColorMatrix type="saturate" values="1.25"/>
-    </filter>
-    <linearGradient id="glaze" x1="0" y1="380" x2="0" y2="700" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F4F8F6" stop-opacity="0.9"/>
-      <stop offset="1" stop-color="#D6E3E1" stop-opacity="0.82"/>
+    <!-- bg: light (default) #FFFFFF → #EEEEEB -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <!-- glaze pools thicker toward the lower edge: a soft darker band inside the bottom -->
-    <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
-      <feFlood flood-color="#5E7A86" flood-opacity=".16"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
-    </filter>
-    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
-    <linearGradient id="lip" x1="0" y1="380" x2="0" y2="540" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <!-- accent: yellow (weather), light #FFD978 → main #F2AE2E; y1/y2 = top and bottom of the sun disc (426 ∓ 191) -->
+    <linearGradient id="accent" x1="0" y1="235" x2="0" y2="617" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD978"/>
+      <stop offset="1" stop-color="#F2AE2E"/>
     </linearGradient>
-    <!-- cloud (moon-white glaze 月白) = union of circles L(410,610,r90), B(565,530,r150), R(715,615,r85), flat base at y 700 -->
-    <path id="glaze-shape" d="M 410 700 A 90 90 0 0 1 415.3 520.2 A 150 150 0 0 1 715.0 530.0 A 85 85 0 0 1 715 700 Z"/>
-    <clipPath id="glaze-clip"><use href="#glaze-shape"/></clipPath>
+    <!-- lift: one faint shadow under the whole subject (light version: flood-opacity .10) -->
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
+      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
 
-  <g id="scene">
-    <g id="background">
-      <rect width="1024" height="1024" fill="url(#bg)"/>
-      <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
-    </g>
-    <!-- subject scaled ×1.36 about the centre to sit on the Apple / Material keyline grid -->
-    <g id="glyph" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-24 20)">
-      <circle cx="440" cy="430" r="250" fill="url(#glow)"/>
-      <!-- sun (gamboge 藤黄): sphere r 170 -->
-      <g filter="url(#elevate)"><circle cx="440" cy="430" r="170" fill="url(#solid)" filter="url(#inner-solid)"/></g>
-    </g>
-  </g>
+  <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- glaze: shadow base, blurred scene, celadon body, pooling, broad sheen, a fine lip of light -->
-  <g id="glaze" transform="translate(512 512) scale(1.36) translate(-512 -512) translate(-24 20)">
-    <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
-    <g clip-path="url(#glaze-clip)">
-      <use href="#scene" transform="translate(24 -20) translate(512 512) scale(0.73529) translate(-512 -512)" filter="url(#through-glaze)"/>
-      <use href="#glaze-shape" fill="url(#glaze)"/>
-      <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
-      <ellipse cx="500" cy="470" rx="160" ry="56" fill="#fff" opacity=".3" filter="url(#soft)"/>
+  <!-- transform: k = 1 (drawn at final size), no translate; centre-line bbox x 183..811, y 235..764
+       -> outer 680 x 581 px (x 157..837, y 209..790).
+       Placement: the bbox centred on (512, 512) would leave the mass centroid at about (544, 546), lower right,
+       because the sun ring and the right lobe stack two arcs on the right and the flat base is heavy.
+       The subject is moved (-15, -12) px, half way toward that centroid: margins L 157 / R 187, T 209 / B 234
+       (each pair within 30 px), silhouette centroid (529, 535), ink centroid (529, 532). -->
+  <g id="subject" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- accent shape: the sun disc, r 191 at (620, 426); its edge sits on the sun line's centre line.
+         The cloud's white fill hides its lower left; 72% of the disc stays visible and the yellow is 22.5% of the subject. -->
+    <circle id="accent-shape" fill="url(#accent)" cx="620" cy="426" r="191"/>
+    <!-- lines: one stroke width, 52 after scaling = 52 ÷ k before (k = 1, so 52); round caps and joins.
+         The cloud is a closed line shape that hides the sun, so it gets fill="#FFFFFF".
+         The sun ring meets the cloud exactly twice, both near right angles (angle between radii, 90 = perpendicular,
+         since |S - C|² ≈ r_sun² + r_lobe²): 90° on the top bump and 90° on the right lobe. At the stroke edges the
+         visible yellow corners are 91° and 93° and the background corners outside both lines are 104° and 106°,
+         so no thin wedge of yellow or background is left. The right valley lies inside the disc, so the yellow
+         is one open region (it reaches y 551, where the ramp is already #F4B63B, close to the main #F2AE2E). -->
+    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+      <!-- sun: circle r 191 at (620, 426), same as the accent disc -->
+      <circle cx="620" cy="426" r="191"/>
+      <!-- cloud: ONE closed path. left lobe r 97 at (280, 667); top bump r 150 at (438, 587); right lobe r 115 at (623, 649).
+           The left and right lobes sit on the flat base y 764 (cy = 764 - r), so the bottom corners are full round ends.
+           Each valley is a concave fillet arc r 80 tangent to both neighbouring lobes (fillet centres (226, 499) and (626, 454),
+           each r_lobe + 80 from both lobe centres); the stroke's outer edge there keeps a radius of 80 - 26 = 54.
+           Z closes along the base. -->
+      <path fill="#FFFFFF" d="M 280 764 A 97 97 0 0 1 250.2 574.7 A 80 80 0 0 0 299.5 529.3 A 150 150 0 0 1 560.4 500.3 A 80 80 0 0 0 624.6 534 A 115 115 0 0 1 623 764 Z"/>
     </g>
-    <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="2.5" clip-path="url(#glaze-clip)"/>
   </g>
 </svg>

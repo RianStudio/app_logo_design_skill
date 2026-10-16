@@ -1,86 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Margin, a notes app: quick notes and longer writing.
+    Final: an ink sheet of paper (portrait, Google-keyline-like 0.77 ratio) whose left margin is filled yellow
+    (the app's name, and where notes start); three lines of writing sit at the top, open paper below for longer writing.
+    Rules: references/style.md. Recipe and platform specs: references/construction.md.
+  -->
   <defs>
-    <!-- ground: a traditional colour in three tones, lit from above -->
-    <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F6F8F8"/>
-      <stop offset=".45" stop-color="#E5EAEB"/>
-      <stop offset="1" stop-color="#C6CFD2"/>
-    </radialGradient>
-    <!-- grain: like the tooth of xuan paper or unglazed clay -->
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .1  0 0 0 .03 0"/>
-      <feComposite in2="SourceGraphic" operator="in"/>
-    </filter>
-    <linearGradient id="solid" x1="300" y1="250" x2="640" y2="710" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7D90A6"/>
-      <stop offset=".45" stop-color="#3E526A"/>
-      <stop offset="1" stop-color="#1F2C3D"/>
+    <!-- bg: light #FFFFFF → #EEEEEB -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEB"/>
     </linearGradient>
-    <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
-      <feFlood flood-color="#121B27" flood-opacity=".28"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
-      <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
-    </filter>
-    <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="28" result="a"/><feOffset in="a" dy="24" result="a"/>
-      <feFlood flood-color="#1E2A33" flood-opacity="0.17"/><feComposite in2="a" operator="in" result="far"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#1E2A33" flood-opacity="0.16"/><feComposite in2="b" operator="in" result="mid"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#1E2A33" flood-opacity="0.12"/><feComposite in2="c" operator="in" result="near"/>
-      <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <!-- celadon glaze: thicker and milkier than glass; what is behind only blushes through -->
-    <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="26"/>
-      <feColorMatrix type="saturate" values="1.25"/>
-    </filter>
-    <linearGradient id="glaze" x1="0" y1="500" x2="0" y2="780" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F4F8F8" stop-opacity="0.72"/>
-      <stop offset="1" stop-color="#D9E3E5" stop-opacity="0.6"/>
+    <!-- accent: yellow #FFD978 → #F2AE2E; y1/y2 = the margin strip's top (218) and bottom (806) -->
+    <linearGradient id="accent" x1="0" y1="218" x2="0" y2="806" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD978"/>
+      <stop offset="1" stop-color="#F2AE2E"/>
     </linearGradient>
-    <!-- glaze pools thicker toward the lower edge: a soft darker band inside the bottom -->
-    <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
-      <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
-      <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
-      <feFlood flood-color="#5E7A86" flood-opacity=".16"/>
-      <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
+    <!-- lift: one faint shadow under the whole subject (light .10) -->
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
+      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
-    <linearGradient id="lip" x1="0" y1="500" x2="0" y2="640" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <!-- note (moon-white glaze 月白) 280×280, rx 64, below the second line -->
-    <rect id="glaze-shape" x="480" y="500" width="280" height="280" rx="64"/>
-    <clipPath id="glaze-clip"><use href="#glaze-shape"/></clipPath>
   </defs>
 
-  <g id="scene">
-    <g id="background">
-      <rect width="1024" height="1024" fill="url(#bg)"/>
-      <rect width="1024" height="1024" fill="#fff" filter="url(#grain)"/>
-    </g>
-    <!-- subject scaled ×1.38 about the centre to sit on the Apple / Material keyline grid -->
-    <g id="glyph" transform="translate(512 512) scale(1.38) translate(-512 -512) translate(-18 -3)">
-      <!-- letter paper (ink blue 黛) 340×460, rx 64, two lines at 40 px, kept above the note -->
-      <g filter="url(#elevate)"><g filter="url(#inner-solid)"><rect x="300" y="250" width="340" height="460" rx="64" fill="url(#solid)"/>
-      <path d="M 372 362 H 568 M 372 440 H 500" stroke="#E8EEF1" stroke-width="40" stroke-linecap="round"/></g></g>
-    </g>
-  </g>
+  <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- glaze: shadow base, blurred scene, celadon body, pooling, broad sheen, a fine lip of light -->
-  <g id="glaze" transform="translate(512 512) scale(1.38) translate(-512 -512) translate(-18 -3)">
-    <use href="#glaze-shape" fill="#fff" filter="url(#elevate)"/>
-    <g clip-path="url(#glaze-clip)">
-      <use href="#scene" transform="translate(18 3) translate(512 512) scale(0.72464) translate(-512 -512)" filter="url(#through-glaze)"/>
-      <use href="#glaze-shape" fill="url(#glaze)"/>
-      <use href="#glaze-shape" fill="#000" filter="url(#pool)"/>
-      <ellipse cx="570" cy="560" rx="110" ry="42" fill="#fff" opacity=".3" filter="url(#soft)"/>
+  <!-- transform: drawn at final size, k = 1. Page outer box (with stroke) 492 × 640 (x 266–758, y 192–832), centred on (512, 512) -->
+  <g id="subject" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 0)" filter="url(#lift)">
+    <!-- accent shape: the margin strip. Left, top and bottom edges sit on the page centreline (x 292, y 218 / 806,
+         corners rx 90 = the page's); the right edge at x 418 is free inside the page, like Tide's sector edges.
+         Visible yellow 100 × 536 (inner edges x 318–418, y 244–780), about 26 % of the inner width, ≈ 17 % of the silhouette -->
+    <path id="accent-shape" fill="url(#accent)"
+          d="M 418 218 H 382 A 90 90 0 0 0 292 308 V 716 A 90 90 0 0 0 382 806 H 418 Z"/>
+    <!-- lines: one stroke width 52 (k = 1); round caps and joins -->
+    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+      <!-- page: centreline rect x 292–732, y 218–806 (440 × 588), rx 90 = 20.5 % of 440 -->
+      <rect x="292" y="218" width="440" height="588" rx="90"/>
+      <!-- writing: three lines at y 360 / 490 / 620 (130 apart = 78 clear), centrelines x 522–602:
+           caps x 496–628 sit 78 clear of the yellow edge (418) and of the page's inner right edge (706),
+           so the text block is centred in the white part of the page. Top cap 90 clear of the inner top edge (244),
+           134 of open paper below. The last line is short (to x 562), a paragraph ending. -->
+      <path d="M 522 360 H 602 M 522 490 H 602 M 522 620 H 562"/>
     </g>
-    <use href="#glaze-shape" fill="none" stroke="url(#lip)" stroke-width="2.5" clip-path="url(#glaze-clip)"/>
   </g>
 </svg>

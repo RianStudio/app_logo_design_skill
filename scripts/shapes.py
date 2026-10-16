@@ -1,5 +1,5 @@
 """Path helpers for shapes that need rounded corners but are used as fills or clips
-(a round-join stroke cannot round those, e.g. the glaze shape).
+(a round-join stroke cannot round those, e.g. the accent shape).
 
     python3 scripts/shapes.py sector CX CY R A0 A1 FILLET
 prints an SVG path for a pie slice centred at (CX, CY), radius R, from angle A0 to A1

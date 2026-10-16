@@ -2,35 +2,25 @@
 
 ## 图层结构
 
-`assets/template.svg` 已经搭好，结构如下：
+`assets/template.svg` 已经搭好：
 
 ```
-<defs>        bg 渐变、grain 颗粒、solid 渐变、inner-solid 内阴影、elevate 三层投影、
-              through-glaze 模糊、glaze 釉色、pool 积釉、soft 釉光模糊、lip 细亮线、glaze-shape、glaze-clip
-#scene
-  #background   bg 渐变 + 颗粒
-  #glyph        （可选柔光）+ 实色图形：solid 渐变 + inner-solid，外面包 elevate
-#glaze          不在 #scene 里
-  1. glaze-shape 白色实心 + elevate          → 釉的阴影
-  2. 裁切到 glaze-shape 内：
-     <use href="#scene"> + through-glaze      → 背后颜色晕出来
-     glaze-shape + glaze 釉色                 → 釉身
-     glaze-shape + pool                       → 下沿积釉
-     白色椭圆 + soft                           → 左上一片釉光
-  3. lip 2.5 px 描边，裁切到内部               → 边缘一道细亮切边
+<defs>       bg 背景渐变、accent 强调色渐变、lift 投影
+#background  1024 全出血矩形，填 bg
+#subject     整体 transform（缩放、居中）+ lift 投影
+  #accent-shape  一个闭合形状，填 accent，在线条下面；可以是 <path>、<circle> 或 <rect>
+  #line          所有墨线：同一线宽 52，round 端点和拐角
 ```
 
 要点：
 
-- `#glyph` 和 `#glaze` 用同一个 transform：`translate(512 512) scale(k) translate(-512 -512) translate(tx ty)`。先在 1024 画布上按方便的尺寸画好主体，再用 k 把它放大到 `style.md` 规定的尺寸（主体长边约 720 px，k = 720 ÷ 原始长边），tx、ty 用来把主体视觉居中。直接按最终尺寸画也可以：k = 1、tx = ty = 0，transform 留着不删，以后好调。釉里面的 `<use href="#scene">` 必须用它的**逆变换**：`translate(-tx -ty) translate(512 512) scale(1/k) translate(-512 -512)`。
-- glaze、lip 渐变的 y 坐标对准釉形状自己的上下沿；釉光椭圆贴在釉形状上沿内侧、略偏左，宽约为形状宽度的 60%，高约为自身宽度的 30%。
-- 釉形状要圆角时不能靠 round-join 描边（描边不改变填充和裁切），要把圆角算进 path 里。圆角扇形用 `python3 scripts/shapes.py sector CX CY R A0 A1 圆角半径`。
-- 实色是多个形状组合时（比如纸页加两行线），把它们放进一个 `<g filter="url(#inner-solid)">`，再整体包 `elevate`。
+- 先在 1024 画布上按方便的尺寸画，再用 `#subject` 的 transform `translate(512 512) scale(k) translate(-512 -512) translate(tx ty)` 放大到规定尺寸（外轮廓长边约 680 px）。线宽会跟着 k 一起放大：**画的时候用 52 ÷ k 作为线宽**，放大后才是 52。直接按最终尺寸画时 k = 1。
+- 色块的边缘要么被线条压住（色块边缘落在线的中心线上），要么完全在线条围出的区域里，和线的描边外沿之间净空至少 40 px。不要让色块露出一条细边。
+- 线需要挡住色块时（比如云挡住太阳），给那个闭合线形填背景色（浅色版 `#FFFFFF`，深色版 `#2A2A2C`），而不是 `none`。
+- 多段线条放在同一个 `<g id="line">` 里，共用线宽和颜色；不要给单条线单独设线宽。
+- lift 投影作用在整个主体上，色块在页面空白处投下的淡影是预期效果，不算内阴影。
+- 渐变用 `gradientUnits="userSpaceOnUse"` 写绝对坐标，accent 的 y1、y2 对准色块的上下沿。
 - 根节点只写 `viewBox`，不写宽高。不嵌入位图，不用 `<text>`。
-
-## 分层与 Icon Composer
-
-三层正好对应 Apple Icon Composer 的分层：`background` → 背景层，`glyph` → 中间层，`glaze` 的 glaze-shape → 前景层（在 Icon Composer 里可以用半透明材质加柔光近似瓷釉，或保留 SVG 渲染出的 PNG）。
 
 ## 几何速查
 
@@ -38,22 +28,26 @@
 
 | 形状 | 写法 |
 |---|---|
-| 扇形 | `M cx cy L 起点 A r r 0 大弧标志 1 终点 Z`，角度 > 180° 时大弧标志为 1 |
+| 圆角扇形（进度、饼图） | `python3 scripts/shapes.py sector CX CY R A0 A1 圆角` |
+| 圆弧 | `M 起点 A r r 0 大弧标志 1 终点`，角度 > 180° 时大弧标志为 1 |
 | 胶囊 | `<rect rx="高度/2">` |
-| 云（胶囊 + 圆凸起） | 用一条 path 写：左半圆弧 → 凸起大圆弧 → 右半圆弧 → 底边（见 `examples/halo.svg`） |
-| 圆角扇形（饼图的一块） | `python3 scripts/shapes.py sector 512 512 300 -90 30 28` |
-| 两个形合并 | 计算交点后写成一条 path；不要用两个重叠的形状当釉 |
+| 云 | 一条闭合 path：左圆 → 凹角圆角 → 顶部大圆 → 凹角圆角 → 右圆 → 平底，见 `examples/halo.svg` |
+| 对勾、箭头 | 折线 `M … L … L …`，靠 round join 磨圆拐角 |
+
+## 深色版和着色版
+
+| 版本 | 怎么做 |
+|---|---|
+| 深色版（iOS 深色模式、深色主题 app） | bg 换成 `#3A3A3D → #1C1C1E`，墨线换成 `#F5F5F7`，挡色块的填充换成 `#2A2A2C`，lift 透明度 0.35；强调色不变 |
+| 着色版 / 单色版（iOS tinted、Android 单色图标） | 去掉背景和色块，只留墨线，改成白色 |
 
 ## 平台规格
 
 | 平台 | 要什么 | 备注 |
 |---|---|---|
-| iOS / iPadOS / macOS | 1024 × 1024 PNG，不透明，无圆角 | Xcode 单尺寸 App Icon；或者把三层导入 Icon Composer |
-| iOS 深色模式 | 底色换成玄青，实色和釉保持 | 从同一份 SVG 改 `#bg` 渐变即可 |
-| iOS 着色模式 | 透明背景上的白色剪影 | 实色 + 釉合并成一个白色剪影 |
-| Android 自适应图标 | 108 dp 画布，前景在中心 66 dp 圆内 | 等价于 1024 画布中心约 626 px 的圆：导出 Android 版时把 k 再乘 0.85 左右，让主体落进这个圆 |
-| Android 单色图标 | 主体单色剪影 | 同 iOS 着色模式 |
-| Web favicon | `icon.svg` + 32 px ICO + 180 px apple-touch-icon | 16/32 px 时去掉釉的模糊和釉光，只保留两个色块 |
+| iOS / iPadOS / macOS | 1024 × 1024 PNG，不透明，无圆角 | Xcode 单尺寸 App Icon；或把背景、色块、墨线三层导入 Icon Composer |
+| Android 自适应图标 | 108 dp 画布，前景在中心 66 dp 圆内 | 等价于 1024 画布中心约 626 px 的圆：导出 Android 版时把 k 再乘 0.85 左右 |
+| Web favicon | `icon.svg` + 32 px ICO + 180 px apple-touch-icon | 16 / 32 px 时线宽加粗到画布的 7% 左右，去掉投影 |
 | PWA | 192 / 512 PNG + maskable 512 | 内容在中心 80% 圆内 |
 
 PNG 批量导出和 ICO 打包用 Xcode、Android Studio 或 realfavicongenerator.net，不要手工拼。
@@ -65,4 +59,4 @@ pip install playwright && playwright install chromium   # 第一次
 python3 scripts/render.py icon.svg -o renders
 ```
 
-用 Chromium 渲染，滤镜与浏览器一致。机器上已有 Chromium 时设 `CHROMIUM_PATH` 跳过下载。注意：一些设计软件（包括部分版本的 Figma 导入）不支持 `<use href="#scene">` 加滤镜的写法，需要在那里重新做釉面效果；交付的 PNG 不受影响。
+用 Chromium 渲染，和浏览器一致。机器上已有 Chromium 时设 `CHROMIUM_PATH` 跳过下载。

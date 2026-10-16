@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Streak, a daily habit check-in app: an ink calendar page with today ticked off on a green stamp.
+    Built from assets/template.svg (line style). Scaled by k = 1.05 so stroke = 52 ÷ 1.05 ≈ 49.5 before scaling.
+  -->
+  <defs>
+    <!-- bg: light (default) #FFFFFF → #EEEEEB -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEB"/>
+    </linearGradient>
+    <!-- accent: green (完成), light → main; y1/y2 = stamp circle top 420 and bottom 760 -->
+    <linearGradient id="accent" x1="0" y1="420" x2="0" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6FD3A6"/>
+      <stop offset="1" stop-color="#23A36B"/>
+    </linearGradient>
+    <!-- lift: light .10 -->
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="16" result="b"/>
+      <feFlood flood-color="#000" flood-opacity=".10"/><feComposite in2="b" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
+
+  <!-- k = 1.05, ty = -31. Unscaled outer box (half stroke 24.75): x 199..825 (626), y 207..851 (644).
+       Scaled: 657 × 676. Optical centring as in Tide: the page body (y 296..826, centre 561) is the mass,
+       the rings are a top bump, so the body centre goes to (512, 530): (561 - 31 - 512) × 1.05 + 512 ≈ 531.
+       Outer box after the move: y 159..835, inside the 824 safe zone (100..924). -->
+  <g id="subject" transform="translate(512 512) scale(1.05) translate(-512 -512) translate(0 -31)" filter="url(#lift)">
+    <!-- today stamp: circle r 170 at (512, 590); 40 px clear of the page's bottom line (inner edge 800) -->
+    <circle id="accent-shape" fill="url(#accent)" cx="512" cy="590" r="170"/>
+    <g id="line" fill="none" stroke="#1C1C1E" stroke-width="49.5" stroke-linecap="round" stroke-linejoin="round">
+      <!-- page: 576 × 530 at (224, 296), rx 108 (≥ 18 % of 576); outer edge 24.75 = 49.5 / 2 -->
+      <rect x="224" y="296" width="576" height="530" rx="108"/>
+      <!-- binder rings: two stubs at x = 512 ± 144, from y 232 (above the page) to 352 (inside) -->
+      <path d="M 368 232 V 352 M 656 232 V 352"/>
+      <!-- tick: short arm 70 × 70 into the vertex (482, 661), long arm 130 × 130 up to the right;
+           nudged (-8, +6) from the stamp centre because the long arm carries the visual weight up-right -->
+      <path d="M 412 591 L 482 661 L 612 531"/>
+    </g>
+  </g>
+</svg>
