@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
     Ledgerly: a pie chart of the month's spending; one slice lifts out of the pie in celadon glaze.
-    Ground 苍绿 · solid 藤黄 (the pie) · glaze 月白 (the lifted quarter slice).
+    Ground 霜白 · solid 黛 (the pie) · glaze 月白 (the lifted quarter slice).
     Geometry (drawn at final size, k = 1):
       pie   = circle C(498, 510) r 352
       slice = 120° sector (one third) of the same radius, from 12 o'clock to 4 o'clock (−90°→30°),
@@ -9,53 +9,53 @@
       bbox  = x 146..880, y 140..861 → 734 × 721 (round subject ≈ 740), centre (513, 500): lifted ~10 px
   -->
   <defs>
-    <!-- ground: 苍绿 -->
+    <!-- ground: 霜白 -->
     <radialGradient id="bg" cx="512" cy="40" r="1100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#5F7A74"/>
-      <stop offset=".45" stop-color="#2C413D"/>
-      <stop offset="1" stop-color="#0E1817"/>
+      <stop offset="0" stop-color="#F6F8F8"/>
+      <stop offset=".45" stop-color="#E5EAEB"/>
+      <stop offset="1" stop-color="#C6CFD2"/>
     </radialGradient>
     <filter id="grain" x="0" y="0" width="100%" height="100%">
       <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="3" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .03 0"/>
+      <feColorMatrix values="0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .1  0 0 0 .03 0"/>
       <feComposite in2="SourceGraphic" operator="in"/>
     </filter>
-    <!-- solid: 藤黄, highlight at the pie's upper left -->
+    <!-- solid: 黛, highlight at the pie's upper left -->
     <linearGradient id="solid" x1="240" y1="200" x2="780" y2="840" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F4ECD4"/>
-      <stop offset=".35" stop-color="#D9B46A"/>
-      <stop offset="1" stop-color="#A57F3A"/>
+      <stop offset="0" stop-color="#7D90A6"/>
+      <stop offset=".35" stop-color="#3E526A"/>
+      <stop offset="1" stop-color="#1F2C3D"/>
     </linearGradient>
     <filter id="inner-solid" x="-20%" y="-20%" width="140%" height="140%">
       <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
       <feOffset dx="-14" dy="-18"/><feGaussianBlur stdDeviation="18" result="s"/>
-      <feFlood flood-color="#8A5510" flood-opacity=".28"/>
+      <feFlood flood-color="#121B27" flood-opacity=".28"/>
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="inner"/>
       <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
     </filter>
-    <!-- elevate: 苍绿 deepest, darker still -->
+    <!-- elevate: 霜白 shadow colour, light-ground opacities -->
     <filter id="elevate" x="-40%" y="-40%" width="180%" height="190%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="28" result="a"/><feOffset in="a" dy="24" result="a"/>
-      <feFlood flood-color="#050B0A" flood-opacity=".28"/><feComposite in2="a" operator="in" result="far"/>
+      <feFlood flood-color="#1E2A33" flood-opacity=".17"/><feComposite in2="a" operator="in" result="far"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feOffset in="b" dy="12" result="b"/>
-      <feFlood flood-color="#050B0A" flood-opacity=".26"/><feComposite in2="b" operator="in" result="mid"/>
+      <feFlood flood-color="#1E2A33" flood-opacity=".16"/><feComposite in2="b" operator="in" result="mid"/>
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="c"/><feOffset in="c" dy="2" result="c"/>
-      <feFlood flood-color="#050B0A" flood-opacity=".2"/><feComposite in2="c" operator="in" result="near"/>
+      <feFlood flood-color="#1E2A33" flood-opacity=".12"/><feComposite in2="c" operator="in" result="near"/>
       <feMerge><feMergeNode in="far"/><feMergeNode in="mid"/><feMergeNode in="near"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <filter id="through-glaze" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur stdDeviation="26"/>
       <feColorMatrix type="saturate" values="1.25"/>
     </filter>
-    <!-- glaze 月白: dark ground, but the slice sits ~85% on light 藤黄, so .80 / .70 (at .90 / .82 it read as opaque milk); y1/y2 = slice top 141 / bottom 667 -->
+    <!-- glaze 月白: the slice sits ~85% on dark 黛, so .90 / .82; y1/y2 = slice top 141 / bottom 667 -->
     <linearGradient id="glaze" x1="0" y1="141" x2="0" y2="667" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#DCEDE8" stop-opacity="0.78"/>
-      <stop offset="1" stop-color="#A5C7C0" stop-opacity="0.66"/>
+      <stop offset="0" stop-color="#F4F8F6" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#D6E3E1" stop-opacity="0.82"/>
     </linearGradient>
     <filter id="pool" x="-10%" y="-10%" width="120%" height="120%">
       <feComponentTransfer in="SourceAlpha"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
       <feOffset dy="22"/><feGaussianBlur stdDeviation="20" result="s"/>
-      <feFlood flood-color="#3E6B66" flood-opacity=".16"/>
+      <feFlood flood-color="#5E7A86" flood-opacity=".16"/>
       <feComposite in2="s" operator="in"/><feComposite in2="SourceAlpha" operator="in"/>
     </filter>
     <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>

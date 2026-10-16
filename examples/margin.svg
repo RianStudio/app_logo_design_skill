@@ -66,7 +66,7 @@
     </g>
     <!-- subject scaled ×1.38 about the centre to sit on the Apple / Material keyline grid -->
     <g id="glyph" transform="translate(512 512) scale(1.38) translate(-512 -512) translate(-18 -3)">
-      <!-- letter paper (cinnabar 红笺) 340×460, rx 64, two lines at 40 px, kept above the note -->
+      <!-- letter paper (ink blue 黛) 340×460, rx 64, two lines at 40 px, kept above the note -->
       <g filter="url(#elevate)"><g filter="url(#inner-solid)"><rect x="300" y="250" width="340" height="460" rx="64" fill="url(#solid)"/>
       <path d="M 372 362 H 568 M 372 440 H 500" stroke="#E8EEF1" stroke-width="40" stroke-linecap="round"/></g></g>
     </g>
