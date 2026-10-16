@@ -17,15 +17,11 @@
 
 ## 姊妹 skill：App UI 主题
 
-`theme/` 是第二个 skill（`rian-app-theme`）：用图标的三种传统色生成整套 UI 主题，包括浅色和深色颜色 token、字号、间距、圆角、投影和青瓷釉材质，导出 CSS 变量、SwiftUI、Jetpack Compose 和 Tailwind，并渲染样例界面。所有颜色自动通过 WCAG 对比度检查。
-
-![Tide 主题](theme/examples/tide/preview.png)
-
-安装：把 `theme/` 文件夹复制到 `~/.claude/skills/rian-app-theme/`，然后对 Claude 说「给 Tide 做一套 UI 主题」。
+用图标的三种传统色生成整套 UI 主题（浅色和深色 token、字号、圆角、青瓷釉材质，导出 CSS、SwiftUI、Compose、Tailwind），在单独的仓库：[RianStudio/app_ui_design_skill](https://github.com/RianStudio/app_ui_design_skill)。
 
 ## 安装
 
-**Claude Code**：把整个仓库复制到 `~/.claude/skills/rian-app-icon/`（个人）或项目里的 `.claude/skills/rian-app-icon/`。UI 主题 skill 另外把 `theme/` 复制到 `~/.claude/skills/rian-app-theme/`。
+**Claude Code**：把整个仓库复制到 `~/.claude/skills/rian-app-icon/`（个人）或项目里的 `.claude/skills/rian-app-icon/`。
 
 **Claude.ai / Claude 桌面版**：把仓库打成 zip，在 Settings → Capabilities → Skills 上传。
 
