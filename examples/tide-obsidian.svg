@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="512" cy="180" r="980" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2B2D36"/>
+      <stop offset=".55" stop-color="#15161B"/>
+      <stop offset="1" stop-color="#0B0C0F"/>
+    </radialGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".07"/>
+      <stop offset=".35" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="300" y1="250" x2="720" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset=".45" stop-color="#D5D9E2"/>
+      <stop offset="1" stop-color="#7B8292"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="250" x2="0" y2="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="accent" cx="0" cy="0" r="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#9FB2FF"/>
+      <stop offset="1" stop-color="#5468F0"/>
+    </radialGradient>
+    <filter id="drop" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="26"/>
+      <feOffset dy="28"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".55"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow" x="-200%" y="-200%" width="500%" height="500%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+  </defs>
+  <g id="background">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <rect width="1024" height="1024" fill="url(#sheen)"/>
+  </g>
+  <g id="glyph" filter="url(#drop)">
+    <!-- 300° arc, r = 232, stroke 104: an almost-closed timer ring -->
+    <path d="M 628 311.1 A 232 232 0 1 0 744 512" fill="none" stroke="url(#metal)" stroke-width="104" stroke-linecap="round"/>
+    <!-- specular rim on the upper edge of the ring -->
+    <path d="M 628 311.1 A 232 232 0 1 0 744 512" fill="none" stroke="url(#edge)" stroke-width="4" stroke-linecap="round" transform="translate(512 512) scale(1.224) translate(-512 -512)" opacity=".55"/>
+  </g>
+  <g id="accent">
+    <circle cx="744" cy="512" r="70" fill="#5B6CFF" filter="url(#glow)" opacity=".7"/>
+    <circle cx="744" cy="512" r="52" fill="url(#accent)"/>
+    <circle cx="730" cy="494" r="16" fill="#fff" opacity=".55"/>
+  </g>
+</svg>

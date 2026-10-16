@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="hand" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  <g id="background">
+    <rect width="1024" height="1024" fill="#FBFBFA"/>
+  </g>
+  <g id="glyph" fill="none" stroke="#191919" stroke-width="38" stroke-linecap="round" stroke-linejoin="round" filter="url(#hand)">
+    <!-- open notebook, left page slightly taller than right: the hand is never symmetric -->
+    <path d="M 512 344 C 446 300 342 292 262 312 L 262 712 C 342 694 446 702 512 748 Z"/>
+    <path d="M 512 344 C 578 304 680 298 762 318 L 762 716 C 680 700 578 708 512 748"/>
+    <path d="M 334 420 C 380 412 424 416 456 428" stroke-width="26"/>
+    <path d="M 334 500 C 372 494 410 496 440 504" stroke-width="26"/>
+  </g>
+  <g id="accent">
+    <path d="M 636 312 L 636 452 L 672 424 L 708 452 L 708 304" fill="#E5484D" stroke="#191919" stroke-width="30" stroke-linejoin="round" filter="url(#hand)"/>
+  </g>
+</svg>
