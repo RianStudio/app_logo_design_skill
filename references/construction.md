@@ -1,87 +1,63 @@
 # SVG 构造与平台规格
 
-## 骨架模板
+## 图层结构
 
-```svg
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <defs><!-- 渐变、滤镜，id 用语义名：bg, metal, drop, hand --></defs>
-  <g id="background"><rect width="1024" height="1024" fill="..."/></g>
-  <g id="glyph"><!-- 主图形 --></g>
-  <g id="accent"><!-- 可选：唯一的点缀 --></g>
-</svg>
+`assets/template.svg` 已经搭好，结构如下：
+
+```
+<defs>      渐变、elevate 投影、frost 模糊、glass-shape、glass-clip
+#scene
+  #background   背景渐变 + 顶部径向光
+  #glyph        实色图形（带 elevate 投影）
+#glass          磨砂玻璃（不在 #scene 里）
+  1. glass-shape 白色实心 + elevate 投影   → 玻璃的厚度和阴影
+  2. 裁切到 glass-shape 内：
+     <use href="#scene"> + frost 模糊       → 透出背后的模糊颜色
+     glass-shape + veil 颜色                → 让玻璃变亮、变「白」
+  3. glass-shape 描边 rim，裁切到内部        → 上沿高光
 ```
 
-规则：
+要点：
 
-- 根节点不写 `width` / `height`，只写 `viewBox`。
-- 背景是 1024 全出血正方形，**不画圆角**。iOS、macOS 和 Icon Composer 会自己加遮罩；`render.py` 的对照图会模拟遮罩效果。
-- 不嵌入位图，不用 `<text>`（字体在别的机器上不存在）。
-- 渐变用 `gradientUnits="userSpaceOnUse"` 写绝对坐标，避免图形尺寸变化时光的位置跟着漂移。
-- 弧线用 `A` 命令，并在注释里写下半径和角度，方便以后改。
+- `#glyph` 和 `#glass` 用同一个 `translate` 做整体居中；玻璃里的 `<use href="#scene">` 用**相反**的 translate，这样透出来的画面位置才对。
+- 玻璃的模糊来自真的「背后画面」，所以实色图形挪动时，玻璃里的颜色会自动跟着变，不需要手画。
+- 根节点只写 `viewBox`，不写宽高。不嵌入位图，不用 `<text>`。
+- 渐变用 `gradientUnits="userSpaceOnUse"` 写绝对坐标。
+
+## 分层与 Icon Composer
+
+三层正好对应 Apple Icon Composer 的分层：`background` → 背景层，`glyph` → 中间层，`glass` 的 glass-shape → 前景层（在 Icon Composer 里可以直接打开 Liquid Glass 效果，替代 SVG 里模拟的磨砂）。
 
 ## 几何速查
 
-画布中心 `(512, 512)`。圆上角度 θ（从 3 点钟方向顺时针）的点：`(512 + r·cosθ, 512 + r·sinθ)`。
+画布中心 `(512, 512)`。从 3 点钟方向顺时针 θ 角、半径 r 的点：`(cx + r·cosθ, cy + r·sinθ)`。
 
-| 想要 | 做法 |
+| 形状 | 写法 |
 |---|---|
-| 未闭合圆环 | `A` 弧 + `stroke-linecap="round"`，缺口 40°–80° |
-| 两个图形咬合 | 两个圆互相 `<mask>` 掉一条 24–32 px 的缝 |
-| 切角 | 在 `<clipPath>` 里放一个旋转 45° 的矩形 |
-| 圆润的负形缺口 | 用 `stroke-linejoin="round"` 的描边做遮罩，不要用直角矩形去切 |
+| 扇形 | `M cx cy L 起点 A r r 0 大弧标志 1 终点 Z`，角度 > 180° 时大弧标志为 1 |
+| 胶囊 | `<rect rx="高度/2">` |
+| 云（胶囊 + 圆凸起） | 用一条 path 写：左半圆弧 → 凸起大圆弧 → 右半圆弧 → 底边（见 `examples/halo.svg`） |
+| 两个形合并 | 计算交点后写成一条 path；不要用两个重叠的形状当玻璃 |
 
-## 光影配方
+## 平台规格
 
-**投影（Obsidian：黑色；Glaze：背景色相的深色）**
+| 平台 | 要什么 | 备注 |
+|---|---|---|
+| iOS / iPadOS / macOS | 1024 × 1024 PNG，不透明，无圆角 | Xcode 单尺寸 App Icon；或者把三层导入 Icon Composer |
+| iOS 深色模式 | 背景换成深石墨，实色和玻璃保持 | 从同一份 SVG 改 `#bg` 渐变即可 |
+| iOS 着色模式 | 透明背景上的白色剪影 | 实色 + 玻璃合并成一个白色剪影 |
+| Android 自适应图标 | 108 dp 画布，前景在中心 66 dp 圆内 | 等价于 1024 画布中心约 626 px 的圆，600 关键线框天然满足 |
+| Android 单色图标 | 主体单色剪影 | 同 iOS 着色模式 |
+| Web favicon | `icon.svg` + 32 px ICO + 180 px apple-touch-icon | 16/32 px 时去掉玻璃的模糊，只保留两个色块 |
+| PWA | 192 / 512 PNG + maskable 512 | 内容在中心 80% 圆内 |
 
-```svg
-<filter id="drop" x="-30%" y="-30%" width="160%" height="170%">
-  <feGaussianBlur in="SourceAlpha" stdDeviation="22"/>
-  <feOffset dy="18"/>
-  <feFlood flood-color="#0A3A8C" flood-opacity=".28"/>
-  <feComposite operator="in" in2="SourceAlpha"/>  <!-- 只留模糊后的形状 -->
-  <feComposite operator="in"/>
-  <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-</filter>
-```
+PNG 批量导出和 ICO 打包用 Xcode、Android Studio 或 realfavicongenerator.net，不要手工拼。
 
-**金属渐变（Obsidian）**：沿光源方向的线性渐变，`#FFFFFF → #D5D9E2 (45%) → #7B8292`。
-
-**受光边缘高光**：把同一路径再画一遍，线宽 2–4，描边用白色向下渐隐的线性渐变，透明度 0.5。
-
-**点缀色发光（只用于 Obsidian 的强调色）**：同形状放大 30%，`feGaussianBlur stdDeviation="28"`，透明度 0.7，放在强调色下面。
-
-**釉面顶光（Glaze）**：`<radialGradient cx="512" cy="0" r="760">`，白色 0.28 → 0，盖在背景上。
-
-**手绘线条（Ink）**
-
-```svg
-<filter id="hand" x="-5%" y="-5%" width="110%" height="110%">
-  <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="7"/>
-  <feDisplacementMap in="SourceGraphic" scale="9" xChannelSelector="R" yChannelSelector="G"/>
-</filter>
-```
-
-换 `seed` 可以得到不同的手抖。滤镜挂在整个线稿组上，保证所有线条抖动一致。
-
-## 渲染检查
+## 渲染
 
 ```bash
 pip install playwright && playwright install chromium   # 第一次
 python3 scripts/render.py icon.svg -o renders
 ```
 
-用 Chromium 渲染，滤镜和渐变与浏览器完全一致。机器上已有 Chromium 时，可以设 `CHROMIUM_PATH` 跳过下载。
-
-## 平台规格
-
-| 平台 | 要什么 | 备注 |
-|---|---|---|
-| iOS / iPadOS / macOS | 1024 × 1024 PNG，不透明，无圆角 | Xcode 的单尺寸 App Icon 即可；iOS 26 起可用 Icon Composer 导入分层 SVG 做玻璃效果，`background` / `glyph` / `accent` 三个组直接对应三层 |
-| iOS 深色 / 着色模式 | 深色版：背景透明或换成深色，主图形保持；着色版：纯白主图形在透明背景上 | 需要时从同一份 SVG 派生 |
-| Android 自适应图标 | 108 dp 画布，前景内容在中心 66 dp 圆内 | 等价于 1024 画布里中心约 626 px 的圆：主图形放在 600 关键线框内就自然满足 |
-| Android 单色图标（Android 13+） | 只有主图形的单色剪影 | 就是对照图里 mono 版本的剪影 |
-| Web favicon | `icon.svg` + 32 px ICO + 180 px apple-touch-icon | 小尺寸只保留主图形，去掉点缀和光影 |
-| PWA | 192 / 512 PNG，外加 maskable 512（内容在中心 80% 圆内） | 同 Android 安全区 |
-
-PNG 的批量导出、ICO 打包建议用 realfavicongenerator.net 或 Xcode / Android Studio 自带的资源工具，不要手工拼。
+用 Chromium 渲染，滤镜与浏览器一致。机器上已有 Chromium 时设 `CHROMIUM_PATH` 跳过下载。注意：一些设计软件（包括部分版本的 Figma 导入）不支持 `<use href="#scene">` 加滤镜的写法，需要在那里重新做磨砂效果；交付的 PNG 不受影响。

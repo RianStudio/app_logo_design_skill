@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#ECEEF2"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="250" x2="0" y2="710" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFC94A"/><stop offset="1" stop-color="#F59E00"/>
+    </linearGradient>
+    <radialGradient id="lift" cx="512" cy="0" r="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".95"/>
+      <stop offset=".35" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- two-part elevation shadow (Material): wide ambient + tight key, tinted with the hue's dark tone -->
+    <filter id="elevate" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="a"/>
+      <feOffset in="a" dy="20" result="a"/>
+      <feFlood flood-color="#7A4A00" flood-opacity=".22"/>
+      <feComposite in2="a" operator="in" result="ambient"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="k"/>
+      <feOffset in="k" dy="4" result="k"/>
+      <feFlood flood-color="#7A4A00" flood-opacity=".18"/>
+      <feComposite in2="k" operator="in" result="key"/>
+      <feMerge><feMergeNode in="ambient"/><feMergeNode in="key"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="frost" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="18"/></filter>
+    <rect id="glass-shape" x="470" y="470" width="290" height="290" rx="64"/>
+    <clipPath id="glass-clip"><use href="#glass-shape"/></clipPath>
+  </defs>
+  <g id="scene">
+    <g id="background">
+      <rect width="1024" height="1024" fill="url(#bg)"/>
+    </g>
+    <g id="glyph" transform="translate(-18 7)" filter="url(#elevate)">
+      <rect x="300" y="250" width="340" height="460" rx="64" fill="url(#page)"/>
+      <path d="M 372 382 H 568 M 372 470 H 500" stroke="#fff" stroke-opacity=".92" stroke-width="40" stroke-linecap="round"/>
+    </g>
+  </g>
+  <!-- frosted glass: opaque base casts the shadow, the scene behind is blurred inside it, a tinted veil lightens it, a rim catches the light -->
+  <g id="glass" transform="translate(-18 7)">
+    <use href="#glass-shape" fill="#fff" filter="url(#elevate)"/>
+    <g clip-path="url(#glass-clip)">
+      <use href="#scene" transform="translate(18 -7)" filter="url(#frost)"/>
+      <use href="#glass-shape" fill="#FFFFFF" fill-opacity=".4"/>
+    </g>
+    <use href="#glass-shape" fill="none" stroke="url(#rim)" stroke-width="8" clip-path="url(#glass-clip)"/>
+  </g>
+</svg>
