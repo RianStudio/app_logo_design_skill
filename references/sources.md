@@ -16,10 +16,11 @@
 | [Apple · App Review Guidelines 2.3.8](https://developer.apple.com/app-store/review/guidelines/#accurate-metadata) | 应用名和各尺寸图标、备用图标要彼此相像，不让用户混淆：商店变体只换底或加边，图形不动 |
 | [Apple · Creating your app icon using Icon Composer](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer) | 分组和层、Fill 渐变、Specular、组阴影、各外观的设定：`export/icon-composer/` 的两层和 README.txt 照它写 |
 | [Android · Adaptive icons](https://developer.android.com/develop/ui/views/launch/icon_design_adaptive) | 108 dp 的 background / foreground / monochrome 三层，66 dp 安全圆，72 dp 可见区；Android 13 起的主题图标：系统按壁纸颜色给 monochrome 层重新上色 |
+| [AOSP Launcher3 · ThemedIconDrawable.java](https://github.com/LineageOS/android_frameworks_libs_systemui/blob/lineage-20.0/iconloaderlib/src/com/android/launcher3/icons/ThemedIconDrawable.java)（Android 13，`getColors`） | 主题图标的两对色调按系统深色主题选，不按壁纸：浅色主题 `system_accent1_100` 底、`system_neutral2_700` 图形，深色主题 `system_neutral1_800` 底、`system_accent1_100` 图形。对照图的两格照它分浅色、深色主题 |
 | [material-foundation · material-color-utilities](https://github.com/material-foundation/material-color-utilities)（`dynamic_scheme.ts`） | Material You 从种子色生成色调盘：Android 12、13 默认的 tonal spot 方案 primary 彩度 36、neutral variant 8，色调就是 L*。对照图里主题图标的模拟照它近似（用 CIE LCh 代替 HCT） |
 | [Google Play · Icon design specifications](https://developer.android.com/distribute/google-play/resources/icon-design-specifications) | 512 × 512、32-bit PNG、sRGB、≤ 1024 KB、满幅方形；Play 自己加 30 % 圆角和投影 |
 
-**待验证**：Icon Composer 的 Chromatic 组阴影（以实际版本的选项为准）；Android monochrome 层是否只按 alpha 通道着色（官方页面没写）；主题图标用的色调（render.py 取浅壁纸 accent1 90 底、neutral2 30 图形，深壁纸 neutral1 20 底、accent1 90 图形）没对过 AOSP Launcher3 源码；neutral1 的彩度取 4（material-color-utilities 2021 版写的是 6）；各家启动器也不一样。所以验收清单要求上架前在真机启动器上看。
+**待验证**：Icon Composer 的 Chromatic 组阴影（以实际版本的选项为准）；Android monochrome 层是否只按 alpha 通道着色（官方页面没写）；主题图标的色调值是用 CIE LCh 近似的 Material You 色调盘（HCT 才准），neutral1 的彩度取 4（material-color-utilities 2021 版写的是 6）；各家启动器也不一样。所以验收清单要求上架前在真机启动器上看。Apple 图标外形用圆角 22.37 %、60 % 平滑近似，Apple 没有公开精确的遮罩公式，细亮边上传前在 App Store Connect 的预览里看一眼角。
 
 ## 流程上借鉴的开源项目
 

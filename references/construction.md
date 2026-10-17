@@ -49,7 +49,7 @@ render.py 靠这些标记测量、换外观、导出分层，画的时候顺手�
 | `#glow` | 可选，`#subject` 的第一个子元素，`<use href="#accent-shape" filter="url(#glow-blur)"/>`。filter 叫 `#glow-blur`，不叫 `#glow`，否则 id 重复 | 测量时隐藏；从 `#glow-blur` 读 stdDeviation 和 flood-opacity |
 | `#body` | `<g fill="url(#body-fill)">`，里面是主体的所有实形；单块不写自己的 fill（写也只能是 `url(#body-fill)`），不写 opacity / fill-opacity | 测主体面积、主体对底的亮度对比 |
 | `#accent-shape` | 一个元素（`path` 或 `g`），fill `url(#accent)`；同样不带 opacity | 测强调色占比、和主体之间的切口 |
-| `#accent-shape` | `data-accent="band"` | 强调色是 AI 斜带（`shapes.py aiband` 打印的那条）：占比按 8–18 % 查，另查方向、带宽和位置；只给 `data-category="ai"` |
+| `#accent-shape` | `data-accent="band"` | 强调色是 AI 斜带（`shapes.py aiband` 打印的那条）：占比按 10–18 % 查，另查方向、带宽和位置；只给 `data-category="ai"` |
 | `#accent-shape` | `data-accent="pair"` | 强调色是一对同类物体里较小或一样大的那个：占比按 10–33 % 查，另查它不大于最大一块主体的凸包 |
 | 单块实形 | `class="detail"` | 64 px 及以下删掉。只给面积 < 2 % 凸包的碎块；≥ 2 % 的块标了也是块数 FAIL（不能拿它躲块数上限） |
 | `<mask id="cut">` | `maskUnits="userSpaceOnUse"`，x、y、宽、高覆盖整个源坐标；先放白色 rect，再放 `<g id="cuts" stroke="#000" stroke-width="48÷k" stroke-linecap="butt" fill="none">` | 起稿时画切口；查 `stroke-width × k` = 48。mask 写在 `#body` 或 `#accent-shape` 上，不写在 `#subject` 上，这样坐标跟着 transform 走 |
@@ -77,8 +77,8 @@ render.py 靠这些标记测量、换外观、导出分层，画的时候顺手�
 | 弓形 | `python3 scripts/shapes.py segment CX CY R A D [--fillet 0]` | 圆被一条弦切开后，朝方向 A 的那一侧；D 是弦到圆心的距离（负数时留下大半个圆）。45° 自由切口用 A = −45（留右上，弦是「\」向）或 135（留左下）。Halo 的太阳：`segment 692 372 156 -45 5.7`，弦落在云凸包外 48 |
 | 圆角扇形 | `python3 scripts/shapes.py sector CX CY R A0 A1 FILLET` | 饼图切片，三个角都圆角 FILLET（取 24）。Ledgerly 的切片：`sector 557.74 466.26 280 -81 -9 24`，也就是 `sector 500 524 …` 沿平分线 −45° 外移 81.7 后的圆心 |
 | 圆角矩形 | `python3 scripts/shapes.py rrect X Y W H R [--grow 0]` | 卡片、书签、字幕条、键帽。R = H ÷ 2 是胶囊。`--grow 48` 出一份外扩 48 的轮廓（宽高各 + 96、圆角 + 48），喂给 `minus` |
-| 圆角多边形 | `python3 scripts/shapes.py poly "X1,Y1 X2,Y2 X3,Y3 ..." [--r 24 \| --radii R1,R2,...] [--grow 0]` | 箭头、切角的卡片、台阶这类直边的块。按顺序给角点（顺时针、逆时针都行），每个角一个圆角半径（0 是尖角，凹角写成反向圆弧）。`--grow G` 外扩 G（凸角 R + G，凹角 R − G），喂给 `minus` |
-| 播放三角 | `python3 scripts/shapes.py play CX CY H [--r 32] [--grow 0]` | 视频记号：尖朝右的正三角，竖边长 H（≥ 200），质心在 (CX, CY)，三个角圆角 32。用 `minus` 从实形里挖掉，结果是两圈，加 `fill-rule="evenodd"` |
+| 圆角多边形 | `python3 scripts/shapes.py poly "X1,Y1 X2,Y2 X3,Y3 ..." [--r 24 \| --radii R1,R2,...] [--grow 0]` | 箭头、切角的卡片、台阶这类直边的块。按顺序给角点（顺时针、逆时针都行），每个角一个圆角半径（默认 24，规则的下限；0 是尖角，凹角写成反向圆弧）。`--grow G` 外扩 G（凸角 R + G，凹角 R − G），喂给 `minus` |
+| 播放三角 | `python3 scripts/shapes.py play CX CY H [--r 32] [--grow 0]` | 视频记号：尖朝右的正三角，竖边长 H（源坐标，≥ 200 ÷ k），质心在 (CX, CY)，三个角圆角 32。用 `minus` 从实形里挖掉，结果是两圈，加 `fill-rule="evenodd"` |
 | AI 斜带 | `python3 scripts/shapes.py aiband "PATH" [--chamfer 48] [--width 96] [--gap 48]` | AI 记号：把外轮廓 PATH 的右下角沿 45°「/」切下，打印主体和斜带两条 path。斜带宽 96，外沿离外轮廓最右下点 CHAMFER，主体在斜带前 48 停下。斜带放进 `#accent-shape`，加 `data-accent="band"`。那个角的圆角是 R 时 chamfer ≥ 0.3 R，斜带两端才落在直边上 |
 | 切口线 | `python3 scripts/shapes.py cutline CX CY A R0 R1` | 一条 `<line>`，放进 `#cuts`：绕 (CX, CY) 沿方向 A，从半径 R0 到 R1。两端都要伸出外轮廓 |
 | 气泡 | `python3 scripts/shapes.py bubble X Y W H R TAIL [left\|right] [--angle 55] [--tip-r 24] [--concave 56] [--grow 0]` | 对话气泡：圆角矩形，左（或右）边往下伸出尾巴，尾尖圆角 TIP_R，和底边之间是半径 CONCAVE 的凹角。R ≤ H ÷ 2，R = H ÷ 2 是胶囊气泡。`--grow G` 把整个轮廓外扩 G：前一个气泡用 `--grow 48` 再出一份，喂给 `minus`，从后一个气泡上减掉 |
@@ -119,7 +119,7 @@ python3 scripts/shapes.py bubble 560 210 300 200 100 90 right                   
     <line x1="512" y1="354" x2="512" y2="220"/>     <!-- cutline 512 536 -90 182 316：从表盘和表圈之间穿出表圈外 -->
   </g>
 </mask>
-<g id="body" fill="url(#body)" mask="url(#cut)"> … </g>
+<g id="body" fill="url(#body-fill)" mask="url(#cut)"> … </g>
 ```
 
 - 白色留下，黑色挖掉。切口线两端都要伸出外轮廓（贯穿），butt 端头不会多出半圆。
@@ -156,7 +156,7 @@ python3 scripts/shapes.py bubble 560 210 300 200 100 90 right                   
 
 - **erode 加在 `#subject` 上**，不分别加在 `#body`、`#accent-shape` 上：SVG 里滤镜先于 mask 执行，加在 `#body` 上时 mask 切出的切口不会变宽。半径 12 会把 72 宽的环削到 48（60 px 时只剩约 2.8 px），所以用 8。
 - **Tinted 和 Clear** 由系统从 mono 生成。对照图里给近似效果：Tinted 用黄、蓝两种色调各一张，叠在深底上；Clear 用 mono 白 90 % 叠在模糊的浅色壁纸和深色壁纸上各一张。HIG 要求至少一个元素是白色或接近白色，这里主体就是白色。
-- **安卓主题图标**由启动器从 monochrome 层生成。对照图里放在一张浅壁纸、一张深壁纸上各一张：从壁纸取种子色相（彩度 ≥ 12 的像素按彩度加权，取色相直方图的峰），按 Material You 的色调近似上色。浅壁纸：底 accent1 色调 90，图形 neutral2 色调 30；深壁纸：底 neutral1 色调 20，图形 accent1 色调 90（色调 = CIE L*，彩度 accent1 36、neutral1 4、neutral2 8）。强调色是图形色 50 % 叠在底上。这是近似，待验证（见 `sources.md`），上架前在开启主题图标的真机启动器上看一遍。
+- **安卓主题图标**由启动器从 monochrome 层生成，用哪一对色调看系统的浅色、深色主题（Launcher3 `ThemedIconDrawable.getColors`），色相来自壁纸。对照图里浅色主题放在浅壁纸上、深色主题放在深壁纸上各一张：从壁纸取种子色相（彩度 ≥ 12 的像素按彩度加权，取色相直方图的峰），按 Material You 的色调近似上色。浅色主题：底 accent1 色调 90，图形 neutral2 色调 30；深色主题：底 neutral1 色调 20，图形 accent1 色调 90（色调 = CIE L*，彩度 accent1 36、neutral1 4、neutral2 8）。强调色是图形色 50 % 叠在底上。这是近似，待验证（见 `sources.md`），上架前在开启主题图标的真机启动器上看一遍。
 
 ## 平台导出
 
@@ -214,12 +214,14 @@ python3 scripts/render.py icon.svg -o renders --store-ab
 | 文件 | 内容 |
 |---|---|
 | `<name>-lighter.svg/.png` | 浅一档的底，别的不动 |
-| `<name>-rim.svg/.png` | 默认底，iOS 遮罩里最外 16 px 一圈细亮边 |
-| `<name>-tint.svg/.png` | 类别色底（强调色是灰或色板外时不出） |
+| `<name>-rim.svg/.png` | 默认底，Apple 图标外形里最外 16 px 一圈细亮边 |
+| `<name>-tint.svg/.png` | 类别色底，四类以外的 app 叫强调色底（强调色是灰或色板外时不出） |
 | `<name>-store-ab.png` | 对比图：默认和变体放在黑、白两种商店底上，120 px 和 60 px，标边缘对比度 |
 | `README.txt` | 在产品页优化里怎么用：备用图标打进安装包、和主图标相像（审核规则 2.3.8）、一次只测一项 |
 
-变体的 `.svg` 可以直接交给 render.py 检查：色板按根上的 `data-variant` 查，其余检查和母版一样。传进去的已经是变体时不再出它的变体。
+变体的 `.svg` 可以直接交给 render.py 检查：色板按根上的 `data-variant` 查，其余检查和母版一样，报告多一行「商店变体」（INFO）。传进去的已经是变体时不再出它的变体，也不出 `--export`：平台文件只从母版出。
+
+细亮边贴着 Apple 图标外形的近似（`render.py` 的 `ios_path`：圆角 22.37 % 的圆角正方形，60 % 平滑，和 Figma 的 iOS 预设同一种画法）往里 16 px。对照图里的 iOS 遮罩、商店边缘一行量的那一圈也用它。
 
 ## 渲染
 
@@ -262,12 +264,13 @@ python3 scripts/series.py icon.svg [more.svg ...] [--with EXISTING.svg ...] [-o 
   | 辉光 | `glow` | FAIL |
   | 切口清晰度 | `cut_clarity` | FAIL |
   | 类别记号（强调色是不是这一类的颜色，记号在不在；绿只给健康、财务，斜带只给 AI；没写 `data-category` 时 INFO） | `category` | FAIL |
-  | 商店边缘（iOS 遮罩里最外 16 px 对黑、对白的对比度，附 A/B 变体对黑的数字） | `store_edge` | INFO |
-  | 安卓主题图标（浅、深壁纸下图形和强调色对主题底的对比度，近似） | `themed` | INFO |
+  | 商店边缘（iOS 遮罩里最外 16 px 对黑、对白的对比度，附 A/B 变体对黑的数字；母版的底固定，每枚一样） | `store_edge` | INFO |
+  | 安卓主题图标（浅色、深色主题下图形和强调色对主题底的对比度，近似；固定参考，每枚一样） | `themed` | INFO |
+  | 商店变体（文件根上有 `data-variant`：这是 `--store-ab` 写出的变体，不是母版） | `variant` | 有才出现，INFO |
   | 小尺寸：40 px 块数；29 px、16 px 块数 | `small`、`small_29`、`small_16` | FAIL；INFO |
   | 主体渐变跨度、强调色渐变跨度（报告里叫「主体渐变」「强调色渐变」） | `body_gradient`、`gradient` | FAIL |
   | r_max 和 Android / PWA 系数（附 Tide 的 r_max；两个都按 Tide 的系数封顶） | `android`、`pwa` | INFO |
 
-- **对照图**（`<name>-sheet.png`）：iOS 遮罩下的默认外观和读数（第一行是类别和强调色）；180 / 120 / 80 / 60 / 40 / 29 px（60 及以下用 small 版）；和 Tide 同尺寸并排；浅色、深色；Tinted 黄、Tinted 蓝；Clear 浅壁纸、Clear 深壁纸；Android 圆形遮罩、方圆遮罩、主题图标（mono 层按浅、深两张壁纸取的色调上色，放在壁纸上）、圆形 48 px、mono 层。
-- **系列检查**（`series.py`）：新图标和已有图标（`--with`，默认 `examples/*.svg`）一起渲染，写 `DIR/series-sheet.png`（加 `--json` 另写 `series.json`），终端打印强调色登记、配对分数和扎堆。规则和阈值见 `style.md`「系列检查」。
+- **对照图**（`<name>-sheet.png`）：iOS 遮罩下的默认外观和读数（第一行是类别和强调色）；180 / 120 / 80 / 60 / 40 / 29 px（60 及以下用 small 版）；和 Tide 同尺寸并排；浅色、深色；Tinted 黄、Tinted 蓝；Clear 浅壁纸、Clear 深壁纸；Android 圆形遮罩、方圆遮罩、主题图标（mono 层按浅色、深色主题的色调上色，色相取自壁纸，放在壁纸上）、圆形 48 px、mono 层。
+- **系列检查**（`series.py`）：新图标和已有图标（`--with`；不写时用 `examples/*.svg` 作参考，只算配对、不算扎堆）一起渲染，写 `DIR/series-sheet.png`（加 `--json` 另写 `series.json`），终端打印强调色登记、配对分数、扎堆和占了记号的角。规则和阈值见 `style.md`「系列检查」。
 - 用 Chromium 渲染，和浏览器一致。机器上已有 Chromium 时设 `CHROMIUM_PATH` 跳过下载。

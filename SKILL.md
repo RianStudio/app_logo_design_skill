@@ -35,7 +35,7 @@ description: Design app icons as production SVG in Rian's house style, the graph
 
 这个风格追求**一眼看懂**，像 Apple 和 Google 自己的 app：计时就是秒表，天气就是太阳和云，记账就是饼图。
 
-先定类别：工具、图片、视频、AI，健康、财务，或者都不是。类别定了强调色和类别记号（`style.md`「类别记号」），隐喻要放得下这个记号：工具是一道把物件分成上下两块的水平切口，图片是左上角的圆太阳，视频是挖在主要实形里的播放三角，AI 是切掉右下角的「/」斜带。
+先定类别：工具、图片、视频、AI，健康、财务，或者都不是（按主要功能归，顺序见 `style.md`「类别记号」：先看是不是靠模型，再看处理的是图片、视频还是文件；计时、笔记、翻译这类不归类）。类别定了强调色和类别记号，隐喻要放得下这个记号：工具是一道把物件分成上下两块的水平切口，图片是左上角的圆太阳，视频是挖在主要实形里的播放三角，AI 是切掉右下角的「/」斜带。
 
 1. 写 3 个方向，每个一行：**画什么物件 → 强调色是哪一块 → 为什么一眼能懂**。
 2. 每个方向按三项各打 0–2 分：**一眼看懂**、**有自己的一处**、**能用 3–4 块实形画出**（放进类别记号之后）。
@@ -78,15 +78,15 @@ description: Design app icons as production SVG in Rian's house style, the graph
 python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants
 ```
 
-终端逐条打印指标，每条标 PASS / FAIL / INFO。再打开 `*-sheet.png` 亲眼看：80 px 下认不认得出，和 Tide 并排是否一样大，40 / 29 px 的 small 版切口有没有糊住，单色、Tinted、Clear 和安卓主题图标（浅、深壁纸）里结构和含义还在不在。
+终端逐条打印指标，每条标 PASS / FAIL / INFO。再打开 `*-sheet.png` 亲眼看：80 px 下认不认得出，和 Tide 并排是否一样大，40 / 29 px 的 small 版切口有没有糊住，单色、Tinted、Clear 和安卓主题图标（浅色、深色主题）里结构和含义还在不在。
 
-报告没有 FAIL 以后，和已有的图标一起跑一次系列检查（用户给了他别的 app 图标就用 `--with` 传进去，没有就和 `examples/` 比）：
+报告没有 FAIL 以后，和已有的图标一起跑一次系列检查（用户给了他别的 app 图标就用 `--with` 传进去；没有就不写 `--with`，和 `examples/` 比，示例只作参考，只看配对、不算扎堆）：
 
 ```bash
 python3 <skill 目录>/scripts/series.py icon.svg --with <已有图标>.svg ... -o renders
 ```
 
-看 `series-sheet.png` 和终端的「像」「扎堆」：新图标要 0 对像、0 处扎堆。
+看 `series-sheet.png` 和终端的「像」「扎堆」「占了记号的角」：新图标三项都要是 0。
 
 **节奏**：第一次渲染后只修报告里 FAIL 的项和验收清单里没过的项，最多 2 轮。一轮 = 改一次 SVG 再跑一次 render.py；`overview.py`、`series.py` 和定稿时加 `--export` 的那次不算。猜错用途时换方向也算 1 轮；2 轮用完就交付，把没画的方向写进「可再调」。剩下的问题也写进「可再调」，不要无限打磨。打磨时不加东西，只调准已有的东西：比例、切口、强调色块的大小和位置。
 
@@ -106,9 +106,9 @@ python3 <skill 目录>/scripts/series.py icon.svg --with <已有图标>.svg ... 
 | 看起来发平、发灰，或多出了颜色 | 色板 `palette`、主体渐变跨度 `body_gradient`、亮度对比 `contrast_body` | 底和主体只用色板的值，每个渐变只有那一对 stop（中间不加第三个颜色或亮带）；单块不带自己的 fill 和透明度；主体渐变跨度 600，所有块共用一个；y1、y2 照报告给的值改 |
 | 切口里发亮、看不清 | 辉光 `glow`、切口清晰度 `cut_clarity` | 辉光不透明度降到 .16 以下，或 stdDeviation 调小；不行就去掉辉光 |
 | 出现线条、轮廓线 | 无描边 `no_stroke` | 改成填充的实形；切口只在 mask 里用描边画 |
-| 遮住颜色说不出类别，或类别记号 FAIL | 类别记号 `category` | 颜色换成这一类的；工具加一道贯穿的水平切口（中线在高度 35–75 %），图片的太阳画成整圆挪到左上角，视频挖一个 `play` H ≥ 200 的三角，AI 用 `shapes.py aiband` 切掉右下角（不放在圆上）。不属于四类就不写 `data-category`，也不用绿和斜带。见 `style.md`「类别记号」 |
-| 和已有的某个图标像，或强调色挤在一处 | `series.py` 的「像」「扎堆」「占了记号的角」 | 改外形（轮廓、长宽比、块怎么分）或强调色的位置，只换颜色不算；同一类别的两枚靠外形分开 |
-| 安卓主题图标里认不出 | 对照图的主题图标两格、安卓主题图标 `themed`（INFO） | 底和强调色都没了，只剩形状：换更具体的轮廓，或让切口两边的块更分明 |
+| 遮住颜色说不出类别，或类别记号 FAIL | 类别记号 `category` | 颜色换成这一类的；工具加一道贯穿的水平切口（中线在高度 35–75 %），图片的太阳画成整圆（r ≥ 100）挪到左上角，视频挖一个 `play` H ≥ 200 ÷ k 的三角，AI 用 `shapes.py aiband` 切掉右下角（不放在圆上，占比不到 10 % 时加大 `--chamfer`）。不属于四类就不写 `data-category`，也不用绿和斜带。见 `style.md`「类别记号」 |
+| 和已有的某个图标像，或强调色挤在一处 | `series.py` 的「像」「扎堆」「占了记号的角」 | 改外形（轮廓、长宽比、块怎么分）或强调色的位置，只换颜色不算；同一类别的两枚颜色和记号一样，只能靠外形和布局分开（门槛 0.50） |
+| 安卓主题图标里认不出 | 对照图的主题图标两格（`themed` 那一行是固定参考，每枚都一样） | 底和强调色都没了，只剩形状：换更具体的轮廓，或让切口两边的块更分明 |
 | 深色商店里边缘看不见 | 商店边缘 `store_edge`（INFO） | 不改母版：交付时提 `--store-ab` 的变体，见第 6 步 |
 | Android 圆形遮罩会裁到 | r_max `android` | 不改母版，`--export` 按系数自动缩放 |
 | 浅色版里白色主体读成了别的东西（白云变乌云） | 亮度对比的浅色外观数字（INFO） | 已知取舍，不改：写进「可再调」，营销图用默认石墨版 |
@@ -135,6 +135,6 @@ python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants --export
 - 「可再调」：没修完的问题和已知取舍（比如浅色版里白云读成乌云），没有就省略
 - 一句提醒：安卓主题图标在对照图里是近似，上架前在开启主题图标的真机启动器上看一遍
 - 出了 `--store-ab` 时一句：深色 App Store 里石墨底的边缘看不清，`renders/store-ab/` 的浅一档底、细亮边（和类别色底）可以在产品页优化里和主图标对照，测试图标要作为备用图标打进安装包（`README.txt` 有步骤）
-- 一行界面主色，按 `style.md` 强调色表的「界面主色」列（蓝、绿、紫同色，珊瑚、黄、灰用蓝）。要做 UI 主题时用 `rian-app-theme`：`python3 <rian-app-theme 目录>/scripts/build.py --name <名字> --accent <色名> -o themes/<名字>`。`--accent` 传图标强调色的**色名**（蓝 / 绿 / 黄 / 珊瑚 / 紫 / 灰，或 blue / green / yellow / coral / violet / gray；色板表里的两个色值也认，别的色值会被拒），脚本自己换算界面主色。预览用 `python3 <rian-app-theme 目录>/scripts/preview.py themes/<名字> --screen <timer|notes|list> --icon renders/<name>-1024.png --icon-dark renders/<name>-dark.png`（深色版来自 `--variants`）。`--screen` 按 app 类型选：计时和工具类（翻译、扫码这类也算）→ `timer`，笔记和阅读类 → `notes`，账本和列表类 → `list`，拿不准就 `timer`
+- 一行界面主色，按 `style.md` 强调色表的「界面主色」列（蓝、绿、紫同色，珊瑚、黄、灰用蓝）。要做 UI 主题时用 `rian-app-theme`：`python3 <rian-app-theme 目录>/scripts/build.py --name <名字> --accent <色名> -o themes/<名字>`。`--accent` 传图标强调色的**色名**（蓝 / 绿 / 黄 / 珊瑚 / 紫 / 灰，或 blue / green / yellow / coral / violet / gray；色板表里的两个色值也认，别的色值会被拒），脚本自己换算界面主色。预览用 `python3 <rian-app-theme 目录>/scripts/preview.py themes/<名字> --screen <timer|notes|list> --icon renders/<name>-1024.png --icon-dark renders/<name>-dark.png`（深色版来自 `--variants`）。`--screen` 按 app 类型选：计时、工具类，以及翻译这类 → `timer`，笔记和阅读类 → `notes`，账本和列表类 → `list`，拿不准就 `timer`
 
 Android 三层图标、Play 512、PWA 和 favicon 也在 `renders/export/` 里，用户要上架时指给他，见 `construction.md`「平台导出」。Xcode 走 asset catalog 时，深色外观用透明底的 `ios-1024-dark.png`。迭代时只改用户点名的部分。

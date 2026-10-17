@@ -67,7 +67,7 @@ def esc(s):
 
 def band_html(items, look, cols):
     t = BANDS[look]
-    d = R.squircle_path(TILE)
+    d = R.ios_path(TILE)
     cells = ""
     for i, (png, name) in enumerate(items):
         b = base64.b64encode(png).decode()

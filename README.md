@@ -6,7 +6,7 @@
 
 - **实形加切口**：主体是 2–4 块实心几何形（一般 3–4 块；圆、圆角矩形、胶囊、扇形、环段、圆角多边形），相邻两块之间是一道最窄处 48 px 的负形切口，整个图标没有一条描边。切口学 Linear 的标志；变成单色、缩到 29 px，结构仍然看得出来。
 - **石墨底和顶光**：底是 `#26282B → #191C1F` 的竖直渐变，主体是 `#F8F9FB → #C6C8CB` 的顶光渐变。不画投影和高光，iOS 26 的 Liquid Glass 由系统自己加。
-- **一块强调色**：六色之一，单独一块实形，占 10–25 %（一对同类物体里较小的那个当强调色时到 33 %），和主体隔一道切口，可以带一层极淡的辉光。
+- **一块强调色**：六色之一，单独一块实形，占 10–25 %（一对同类物体里较小或一样大的那个到 33 %，AI 斜带 10–18 %），和主体隔一道切口，可以带一层极淡的辉光。
 - **类别记号**：工具（蓝）是一道贯穿的水平切口，图片（黄）是左上角的圆太阳，视频（珊瑚）是镂空的播放三角，AI（紫）是右下角的「/」斜带；绿只给健康和财务。用户靠图形认类别，不靠颜色。
 - **平台规格**：1024 全出血母版和 Icon Composer 两层学 Apple；自适应图标三层、主题图标和 Play 512 学 Google。
 
@@ -51,7 +51,7 @@ python3 scripts/render.py icon.svg -o renders --variants --export   # 另出 Ico
 python3 scripts/render.py icon.svg -o renders --store-ab           # 另出商店 A/B 变体（浅一档底、细亮边、类别色底）和对比图
 python3 scripts/render.py icon.svg -o renders --json                # 指标另存为 JSON
 python3 scripts/overview.py examples/tide.svg icon.svg -o renders/compare.png   # 新图标和 Tide 并排，看轻重
-python3 scripts/series.py icon.svg --with a.svg b.svg -o renders    # 系列检查：和已有图标一起出 40 / 29 px 对照，标出像的配对和扎堆的强调色
+python3 scripts/series.py icon.svg --with a.svg b.svg -o renders    # 系列检查：和已有图标一起出 40 / 29 px 对照，标出像的配对和扎堆的强调色（不写 --with 时和示例比）
 python3 scripts/shapes.py                                           # 环段、弓形、扇形、圆角矩形、多边形、播放三角、AI 斜带、切口线、气泡、路径相减的用法
 ```
 

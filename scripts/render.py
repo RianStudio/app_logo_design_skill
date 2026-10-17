@@ -9,9 +9,9 @@ Always writes, for each SVG:
   DIR/<name>-1024.png    full-bleed opaque 1024 master, default (graphite) look
   DIR/<name>-sheet.png   review sheet: iOS-masked master; 180/120/80/60/40/29 px (40 and 29 from the small
                          version); light and dark looks; Tinted yellow and blue; Clear on a light and a dark
-                         wallpaper; Android circle and squircle masks, the themed icon on a light and a dark
-                         wallpaper (monochrome layer recoloured with Material You tones taken from the
-                         wallpaper); the icon next to Tide at the same size
+                         wallpaper; Android circle and squircle masks, the themed icon in the light and the
+                         dark theme (monochrome layer recoloured with the theme's Material You tones, seed hue
+                         from a light and a dark wallpaper); the icon next to Tide at the same size
 and prints a metrics report, one line per check with value, target and PASS / FAIL / INFO.
 Exit code 0 even when a check fails (1 only when an SVG cannot be read).
 
@@ -102,7 +102,7 @@ LONG_SIDE_MAX = 720
 SOLID_RATIO = (0.90, 1.10)    # filled silhouette area / Tide's
 OPEN_RATIO = (0.90, 1.15)     # convex hull area / Tide's hull
 ACCENT_SHARE = (10.0, 25.0)   # accent / silhouette convex hull, %
-ACCENT_SHARE_BAND = (8.0, 18.0)   # the AI band across a corner
+ACCENT_SHARE_BAND = (10.0, 18.0)  # the AI band across a corner
 ACCENT_SHARE_PAIR = (10.0, 33.0)  # data-accent="pair": the smaller (or equal) of two like objects
 GRAD_SPAN = 480               # accent gradient span, final px, centred on the accent shape
 BODY_SPAN = 600               # body gradient span, final px, centred on the body
@@ -128,8 +128,8 @@ TOOLS_CUT_AT = (0.35, 0.75)   # the tools cut's centre line, share of the silhou
 TOOLS_FACING = 0.25           # both edges along the tools cut run straight for this share of the width
 SUN_CORNER = 0.40             # the image sun's centre within this share of the box from the top left
 SUN_ROUND = 0.92              # area / (pi R²), R = farthest edge from the centre
-SUN_R_MIN = 88.0
-PLAY_H_MIN = 150              # the video mark's hole, measured height (shapes.py play H 200 --r 32 measures 152)
+SUN_R_MIN = 100.0             # r 88 already falls under the 10 % accent floor on a Tide-sized hull
+PLAY_H_MIN = 150              # the video mark's hole, measured height (shapes.py play H × k = 200 --r 32 measures 152)
 AI_CORNER = (0.65, 0.50)      # the AI band's centre in the box: mean of x and y share >= .65, each >= .50
 SMALL_ERODE = 8.0             # small version: erode on #subject, final px (cuts 48 -> 64)
 SMALL_CHECK = 40              # piece count must hold at this size (FAIL); 29 and 16 px are INFO
@@ -158,20 +158,24 @@ PALETTE = {"蓝": ("#7AAEFF", "#3B7BEA"), "绿": ("#6FD3A6", "#23A36B"), "黄": 
            "珊瑚": ("#FF9C86", "#EC5B45"), "紫": ("#B3A6FF", "#7A63F0"), "灰": ("#C8C7C3", "#8E8D89")}
 TINTS = (("Tinted 黄", "#F5C542"), ("Tinted 蓝", "#5E9BFF"))
 FAVICON_RADIUS = 0.22         # favicon: graphite tile with 22 % corners
+IOS_CORNER = 0.2237           # Apple's icon shape: corner radius / side ...
+IOS_SMOOTH = 0.6              # ... with 60 % corner smoothing (previews, the store rim, its edge ring)
 
 # App Store A/B variants (style.md, 商店图标的 A/B 变体): extra exports of the default look, never the master
 STORE_AB = ("lighter", "rim", "tint")
-STORE_NAME = {"lighter": "浅一档", "rim": "细亮边", "tint": "类别色"}
+STORE_NAME = {"lighter": "浅一档", "rim": "细亮边", "tint": "类别色"}   # tint: 强调色底 outside the categories
 LIGHTER_BG = ("#323538", "#26282B")   # one step lighter: L 22 -> 16, the default's top is its bottom
 RIM = ("#66686C", "#44474A")          # rim gradient, L 44 -> 30, hue 265, chroma 2.5
-RIM_W = 16                            # rim width inside the iOS mask (superellipse n 4), final px
+RIM_W = 16                            # rim width inside Apple's icon shape (ios_path), final px
 TINT_BG = {"蓝": ("#262730", "#1A1B23"), "黄": ("#2D2720", "#201B13"), "珊瑚": ("#302523", "#241917"),
            "紫": ("#29272F", "#1D1A22"), "绿": ("#212A24", "#151E18")}   # L 16 -> 10, chroma 6 at the accent's hue
 STORE_BG = {"dark": "#000000", "light": "#FFFFFF"}
 
 # Android themed icon, approximated: Material You tonal palettes (Android 13 tonal spot: accent1 chroma 36,
-# neutral1 4, neutral2 8; tone = CIE L*) from a seed hue taken from the wallpaper; AOSP Launcher3 paints the
-# background and the monochrome layer with these tones
+# neutral1 4, neutral2 8; tone = CIE L*) from a seed hue taken from the wallpaper. Launcher3
+# (ThemedIconDrawable.getColors) picks the pair by the system theme, not the wallpaper: light theme
+# accent1_100 behind neutral2_700, dark theme neutral1_800 behind accent1_100. The sheet shows the light
+# theme on a light wallpaper and the dark theme on a dark one.
 TONAL_CHROMA = {"accent1": 36.0, "neutral1": 4.0, "neutral2": 8.0}
 THEMED_TONES = {"light": (("accent1", 90), ("neutral2", 30)), "dark": (("neutral1", 20), ("accent1", 90))}
 
@@ -190,20 +194,86 @@ NONRENDER = {"defs", "mask", "clipPath", "pattern", "marker", "symbol", "linearG
 
 # ---------------------------------------------------------------- kept helpers (imported elsewhere)
 
-def squircle_path(size=1024, n=4.0, steps=360, inset=0.0):
-    """Apple-style continuous-corner mask (superellipse) on a size x size canvas, as an SVG path, optionally
-    shrunk by inset on every side. Used for previews, the rounded PWA background and the store rim variant;
-    the master stays full-bleed."""
-    o = size / 2
-    r = o - inset
+def squircle_path(size=1024, n=4.0, steps=360):
+    """Superellipse on a size x size canvas, as an SVG path: the rounded PWA background. (iOS previews and the
+    store rim use ios_path, which is closer to Apple's mask.)"""
+    r = size / 2
     pts = []
     for i in range(steps):
         t = 2 * math.pi * i / steps
         c, s = math.cos(t), math.sin(t)
-        x = o + r * math.copysign(abs(c) ** (2 / n), c)
-        y = o + r * math.copysign(abs(s) ** (2 / n), s)
+        x = r + r * math.copysign(abs(c) ** (2 / n), c)
+        y = r + r * math.copysign(abs(s) ** (2 / n), s)
         pts.append(f"{x:.1f},{y:.1f}")
     return "M" + " L".join(pts) + " Z"
+
+
+def _ios_corners(size, inset):
+    """Apple's icon shape: a rounded square with corner radius IOS_CORNER of the side and IOS_SMOOTH corner
+    smoothing (the cubic, arc, cubic construction Figma uses for its iOS preset), shrunk by inset on every
+    side (radius minus inset, so the rim inside it is inset wide all round). -> per corner, clockwise from the
+    top right: [start, (c1, c2, end), arc end, (c1, c2, end), arc centre], and the arc radius."""
+    r = IOS_CORNER * size - inset
+    xi = IOS_SMOOTH
+    p = (1 + xi) * r
+    arc = math.radians(90 * (1 - xi))
+    alpha = (math.pi / 2 - arc) / 2
+    beta = math.radians(45 * xi)
+    c = r * math.tan(alpha / 2) * math.cos(beta)
+    d = c * math.tan(beta)
+    b = (p - math.sin(arc / 2) * r * math.sqrt(2) - c - d) / 3
+    a = 2 * b
+    local = [(-p, 0), ((-p + a, 0), (-p + a + b, 0), (-p + a + b + c, d)), (-d, p - a - b - c),
+             ((0, p - a - b), (0, p - a), (0, p)), (-r, r)]   # around the top right corner, y down
+    lo, hi = inset, size - inset
+    out = []
+    for (cx, cy), turns in (((hi, lo), 0), ((hi, hi), 1), ((lo, hi), 2), ((lo, lo), 3)):
+        def at(v, t=turns, cx=cx, cy=cy):
+            x, y = v
+            for _ in range(t):
+                x, y = -y, x
+            return (cx + x, cy + y)
+        out.append([at(local[0]), tuple(map(at, local[1])), at(local[2]), tuple(map(at, local[3])), at(local[4])])
+    return out, r
+
+
+def ios_path(size=1024, inset=0.0):
+    """Apple's icon shape as an SVG path (cubics and arcs), optionally shrunk by inset."""
+    corners, r = _ios_corners(size, inset)
+
+    def pt(v):
+        return f"{v[0]:.2f} {v[1]:.2f}"
+
+    d = []
+    for start, c1, arc_end, c2, _ in corners:
+        d.append(("M " if not d else "L ") + pt(start))
+        d.append("C " + " ".join(map(pt, c1)))
+        d.append(f"A {r:.2f} {r:.2f} 0 0 1 " + pt(arc_end))
+        d.append("C " + " ".join(map(pt, c2)))
+    return " ".join(d) + " Z"
+
+
+def ios_points(size=1024, inset=0.0, steps=24):
+    """The same outline as points (for raster masks)."""
+    corners, r = _ios_corners(size, inset)
+
+    def cubic(p0, c):
+        for i in range(1, steps + 1):
+            t = i / steps
+            yield tuple((1 - t) ** 3 * p0[k] + 3 * (1 - t) ** 2 * t * c[0][k] + 3 * (1 - t) * t * t * c[1][k]
+                        + t ** 3 * c[2][k] for k in (0, 1))
+
+    pts = []
+    for start, c1, arc_end, c2, (ox, oy) in corners:
+        pts.append(start)
+        pts += cubic(start, c1)
+        t0 = math.atan2(c1[2][1] - oy, c1[2][0] - ox)
+        t1 = math.atan2(arc_end[1] - oy, arc_end[0] - ox)
+        t1 += 2 * math.pi if t1 < t0 else 0
+        pts += [(ox + r * math.cos(t0 + (t1 - t0) * i / steps), oy + r * math.sin(t0 + (t1 - t0) * i / steps))
+                for i in range(1, steps + 1)]
+        pts += cubic(arc_end, c2)
+    return pts
 
 
 def rounded_rect_path(size=1024, frac=FAVICON_RADIUS):
@@ -680,7 +750,8 @@ def without_background(text):
 
 def make_store_variant(text, kind, accent_name=None):
     """App Store A/B variant of the default look, marked data-variant on the root: lighter (the base one step
-    lighter), rim (a thin bright rim inside the iOS mask) or tint (the base turned towards the accent's hue)."""
+    lighter), rim (a thin bright rim inside Apple's icon shape) or tint (the base turned towards the accent's
+    hue)."""
     root = ET.fromstring(strip_xml_prolog(text))
     root.set("data-variant", kind)
     bg_id = _bg_gradient_id(root)
@@ -700,7 +771,7 @@ def make_store_variant(text, kind, accent_name=None):
         bg = node(root, "background")
         i = list(root).index(bg) + 1 if bg is not None and bg in list(root) else len(root)
         root.insert(i, ET.Element(q("path"), {"id": "rim", "fill": "url(#rim-fill)", "fill-rule": "evenodd",
-                                              "d": "M 0 0 H 1024 V 1024 H 0 Z " + squircle_path(inset=RIM_W)}))
+                                              "d": "M 0 0 H 1024 V 1024 H 0 Z " + ios_path(inset=RIM_W)}))
     return serialize(root)
 
 
@@ -1146,7 +1217,8 @@ def seed_hue(im):
 
 
 def themed_colors(kind):
-    """Android themed icon on the light or dark sample wallpaper: (background rgb, glyph rgb, seed hue)."""
+    """Android themed icon in the light or dark system theme, seed hue from the matching sample wallpaper:
+    (background rgb, glyph rgb, seed hue)."""
     hue = seed_hue(wallpaper(kind))
     (bp, bt), (fp, ft) = THEMED_TONES[kind]
     return lch_rgb(bt, TONAL_CHROMA[bp], hue), lch_rgb(ft, TONAL_CHROMA[fp], hue), hue
@@ -1400,6 +1472,9 @@ def measure(renderer, text, root, name, ref):
         good = False
     raw["accent_colour"] = acc_name
     C.append(check("palette", "颜色", " · ".join(parts), "B4 默认外观 + 六色表", ok(good)))
+    if variant:
+        C.append(check("variant", "商店变体", f'data-variant="{variant}"：--store-ab 写出的 A/B 变体，不是母版',
+                       "母版不写 data-variant；变体只进产品页优化，不出 --export", "INFO"))
 
     names = ["body", "accent", "core", "full", "bg", "glow"]
     if info["details"]:
@@ -1795,15 +1870,17 @@ def measure(renderer, text, root, name, ref):
 
 def tools_cut(union):
     """The tools mark: the horizontal run of empty rows nearest 48 high that splits the silhouette into an upper
-    and a lower part. -> (height, top, bottom, centre as a share of the height, facing share) or None."""
+    and a lower part. -> (height, top, bottom, centre as a share of the height, facing share, number of runs)
+    or None."""
     x0, y0, x1, y1 = bbox(union)
     empty = (~union[y0:y1, x0:x1].any(1)).astype(np.int8)
     d = np.diff(np.concatenate([[0], empty, [0]]))
+    runs = list(zip(np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]))
     best = None
-    for s, e in zip(np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]):
+    for s, e in runs:
         ya, yb = y0 + int(s), y0 + int(e)
         facing = float((union[ya - 1, x0:x1] & union[yb, x0:x1]).sum()) / (x1 - x0)
-        cand = (yb - ya, ya, yb, ((ya + yb) / 2 - y0) / (y1 - y0), facing)
+        cand = (yb - ya, ya, yb, ((ya + yb) / 2 - y0) / (y1 - y0), facing, len(runs))
         if best is None or abs(cand[0] - CUT) < abs(best[0] - CUT):
             best = cand
     return best
@@ -1851,6 +1928,9 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
     x0, y0, x1, y1 = bbox(union)
     W, H = x1 - x0, y1 - y0
     if cat not in CATEGORIES:
+        if cat:
+            return check("category", "类别记号", f'data-category="{cat}" 不认识', "工具 / 图片 / 视频 / AI 各有记号",
+                         "FAIL")
         probs = []
         if acc_name == RESERVED:
             probs.append('绿只给健康和财务：写 data-category="health" 或 "finance"，别的 app 换色')
@@ -1870,8 +1950,8 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
         if cut is None:
             probs.append("没有一道水平切口把整个剪影切成上下两部分")
         else:
-            gap, ya, yb, frac, facing = cut
-            raw["tools_cut"] = {"y": [ya, yb], "at": round(frac, 3), "facing": round(facing, 3)}
+            gap, ya, yb, frac, facing, runs = cut
+            raw["tools_cut"] = {"y": [ya, yb], "at": round(frac, 3), "facing": round(facing, 3), "runs": runs}
             notes.append(f"水平切口 y {ya}–{yb}（{gap} px，中线在高度 {frac:.0%}，两边直边对齐 {facing:.0%}）")
             if abs(gap - CUT) > 3:
                 probs.append("没有一道 48 的水平切口贯穿整个剪影" if gap > ADJACENT else f"水平切口 {gap} px，要 48")
@@ -1879,6 +1959,8 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
                 probs.append(f"水平切口的中线要在剪影高度的 {TOOLS_CUT_AT[0]:.0%}–{TOOLS_CUT_AT[1]:.0%}")
             if facing < TOOLS_FACING:
                 probs.append(f"切口上下两边要是水平直边（对齐的长度不到宽度的 {TOOLS_FACING:.0%}）")
+            if runs > 1:
+                probs.append(f"只要一道水平切口，分成上下两部分；这里横着断开了 {runs} 处（卡片中间夹一条色条不算）")
     elif cat == "image":
         cx, cy = centre_of(acc)
         e = edge_points(acc_c)
@@ -1901,7 +1983,7 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
             raw["play_hole"] = {"height": hole[0], "at": [round(v, 1) for v in hole[1]]}
             notes.append(f"镂空三角 高 {hole[0]} px {at(hole[1])}")
             if hole[0] < PLAY_H_MIN:
-                probs.append(f"三角实测要高 ≥ {PLAY_H_MIN}（shapes.py play 的 H ≥ 200，--r 32）")
+                probs.append(f"三角实测要高 ≥ {PLAY_H_MIN}（shapes.py play 的 H ≥ 200 ÷ k，--r 32）")
     elif cat == "ai":
         if kind != "band":
             probs.append('AI 斜带就是强调色：#accent-shape 写 data-accent="band"')
@@ -1912,7 +1994,7 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
             fx, fy = (cx - x0) / W, (cy - y0) / H
             raw["ai_band"] = {"angle": round(angle, 2), "width": round(width, 1), "length": round(length, 1),
                               "at": [round(fx, 3), round(fy, 3)]}
-            notes.append(f"斜带 {angle:.1f}° · 宽 {width:.0f} · 长 {length:.0f} · 中心在外框 ({fx:.0%}, {fy:.0%})")
+            notes.append(f"斜带「/」{180 - angle:.1f}° · 宽 {width:.0f} · 长 {length:.0f} · 中心在外框 ({fx:.0%}, {fy:.0%})")
             if abs(angle - BAND_ANGLE) > BAND_ANGLE_TOL:
                 probs.append("斜带要「/」向 45°（左下到右上，shapes.py aiband）")
             if abs(width - BAND_WIDTH) > BAND_WIDTH_TOL:
@@ -1923,16 +2005,17 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
                 probs.append("圆 + 斜带像 Linear 的标：AI 斜带不放在圆形物件上")
     else:
         notes.append("没有形状记号")
-    val = f"{name}类 · " + " · ".join(notes) + ("；" + "；".join(probs) if probs else "")
+    val = f"{name}类" + "".join(" · " + n_ for n_ in notes) + ("；" + "；".join(probs) if probs else "")
     return check("category", "类别记号", val, CATEGORY_TARGET[cat], ok(not probs))
 
 
 def edge_ring(width=RIM_W):
-    """The outermost `width` px inside the iOS mask preview (superellipse n 4)."""
-    outer = np.asarray(mask_alpha("ios")) >= 128
-    inner = np.zeros_like(outer)
-    inner[width:1024 - width, width:1024 - width] = np.asarray(_superellipse(4.0, 1024 - 2 * width)) >= 128
-    return outer & ~inner
+    """The outermost `width` px inside Apple's icon shape (where the rim variant paints its rim)."""
+    return (np.asarray(mask_alpha("ios")) >= 128) & ~(np.asarray(_ios_mask(1024, width)) >= 128)
+
+
+def store_name(kind, category):
+    return "强调色底" if kind == "tint" and category not in CATEGORIES else STORE_NAME[kind]
 
 
 def store_edge_check(full, acc_name, raw):
@@ -1951,15 +2034,17 @@ def store_edge_check(full, acc_name, raw):
     raw["store_edge"] = {"dark": round(own[0], 2), "light": round(own[1], 2),
                          "ab_dark": {k: round(v[0], 2) for k, v in ab.items()}}
     val = (f"对黑 {own[0]:.1f}:1 · 对白 {own[1]:.1f}:1 · A/B 变体对黑："
-           + " · ".join(f"{STORE_NAME[k]} {v[0]:.1f}" for k, v in ab.items()))
-    return check("store_edge", "商店边缘", val, "参考：深色商店里边缘要看得出（--store-ab 出变体）", "INFO")
+           + " · ".join(f"{store_name(k, raw.get('category'))} {v[0]:.1f}" for k, v in ab.items()))
+    return check("store_edge", "商店边缘", val, "参考（母版的底固定，每枚一样）：深色商店里边缘要看得出，"
+                 "--store-ab 出变体", "INFO")
 
 
 def themed_check(raw):
     """Android themed icon, approximated: contrast of the glyph and of the accent (alpha .5) on the themed
-    background for the light and the dark sample wallpaper."""
+    background in the light and the dark theme. Fixed numbers (the same for every icon): the accent keeps
+    only this much; whether the shape still reads is judged on the sheet's two themed tiles."""
     parts, out = [], {}
-    for kind, label_ in (("light", "浅壁纸"), ("dark", "深壁纸")):
+    for kind, label_ in (("light", "浅色主题"), ("dark", "深色主题")):
         bg, fg, hue = themed_colors(kind)
         a = float(MONO_ACCENT_OPACITY)
         mix = bg * (1 - a) + fg * a
@@ -1968,7 +2053,7 @@ def themed_check(raw):
         parts.append(f"{label_}（种子色相 {hue:.0f}°）图形 {cg:.1f}:1 · 强调色 {ca:.1f}:1")
     raw["themed"] = out
     return check("themed", "安卓主题图标", " · ".join(parts),
-                 "参考：底和强调色都没了，只剩形状；上架前在真机启动器上看", "INFO")
+                 "固定参考，每枚一样：认不认得出看对照图的两格；上架前在真机启动器上看", "INFO")
 
 
 # ---------------------------------------------------------------- report
@@ -2021,6 +2106,12 @@ def _superellipse(n, size=1024):
     return big.resize((size, size), Image.LANCZOS)
 
 
+def _ios_mask(size=1024, inset=0.0):
+    big = Image.new("L", (size * 4, size * 4), 0)
+    ImageDraw.Draw(big).polygon(ios_points(size * 4, inset * 4), fill=255)
+    return big.resize((size, size), Image.LANCZOS)
+
+
 def _circle(size=1024):
     big = Image.new("L", (size * 4, size * 4), 0)
     ImageDraw.Draw(big).ellipse((0, 0, size * 4 - 1, size * 4 - 1), fill=255)
@@ -2028,9 +2119,9 @@ def _circle(size=1024):
 
 
 def mask_alpha(name):
-    """ios: superellipse n 4 (approximates Apple's mask); squircle: n 3 (Android); circle."""
+    """ios: Apple's icon shape (ios_path); squircle: superellipse n 3 (Android); circle."""
     if name not in MASKS:
-        MASKS[name] = {"ios": lambda: _superellipse(4.0), "squircle": lambda: _superellipse(3.0),
+        MASKS[name] = {"ios": _ios_mask, "squircle": lambda: _superellipse(3.0),
                        "circle": _circle}[name]()
     return MASKS[name]
 
@@ -2103,8 +2194,9 @@ def clear_tile(mono, kind):
 
 
 def themed(mono_scaled, kind):
-    """Android themed icon, approximated: the monochrome layer recoloured with Material You tones from the
-    wallpaper's seed hue (THEMED_TONES; the layer's alpha carries the accent at .5)."""
+    """Android themed icon, approximated: the monochrome layer recoloured with the light or dark theme's
+    Material You tones from the wallpaper's seed hue (THEMED_TONES; the layer's alpha carries the accent
+    at .5)."""
     bg, fg, _ = themed_colors(kind)
     a = np.asarray(mono_scaled)[..., 3:4].astype(np.float32) / 255
     return Image.fromarray(np.clip(bg * (1 - a) + fg * a, 0, 255).astype(np.uint8), "RGB")
@@ -2168,7 +2260,7 @@ SHEET = """<!doctype html><html><head><meta charset="utf-8"><style>
   <div class="strip">{sizes}</div>
   <div class="h">外观（Tinted、Clear 由 mono 近似）</div>
   <div class="row">{looks}</div>
-  <div class="h">Android（前景叠背景渐变取 72 dp 可见区；主题图标：monochrome 层按壁纸取 Material You 色调，近似，上架前在真机启动器上看）</div>
+  <div class="h">Android（前景叠背景渐变取 72 dp 可见区；主题图标：monochrome 层按浅色、深色主题的 Material You 色调上色（色相取自壁纸），近似，上架前在真机启动器上看）</div>
   <div class="row">{android}</div>
 </div></body></html>"""
 
@@ -2217,9 +2309,9 @@ def build_sheet(renderer, result, ims, tide_im, path):
     android = [box(cell(tile(ims["android"], T, "circle"), T / 2, "圆形遮罩"), "lite"),
                box(cell(tile(ims["android"], T, "squircle"), T / 2, "方圆遮罩"), "lite"),
                box(cell(tile(adaptive_visible(themed(ims["mono_scaled"], "light")), T, "circle"), T / 2,
-                        "主题图标 · 浅壁纸"), "wall-light", wallpaper("light")),
+                        "主题图标 · 浅色主题"), "wall-light", wallpaper("light")),
                box(cell(tile(adaptive_visible(themed(ims["mono_scaled"], "dark")), T, "circle"), T / 2,
-                        "主题图标 · 深壁纸"), "wall-dark", wallpaper("dark")),
+                        "主题图标 · 深色主题"), "wall-dark", wallpaper("dark")),
                box(cell(tile(ims["android"], 96, "circle"), 48, "圆形 48"), "lite"),
                box(cell(over(Image.new("RGB", (1024, 1024), (60, 64, 72)), ims["mono"]).resize((T, T), Image.LANCZOS),
                         T / 2, "mono 层"), "lite")]
@@ -2570,7 +2662,7 @@ STORE_SHEET = """<!doctype html><html><head><meta charset="utf-8"><style>
   img {{ display: block; }}
 </style></head><body><div class="sheet">
   <h1>{name} · 商店图标 A/B</h1>
-  <div class="label">只换底，图形和强调色不动；深色、Tinted 外观沿用主图标。边缘对比度 = iOS 遮罩内最外 16 px 的平均色对商店底</div>
+  <div class="label">只换底或加一圈细亮边，图形和强调色不动；深色、Tinted 外观沿用主图标。边缘对比度 = iOS 遮罩内最外 16 px 的平均色对商店底</div>
   <div class="h">深色 App Store（#000）</div>
   <div class="row">{dark}</div>
   <div class="h">浅色 App Store（#FFF）</div>
@@ -2587,22 +2679,23 @@ STORE_README = """商店图标 A/B（{name}）
   只在 App Store Connect 的产品页优化（Product Page Optimization）里做对照，主图标不改。
   测试用的图标要作为备用图标（alternate app icon）打进当前上架版本的二进制里；从测试页下载的用户，
   主屏上看到的也是它。
-  变体和主图标要一眼看出是同一个 app（审核指南 2.3.8）：只换底，图形、强调色和位置都不动。
+  变体和主图标要一眼看出是同一个 app（审核指南 2.3.8）：只换底或加一圈细亮边，图形、强调色和位置都不动。
   深色和 Tinted 外观沿用主图标（export/ios-1024-dark.png、ios-1024-tinted.png），变体只换默认外观。
-  细亮边只出平面 PNG，跟着 iOS 遮罩走：不进 Icon Composer（玻璃自带边缘高光），也不拿去做 Android、网页图标。
+  细亮边只出平面 PNG，按 Apple 图标外形（圆角 22.37 %、60 % 平滑）的近似画在里面 16 px：不进 Icon Composer
+  （玻璃自带边缘高光），也不拿去做 Android、网页图标；上传前在 App Store Connect 的预览里看一眼四个角。
   一次只测一个变化，样本够了再定。结果只决定这个 app 的商店图标，不改石墨风格的底色。
 """
 
 STORE_FILE = {"lighter": "浅一档：底 {0} → {1}（亮一档，主体和强调色不变）",
               "rim": "细亮边：默认底，iOS 遮罩内沿一圈 16 px 亮边 {0} → {1}",
-              "tint": "类别色：底朝强调色的色相偏一点（色度 6）{0} → {1}"}
+              "tint": "{name}：底朝强调色的色相偏一点（彩度 6）{0} → {1}"}
 
 
 def store_ab(renderer, text, result, ims, out):
     """App Store A/B variants of the default look (style.md, 商店图标的 A/B 变体): .svg + .png each, a comparison
     sheet on the dark and the light store, README.txt."""
     out.mkdir(parents=True, exist_ok=True)
-    name, acc_name = result["name"], result["raw"].get("accent_colour")
+    name, acc_name, category = result["name"], result["raw"].get("accent_colour"), result["raw"].get("category")
     kinds = [k for k in STORE_AB if k != "tint" or acc_name in TINT_BG]
     pics, written, lines = {"default": ims["master"]}, [], []
     for kind in kinds:
@@ -2612,14 +2705,14 @@ def store_ab(renderer, text, result, ims, out):
         pics[kind].save(out / f"{name}-{kind}.png")
         written += [f"{name}-{kind}.svg", f"{name}-{kind}.png"]
         stops = {"lighter": LIGHTER_BG, "rim": RIM, "tint": TINT_BG.get(acc_name)}[kind]
-        lines.append((f"{name}-{kind}.svg/.png", STORE_FILE[kind].format(*stops)))
+        lines.append((f"{name}-{kind}.svg/.png", STORE_FILE[kind].format(*stops, name=store_name(kind, category))))
     ring = edge_ring()
     rows = {}
     for store, bg in STORE_BG.items():
         cells = []
         for kind, im in pics.items():
             ratio = contrast(np.asarray(im, np.float64)[ring].mean(0), hex_rgb(bg))
-            cap = ("默认" if kind == "default" else STORE_NAME[kind]) + f" · 边缘 {ratio:.1f}:1"
+            cap = ("默认" if kind == "default" else store_name(kind, category)) + f" · 边缘 {ratio:.1f}:1"
             cells.append(f'<div class="box store-{store}"><div class="pair">'
                          f'<img src="{png_uri(tile(im, 240))}" width="120" height="120">'
                          f'<img src="{png_uri(tile(im, 120))}" width="60" height="60"></div>'
@@ -2684,7 +2777,9 @@ def render(svgs, out_dir, variants=False, export_files=False, json_out=False, ti
                     written += [f"{name}-{look}.svg", f"{name}-{look}.png"]
                 (out_dir / f"{name}-small.svg").write_text(looks["small"], encoding="utf-8")
                 written.append(f"{name}-small.svg")
-            if export_files:
+            if export_files and result["info"]["variant"]:
+                print("  这是商店变体（data-variant），不出 --export：平台文件只从母版出")
+            elif export_files:
                 ex_dir = out_dir / "export" if len(svgs) == 1 else out_dir / "export" / name
                 files = export(renderer, text, root, looks, ims, result, ex_dir)
                 written.append(str(ex_dir.relative_to(out_dir)) + f"/ ({len(files)} 项)")

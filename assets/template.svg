@@ -67,11 +67,11 @@
        wide 580 × 464; open is sized by its hull (about 300k px², an outer box near 690 × 580); long side ≤ 720.
        data-cut stays 48.
        TODO data-category: tools | image | video | ai | health | finance; leave it out for an app outside these
-       (Tide, a focus timer, has none). It fixes the accent colour and the mark: tools a horizontal 48 cut through
-       the whole silhouette (centre line at 35 to 75 % of its height), image a whole round sun in the top left
-       corner, video a play triangle knocked out of a piece (scripts/shapes.py play, H ≥ 200), AI a 45° band
-       running "/" across the lower right corner (scripts/shapes.py aiband, data-accent="band" on the accent,
-       never on a circle). Green only for health and finance, the band only for AI.
+       (Tide, a focus timer, has none). It fixes the accent colour and the mark: tools one horizontal 48 cut
+       through the whole silhouette (centre line at 35 to 75 % of its height), image a whole round sun (r ≥ 100)
+       in the top left corner, video a play triangle knocked out of a piece (scripts/shapes.py play, H ≥ 200 ÷ k),
+       AI a 45° band running "/" across the lower right corner (scripts/shapes.py aiband, data-accent="band" on
+       the accent, 10 to 18 %, never on a circle). Green only for health and finance, the band only for AI.
        TODO transform: translate(512 512) scale(k) translate(-512 -512) translate(tx ty). Draw in final pixels
        with k = 1. When the size line FAILs it prints the k to use; then redo the cut and corner paths with
        shapes.py and its k flag. translate puts the filled silhouette's centroid within 12 of (512, 512) (open:

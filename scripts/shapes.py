@@ -28,15 +28,16 @@ arc of radius CONCAVE. --grow G offsets the whole outline outwards by G (corners
 arc CONCAVE - G): the knock-out for a G-wide cut around a front bubble (feed it to minus).
 
     python3 scripts/shapes.py poly "X1,Y1 X2,Y2 X3,Y3 ..." [--r 24 | --radii R1,R2,...] [--grow 0]
-polygon through the corner points (either winding), each corner rounded by its radius (0 = sharp; a concave
-corner gets a reverse arc of that radius). --grow G offsets the outline outwards by G (convex corners R + G,
+polygon through the corner points (either winding), each corner rounded by its radius (default 24, the house
+minimum; 0 = sharp; a concave corner gets a reverse arc of that radius). --grow G offsets the outline outwards by G (convex corners R + G,
 concave corners R - G, sharp once that reaches 0): the knock-out for a G-wide cut around it. Arrows,
 chevrons, chamfered cards and other straight-edged pieces.
 
     python3 scripts/shapes.py play CX CY H [--r 32] [--grow 0]
 the video mark: an equilateral play triangle pointing right, its upright side H long, its centroid at
-(CX, CY), corners rounded by R (at least 30, so the measuring close keeps the hole's corners). Knock it out
-of a piece with minus (two loops: fill-rule="evenodd").
+(CX, CY), corners rounded by R (at least 30, so the measuring close keeps the hole's corners). H is source
+units like the coordinates: H ≥ 200 ÷ k, so the hole measures at least 150 final px. Knock it out of a piece
+with minus (two loops: fill-rule="evenodd").
 
     python3 scripts/shapes.py aiband "PATH" [--chamfer 48] [--width 96] [--gap 48]
 the AI mark: the outline's lower right corner taken off along a 45 deg line running "/" (bottom left to top
@@ -691,7 +692,7 @@ def main():
     p = sub.add_parser("poly", parents=[kp])
     p.add_argument("points", metavar="POINTS", help='corner points "X1,Y1 X2,Y2 ..."')
     g = p.add_mutually_exclusive_group()
-    g.add_argument("--r", type=float, default=0.0, help="one radius for every corner")
+    g.add_argument("--r", type=float, default=24.0, help="one radius for every corner (0 = sharp)")
     g.add_argument("--radii", metavar="R1,R2,...", help="one radius per corner, in order")
     p.add_argument("--grow", type=float, default=0.0)
     p = sub.add_parser("play", parents=[kp])
