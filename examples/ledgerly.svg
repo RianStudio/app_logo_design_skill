@@ -43,7 +43,7 @@
        (pie's left edge to the slice's right corner), y 200..810 (slice top to pie bottom): 610 × 610.
        render.py: silhouette 0.96 × Tide, ink 1.17 × Tide (a solid pie), cut 47.6 (along the cut p50 48 / p90 52,
        a parallel cut), accent 17.5 % of the hull, r_max 336 (Android ×0.72 and PWA ×1.016, both capped). -->
-  <g id="subject" data-shape="circle" data-cut="48" transform="translate(512 512) scale(1) translate(-512 -512) translate(-6 6)">
+  <g id="subject" data-shape="circle" data-cut="48" data-category="finance" transform="translate(512 512) scale(1) translate(-512 -512) translate(-6 6)">
     <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
     <g id="body" fill="url(#body-fill)">
       <!-- pie: centre (500, 524), r 280, with the −81° → −9° sector taken out (72°, bisector −45°), 288° left.

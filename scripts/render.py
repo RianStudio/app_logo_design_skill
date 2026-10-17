@@ -2,21 +2,25 @@
 """
 Render and check a Rian app icon SVG (graphite style).
 
-  python3 scripts/render.py ICON.svg [more.svg ...] [-o DIR] [--variants] [--export] [--json] [--tide FILE]
+  python3 scripts/render.py ICON.svg [more.svg ...] [-o DIR] [--variants] [--export] [--store-ab] [--json]
+                           [--tide FILE]
 
 Always writes, for each SVG:
   DIR/<name>-1024.png    full-bleed opaque 1024 master, default (graphite) look
   DIR/<name>-sheet.png   review sheet: iOS-masked master; 180/120/80/60/40/29 px (40 and 29 from the small
                          version); light and dark looks; Tinted yellow and blue; Clear on a light and a dark
-                         wallpaper; Android circle and squircle masks, themed icon light and dark; the icon next
-                         to Tide at the same size
+                         wallpaper; Android circle and squircle masks, the themed icon on a light and a dark
+                         wallpaper (monochrome layer recoloured with Material You tones taken from the
+                         wallpaper); the icon next to Tide at the same size
 and prints a metrics report, one line per check with value, target and PASS / FAIL / INFO.
 Exit code 0 even when a check fails (1 only when an SVG cannot be read).
 
   --variants  also writes <name>-light.svg/.png, <name>-dark.svg/.png, <name>-mono.svg/.png (transparent)
               and <name>-small.svg (64 px and below: erode 8, no class="detail", no glow)
   --export    also writes DIR/export/ (DIR/export/<name>/ when several SVGs are given):
-              ios-1024.png, icon-1024-transparent.png, play-512.png, pwa-192.png, pwa-512.png,
+              ios-1024.png, ios-1024-dark.png (asset catalog Dark: transparent background, the system draws
+              its own), ios-1024-tinted.png (asset catalog Tinted: grayscale), icon-1024-transparent.png,
+              play-512.png, pwa-192.png, pwa-512.png,
               pwa-maskable-512.png, apple-touch-180.png, favicon-16.png, favicon-32.png, favicon.ico, favicon.svg,
               android-foreground-432.png, android-monochrome-432.png,
               android/mipmap-anydpi-v26/ic_launcher.xml + ic_launcher_round.xml,
@@ -27,6 +31,10 @@ Exit code 0 even when a check fails (1 only when an SVG cannot be read).
               and cannot be baked to plain paths), icon-composer/README.txt
               Android layers are scaled by min(290 / r_max, 0.72), the PWA maskable icon by
               min(409.6 / r_max, 409.6 / Tide's r_max), so compact icons are not blown up past Tide.
+  --store-ab  also writes DIR/store-ab/ (DIR/store-ab/<name>/ when several SVGs are given): the App Store
+              A/B variants of the default look, <name>-lighter, <name>-rim and (for a coloured accent)
+              <name>-tint as .svg and .png, a comparison sheet <name>-store-ab.png on the dark and the light
+              store, and README.txt
   --json      also writes <name>-metrics.json
   --tide FILE Tide reference for the size checks and the side-by-side cell (default examples/tide.svg;
               falls back to built-in numbers when that file is missing or not a graphite icon)
@@ -39,10 +47,13 @@ If a Chromium build already exists on the machine, set CHROMIUM_PATH to its exec
 SVG conventions read here (brief B10, references/construction.md):
   defs: #bg, #body-fill, #accent linearGradients (userSpaceOnUse); optional #glow-blur filter and #cut mask
   #background (full-bleed rect), #subject (transform, data-shape = circle | square | tall | wide | open,
-  data-cut="48"), #glow (optional first child: <use href="#accent-shape" filter="url(#glow-blur)"/>),
+  data-cut="48", data-category = tools | image | video | ai | health | finance, data-pieces-why for a fifth
+  piece), #glow (optional first child: <use href="#accent-shape" filter="url(#glow-blur)"/>),
   #body (<g fill="url(#body-fill)"> with every body piece), #accent-shape (one element, fill url(#accent);
-  data-accent="band" for a band accent); on single pieces data-part="band" and class="detail";
-  in the #cut mask <g id="cuts" stroke-width="48 / k">.
+  data-accent="band" for the AI band, data-accent="pair" for the smaller of two like objects);
+  class="detail" on single pieces; in the #cut mask <g id="cuts" stroke-width="48 / k">.
+  Store A/B variants written by --store-ab carry data-variant = lighter | rim | tint on the root (rim adds
+  <path id="rim"> between #background and #subject).
 """
 
 import argparse
@@ -83,14 +94,16 @@ THIN_REACH = 2 * THIN_R       # a part the opening removes may reach at most thi
 CLOSE_R = 30                  # closing radius that shuts the cuts for the silhouette
 SLOT_AREA = 1500              # px²: a single piece's closing adds more than this -> a cut that stops inside it
 OVERLAP_MAX = 0.002           # body & accent pixels / accent pixels
-PIECES = (2, 5)               # connected pieces without class="detail"
+PIECES = (2, 4)               # connected pieces without class="detail" (3 or 4 as a rule)
+PIECES_MAX = 5                # a fifth piece only with a reason in data-pieces-why
 MIN_PIECE = 50                # px²: smaller specks are antialiasing noise
 DETAIL_SHARE = 2.0            # pieces under this % of the hull are marked class="detail"
 LONG_SIDE_MAX = 720
 SOLID_RATIO = (0.90, 1.10)    # filled silhouette area / Tide's
 OPEN_RATIO = (0.90, 1.15)     # convex hull area / Tide's hull
 ACCENT_SHARE = (10.0, 25.0)   # accent / silhouette convex hull, %
-ACCENT_SHARE_BAND = (4.0, 15.0)   # one 72 wide band across a 580 circle is about 14 %
+ACCENT_SHARE_BAND = (8.0, 18.0)   # the AI band across a corner
+ACCENT_SHARE_PAIR = (10.0, 33.0)  # data-accent="pair": the smaller (or equal) of two like objects
 GRAD_SPAN = 480               # accent gradient span, final px, centred on the accent shape
 BODY_SPAN = 600               # body gradient span, final px, centred on the body
 GRAD_TOL = 8
@@ -103,11 +116,21 @@ CONTRAST_ACCENT = 3.0         # accent over background, default look
 GLOW_OPACITY_MAX = 0.16
 GLOW_SD_MAX = 28.0            # stdDeviation x k
 CUT_DL_MAX = 8.0              # L* of a cut's centre line minus the background's
-BAND_COUNT = (2, 3)
-BAND_ANGLE = 45.0             # long axis, y down: top left to bottom right
+BAND_ANGLE = 135.0            # the AI band's long axis, y down: bottom left to top right ("/")
 BAND_ANGLE_TOL = 1.5
-BAND_WIDTH = 72.0
-BAND_WIDTH_TOL = 2.0
+BAND_WIDTH = 96.0
+BAND_WIDTH_TOL = 3.0
+# category marks (references/style.md, 类别记号): data-category -> (name, accent colour)
+CATEGORIES = {"tools": ("工具", "蓝"), "image": ("图片", "黄"), "video": ("视频", "珊瑚"), "ai": ("AI", "紫"),
+              "health": ("健康", "绿"), "finance": ("财务", "绿")}
+RESERVED = "绿"               # only health and finance
+TOOLS_CUT_AT = (0.35, 0.75)   # the tools cut's centre line, share of the silhouette's height from the top
+TOOLS_FACING = 0.25           # both edges along the tools cut run straight for this share of the width
+SUN_CORNER = 0.40             # the image sun's centre within this share of the box from the top left
+SUN_ROUND = 0.92              # area / (pi R²), R = farthest edge from the centre
+SUN_R_MIN = 88.0
+PLAY_H_MIN = 150              # the video mark's hole, measured height (shapes.py play H 200 --r 32 measures 152)
+AI_CORNER = (0.65, 0.50)      # the AI band's centre in the box: mean of x and y share >= .65, each >= .50
 SMALL_ERODE = 8.0             # small version: erode on #subject, final px (cuts 48 -> 64)
 SMALL_CHECK = 40              # piece count must hold at this size (FAIL); 29 and 16 px are INFO
 SMALL_INFO = 29
@@ -122,7 +145,6 @@ KEYLINE_WH = {"circle": (580, 580), "square": (520, 520), "tall": (464, 580), "w
 KEYLINE_NAME = {"square": "方形", "tall": "竖矩形", "wide": "横矩形"}
 OPEN_EXTRA = 1.10             # open shapes may be 10 % larger than the keyline of their overall form
 SHAPES = ("circle", "square", "tall", "wide", "open")
-LINEAR_SIDE = 135.0           # bands stacked towards the lower left of a circle: the Linear logo (forbidden)
 BODY_GRAD = "body-fill"       # the body gradient's id (the <g id="body"> group owns "body")
 
 # looks (brief B4): background and body gradient stops, top -> bottom
@@ -136,6 +158,22 @@ PALETTE = {"蓝": ("#7AAEFF", "#3B7BEA"), "绿": ("#6FD3A6", "#23A36B"), "黄": 
            "珊瑚": ("#FF9C86", "#EC5B45"), "紫": ("#B3A6FF", "#7A63F0"), "灰": ("#C8C7C3", "#8E8D89")}
 TINTS = (("Tinted 黄", "#F5C542"), ("Tinted 蓝", "#5E9BFF"))
 FAVICON_RADIUS = 0.22         # favicon: graphite tile with 22 % corners
+
+# App Store A/B variants (style.md, 商店图标的 A/B 变体): extra exports of the default look, never the master
+STORE_AB = ("lighter", "rim", "tint")
+STORE_NAME = {"lighter": "浅一档", "rim": "细亮边", "tint": "类别色"}
+LIGHTER_BG = ("#323538", "#26282B")   # one step lighter: L 22 -> 16, the default's top is its bottom
+RIM = ("#66686C", "#44474A")          # rim gradient, L 44 -> 30, hue 265, chroma 2.5
+RIM_W = 16                            # rim width inside the iOS mask (superellipse n 4), final px
+TINT_BG = {"蓝": ("#262730", "#1A1B23"), "黄": ("#2D2720", "#201B13"), "珊瑚": ("#302523", "#241917"),
+           "紫": ("#29272F", "#1D1A22"), "绿": ("#212A24", "#151E18")}   # L 16 -> 10, chroma 6 at the accent's hue
+STORE_BG = {"dark": "#000000", "light": "#FFFFFF"}
+
+# Android themed icon, approximated: Material You tonal palettes (Android 13 tonal spot: accent1 chroma 36,
+# neutral1 4, neutral2 8; tone = CIE L*) from a seed hue taken from the wallpaper; AOSP Launcher3 paints the
+# background and the monochrome layer with these tones
+TONAL_CHROMA = {"accent1": 36.0, "neutral1": 4.0, "neutral2": 8.0}
+THEMED_TONES = {"light": (("accent1", 90), ("neutral2", 30)), "dark": (("neutral1", 20), ("accent1", 90))}
 
 # Tide reference used only when the Tide SVG cannot be measured (new Tide: silhouette, hull, r_max, ink).
 TIDE_FALLBACK = {"silhouette": 278700.0, "hull": 298700.0, "r_max": 403.0, "ink": 212300.0}
@@ -152,16 +190,18 @@ NONRENDER = {"defs", "mask", "clipPath", "pattern", "marker", "symbol", "linearG
 
 # ---------------------------------------------------------------- kept helpers (imported elsewhere)
 
-def squircle_path(size=1024, n=4.0, steps=360):
-    """Apple-style continuous-corner mask (superellipse) on a size x size canvas, as an SVG path.
-    Used for previews and for the rounded PWA background; the master stays full-bleed."""
-    r = size / 2
+def squircle_path(size=1024, n=4.0, steps=360, inset=0.0):
+    """Apple-style continuous-corner mask (superellipse) on a size x size canvas, as an SVG path, optionally
+    shrunk by inset on every side. Used for previews, the rounded PWA background and the store rim variant;
+    the master stays full-bleed."""
+    o = size / 2
+    r = o - inset
     pts = []
     for i in range(steps):
         t = 2 * math.pi * i / steps
         c, s = math.cos(t), math.sin(t)
-        x = r + r * math.copysign(abs(c) ** (2 / n), c)
-        y = r + r * math.copysign(abs(s) ** (2 / n), s)
+        x = o + r * math.copysign(abs(c) ** (2 / n), c)
+        y = o + r * math.copysign(abs(s) ** (2 / n), s)
         pts.append(f"{x:.1f},{y:.1f}")
     return "M" + " L".join(pts) + " Z"
 
@@ -416,7 +456,8 @@ def static_info(root):
     if root.get("width") or root.get("height") or \
             re.split(r"[\s,]+", (root.get("viewBox") or "").strip()) != ["0", "0", "1024", "1024"]:
         info["errors"].append('根只写 viewBox="0 0 1024 1024"，不写宽高')
-    stray = [c for c in root if local(c) in GRAPHIC and c not in (background, subject)]
+    rim = node(root, "rim") if root.get("data-variant") == "rim" else None
+    stray = [c for c in root if local(c) in GRAPHIC and c not in (background, subject, rim)]
     if stray:
         info["errors"].append("底上不加任何东西：#background 和 #subject 之外还有 "
                               + ", ".join(f"<{local(c)}>" for c in stray[:3]))
@@ -426,7 +467,19 @@ def static_info(root):
     info["k"] = float(math.sqrt(abs(np.linalg.det(M[:2, :2]))))
     info["shape"] = subject.get("data-shape") if subject is not None else None
     info["data_cut"] = subject.get("data-cut") if subject is not None else None
-    info["accent_band"] = accent is not None and accent.get("data-accent") == "band"
+    info["category"] = subject.get("data-category") if subject is not None else None
+    info["pieces_why"] = (subject.get("data-pieces-why") or "").strip() if subject is not None else ""
+    info["accent_kind"] = accent.get("data-accent") if accent is not None else None
+    info["accent_band"] = info["accent_kind"] == "band"
+    info["variant"] = root.get("data-variant")
+    if info["category"] is not None and info["category"] not in CATEGORIES:
+        info["errors"].append(f'data-category="{info["category"]}" 不认识：tools | image | video | ai | health | '
+                              "finance，不属于这几类就不写")
+    if info["accent_kind"] not in (None, "band", "pair"):
+        info["errors"].append('data-accent 只能是 band（AI 斜带）或 pair（一对物体里较小的那个）')
+    if info["variant"] not in (None,) + STORE_AB:
+        info["errors"].append(f'data-variant="{info["variant"]}" 不认识：只有 render.py --store-ab 写的 '
+                              "lighter | rim | tint")
     info["body_matrix"] = M @ chain_matrix(body, body, P) if body is not None else M
     info["accent_matrix"] = M @ chain_matrix(accent, accent, P) if accent is not None else M
 
@@ -505,7 +558,9 @@ def static_info(root):
 
     info["masked"] = {name: any(get_prop(e, "mask") or get_prop(e, "clip-path") for e in el.iter())
                       for name, el in (("body", body), ("accent", accent)) if el is not None}
-    info["bands"] = [e for e in sub_nodes if e.get("data-part") == "band"]
+    if any(e.get("data-part") == "band" for e in sub_nodes):
+        info["errors"].append('data-part="band" 不再使用：斜带只给 AI，只有一条，就是强调色本身'
+                              '（#accent-shape 写 data-accent="band"）')
     info["details"] = [e for e in sub_nodes if "detail" in classes(e)]
     return info
 
@@ -538,6 +593,7 @@ def _bg_gradient_id(root):
 
 def _look(text, look, glow):
     root = ET.fromstring(strip_xml_prolog(text))
+    _remove(root, node(root, "rim"))
     _set_stops(root, _bg_gradient_id(root), LOOKS[look]["bg"])
     body = node(root, "body")
     _set_stops(root, (url_id(get_prop(body, "fill")) if body is not None else None) or BODY_GRAD, LOOKS[look]["body"])
@@ -561,6 +617,7 @@ def make_mono(text):
     body white 100 %, accent white 50 %."""
     root = ET.fromstring(strip_xml_prolog(text))
     _remove(root, node(root, "background"))
+    _remove(root, node(root, "rim"))
     _remove(root, node(root, "glow"))
     body, accent = node(root, "body"), node(root, "accent-shape")
     _set_stops(root, (url_id(get_prop(body, "fill")) if body is not None else None) or BODY_GRAD,
@@ -617,6 +674,33 @@ def with_scale(text, s):
 def without_background(text):
     root = ET.fromstring(strip_xml_prolog(text))
     _remove(root, node(root, "background"))
+    _remove(root, node(root, "rim"))
+    return serialize(root)
+
+
+def make_store_variant(text, kind, accent_name=None):
+    """App Store A/B variant of the default look, marked data-variant on the root: lighter (the base one step
+    lighter), rim (a thin bright rim inside the iOS mask) or tint (the base turned towards the accent's hue)."""
+    root = ET.fromstring(strip_xml_prolog(text))
+    root.set("data-variant", kind)
+    bg_id = _bg_gradient_id(root)
+    if kind == "lighter":
+        _set_stops(root, bg_id, LIGHTER_BG)
+    elif kind == "tint":
+        _set_stops(root, bg_id, TINT_BG[accent_name])
+    elif kind == "rim":
+        defs = root.find(q("defs"))
+        if defs is None:
+            defs = ET.Element(q("defs"))
+            root.insert(0, defs)
+        g = ET.SubElement(defs, q("linearGradient"), {"id": "rim-fill", "x1": "0", "y1": "0", "x2": "0",
+                                                      "y2": "1024", "gradientUnits": "userSpaceOnUse"})
+        for off, c in zip(("0", "1"), RIM):
+            ET.SubElement(g, q("stop"), {"offset": off, "stop-color": c})
+        bg = node(root, "background")
+        i = list(root).index(bg) + 1 if bg is not None and bg in list(root) else len(root)
+        root.insert(i, ET.Element(q("path"), {"id": "rim", "fill": "url(#rim-fill)", "fill-rule": "evenodd",
+                                              "d": "M 0 0 H 1024 V 1024 H 0 Z " + squircle_path(inset=RIM_W)}))
     return serialize(root)
 
 
@@ -638,20 +722,16 @@ def with_rounded_background(text, d=None):
 
 HIDE = "{display:none!important}"
 LAYER_CSS = {
-    "body": "#background,#glow,#accent-shape" + HIDE,
-    "accent": "#background,#glow,#body" + HIDE,
-    "glow": "#background,#body" + HIDE,          # applied to glow_source(): only the glow is left
-    "all": "#background" + HIDE,
+    "body": "#background,#rim,#glow,#accent-shape" + HIDE,
+    "accent": "#background,#rim,#glow,#body" + HIDE,
+    "glow": "#background,#rim,#body" + HIDE,     # applied to glow_source(): only the glow is left
+    "all": "#background,#rim" + HIDE,
 }
 MEASURE_CSS = {                                 # extra layers for the checks
-    "core": "#background,#glow,.detail" + HIDE,
+    "core": "#background,#rim,#glow,.detail" + HIDE,
     "full": "",
     "bg": "#subject" + HIDE,
-    "band": "#background,#glow" + HIDE + "#subject{visibility:hidden!important}"
-            '[data-part="band"],[data-part="band"] *{visibility:visible!important}',
-    "band-detail": "#background,#glow" + HIDE + "#subject{visibility:hidden!important}"
-                   '[data-part="band"].detail,[data-part="band"].detail *{visibility:visible!important}',
-    "detail": "#background,#glow" + HIDE + "#subject{visibility:hidden!important}"
+    "detail": "#background,#rim,#glow" + HIDE + "#subject{visibility:hidden!important}"
               ".detail,.detail *{visibility:visible!important}",
 }
 OPAQUE = {"full", "bg"}
@@ -1012,6 +1092,66 @@ def hex_rgb(h):
     return np.array([int(h[i:i + 2], 16) for i in (1, 3, 5)], np.float64)
 
 
+XYZ = np.array([[0.4124564, 0.3575761, 0.1804375], [0.2126729, 0.7151522, 0.0721750],
+                [0.0193339, 0.1191920, 0.9503041]])
+WHITE = np.array([0.95047, 1.0, 1.08883])     # D65
+
+
+def rgb_lch(rgb):
+    """CIE LCh (D65) of sRGB pixels (any shape ending in 3) -> L, C, h in degrees."""
+    c = np.asarray(rgb, np.float64) / 255
+    c = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    t = (c @ XYZ.T) / WHITE
+    f = np.where(t > 216 / 24389, np.cbrt(t), (24389 / 27 * t + 16) / 116)
+    a, b = 500 * (f[..., 0] - f[..., 1]), 200 * (f[..., 1] - f[..., 2])
+    return 116 * f[..., 1] - 16, np.hypot(a, b), np.degrees(np.arctan2(b, a)) % 360
+
+
+def lch_rgb(L, C, h):
+    """sRGB 0..255 of one CIE LCh colour; out of gamut, the chroma is lowered until it fits."""
+    inv = np.linalg.inv(XYZ)
+
+    def linear(c):
+        fy = (L + 16) / 116
+        f = np.array([fy + c * math.cos(math.radians(h)) / 500, fy, fy - c * math.sin(math.radians(h)) / 200])
+        t = np.where(f ** 3 > 216 / 24389, f ** 3, (116 * f - 16) * 27 / 24389)
+        t[1] = fy ** 3 if L > 8 else L * 27 / 24389
+        return inv @ (t * WHITE)
+
+    def fits(c):
+        v = linear(c)
+        return bool(np.all((v >= -1e-4) & (v <= 1 + 1e-4)))
+
+    lo, hi = (float(C), float(C)) if fits(C) else (0.0, float(C))
+    while hi - lo > 0.01:
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if fits(mid) else (lo, mid)
+    v = np.clip(linear(lo), 0, 1)
+    return np.round(np.where(v <= 0.0031308, 12.92 * v, 1.055 * v ** (1 / 2.4) - 0.055) * 255)
+
+
+def seed_hue(im):
+    """The wallpaper's seed hue, approximated: hue histogram of its colourful pixels (C >= 12) weighted by
+    chroma, smoothed over 30°, the peak refined by the weighted mean of the hues within 15° of it."""
+    _, C, h = rgb_lch(np.asarray(im.convert("RGB").resize((128, 128), Image.BILINEAR)))
+    sel = C >= 12
+    if not sel.any():
+        return 265.0
+    C, h = C[sel], h[sel]
+    hist = np.bincount(h.astype(int) % 360, weights=C, minlength=360)
+    peak = int(np.convolve(np.concatenate([hist[-15:], hist, hist[:15]]), np.ones(31), "valid").argmax())
+    d = (h - peak + 180) % 360 - 180
+    near = np.abs(d) <= 15
+    return float((peak + (d[near] * C[near]).sum() / C[near].sum()) % 360)
+
+
+def themed_colors(kind):
+    """Android themed icon on the light or dark sample wallpaper: (background rgb, glyph rgb, seed hue)."""
+    hue = seed_hue(wallpaper(kind))
+    (bp, bt), (fp, ft) = THEMED_TONES[kind]
+    return lch_rgb(bt, TONAL_CHROMA[bp], hue), lch_rgb(ft, TONAL_CHROMA[fp], hue), hue
+
+
 # ---------------------------------------------------------------- measuring one icon
 
 def silhouette(union):
@@ -1111,8 +1251,10 @@ def gradient_check(key, label_, g, M, mask, span, name):
 
 def small_counts(renderer, small_svg):
     """Pieces of the small version at 40, 29 and 16 px, split by a lightness threshold between the graphite
-    background and the pieces (L* 13 and >= 50)."""
-    im = renderer.image(small_svg, 1024)
+    background and the pieces (L* 13 and >= 50). A store variant's rim is left out: it is not a piece."""
+    root = ET.fromstring(strip_xml_prolog(small_svg))
+    _remove(root, node(root, "rim"))
+    im = renderer.image(serialize(root), 1024)
     bg_mid = (hex_rgb(LOOKS["default"]["bg"][0]) + hex_rgb(LOOKS["default"]["bg"][1])) / 2
     thr = (float(lab_L(bg_mid)) + 60) / 2
     out = {}
@@ -1213,16 +1355,30 @@ def measure(renderer, text, root, name, ref):
         return ""
 
     parts, good = [], True
+    acs = info["accent_grad"]
+    acc_ends = tuple(acs["stops"][:1] + acs["stops"][-1:]) if acs else ()
+    acc_name = next((n_ for n_, v in PALETTE.items() if acc_ends == v), None)
+    # the base is the fixed graphite; only the App Store A/B variants written by --store-ab change it
+    variant = info["variant"]
+    bg_pair = {"lighter": LIGHTER_BG, "tint": TINT_BG.get(acc_name)}.get(variant) or LOOKS["default"]["bg"]
+    bg_label = "底" + (f"（A/B {STORE_NAME[variant]}）" if variant in STORE_NAME else "")
     bgs = info["bg_grad"]
     bg_vertical = bool(bgs) and bgs["tag"] == "linearGradient" and bgs["x1"] == bgs["x2"] and bgs["y2"] > bgs["y1"]
-    note = stop_note(bgs, LOOKS["default"]["bg"])
-    if bg_vertical and not note and url_id(info["bg_fill"]):
-        parts.append(f"底 {LOOKS['default']['bg'][0]}→{LOOKS['default']['bg'][1]}")
-    else:
-        parts.append("底 " + (note or str(info["bg_fill"]))
-                     + ("" if bg_vertical else " 要从上到下的竖直线性渐变")
-                     + f" 应为 {LOOKS['default']['bg'][0]}→{LOOKS['default']['bg'][1]}")
+    note = stop_note(bgs, bg_pair)
+    if variant == "tint" and acc_name not in TINT_BG:
+        parts.append(f"{bg_label} 灰和色板外的强调色没有类别色变体")
         good = False
+    elif bg_vertical and not note and url_id(info["bg_fill"]):
+        parts.append(f"{bg_label} {bg_pair[0]}→{bg_pair[1]}")
+    else:
+        parts.append(f"{bg_label} " + (note or str(info["bg_fill"]))
+                     + ("" if bg_vertical else " 要从上到下的竖直线性渐变")
+                     + f" 应为 {bg_pair[0]}→{bg_pair[1]}")
+        good = False
+    if variant == "rim":
+        note = stop_note(grad_info(grad(root, "rim-fill")), RIM)
+        parts.append(f"亮边 {RIM[0]}→{RIM[1]}" if not note else f"亮边 {note} 应为 {RIM[0]}→{RIM[1]}")
+        good = good and not note
     bds = info["body_grad"]
     note = stop_note(bds, LOOKS["default"]["body"])
     if not note and url_id(info["body_fill"]) == BODY_GRAD:
@@ -1236,9 +1392,6 @@ def measure(renderer, text, root, name, ref):
     if info["piece_fills"]:
         parts.append("单块自带 fill 或透明度：" + ", ".join(info["piece_fills"][:3]))
         good = False
-    acs = info["accent_grad"]
-    acc_ends = tuple(acs["stops"][:1] + acs["stops"][-1:]) if acs else ()
-    acc_name = next((n_ for n_, v in PALETTE.items() if acc_ends == v), None)
     note = stop_note(acs, PALETTE[acc_name]) if acc_name else ("→".join(acc_ends) or "缺渐变") + " 不在色板"
     if not note and url_id(info["accent_fill"]) == "accent":
         parts.append(f"强调色 {acc_name} {acc_ends[0]}→{acc_ends[1]}")
@@ -1249,8 +1402,6 @@ def measure(renderer, text, root, name, ref):
     C.append(check("palette", "颜色", " · ".join(parts), "B4 默认外观 + 六色表", ok(good)))
 
     names = ["body", "accent", "core", "full", "bg", "glow"]
-    if info["bands"]:
-        names += ["band", "band-detail"]
     if info["details"]:
         names += ["detail"]
     L = renderer.layers(text, names)
@@ -1273,28 +1424,33 @@ def measure(renderer, text, root, name, ref):
     centres = [centre_of(p) for p in pieces]
     none = np.zeros_like(union)
     det_mask = L["detail"][..., 3] >= 128 if "detail" in L else none
-    band_det = L["band-detail"][..., 3] >= 128 if "band-detail" in L else none
     is_detail = [bool((p & det_mask).sum() > 0.5 * p.sum()) for p in pieces]
     raw.update(pieces=len(pieces), pieces_core=len(core), accent_pieces=len(acc_pieces))
 
-    # pieces; class="detail" only on fragments under 2 % of the hull or on the shortest band
+    # pieces: 2 to 4 (3 or 4 as a rule), a fifth only with a reason in data-pieces-why;
+    # class="detail" only on fragments under 2 % of the hull
     lo_p, hi_p = PIECES
     tiny = [p for p in core if 100.0 * p.sum() / hull < DETAIL_SHARE]
     val = f"{len(core)} 块"
     if len(pieces) > len(core):
         val += f"（另有 {len(pieces) - len(core)} 块 detail）"
-    good = lo_p <= len(core) <= hi_p
+    why = info["pieces_why"]
+    good = lo_p <= len(core) <= hi_p or (len(core) == PIECES_MAX and bool(why))
+    if len(core) == PIECES_MAX:
+        val += (f" · 第 5 块的理由：{why}" if why else
+                " · 5 块要在 #subject 上写 data-pieces-why 说明为什么非要第 5 块，否则删到 4 块（29 px 下会糊）")
     if tiny:
         val += f" · {100.0 * tiny[0].sum() / hull:.1f} % 凸包的碎块 {at(centre_of(tiny[0]))} 要标 class=\"detail\""
         good = False
     for c in components(det_mask):
         share = 100.0 * c.sum() / hull
-        if share >= DETAIL_SHARE and (c & band_det).sum() <= 0.5 * c.sum():
+        if share >= DETAIL_SHARE:
             val += (f" · detail 块占 {share:.1f} % 凸包 {at(centre_of(c))}：detail 只能给 < {DETAIL_SHARE:.0f} % 凸包"
-                    "的碎块或最短的那条斜纹带（64 px 及以下它会消失）")
+                    "的碎块（64 px 及以下它会消失）")
             good = False
             break
-    C.append(check("pieces", "块数", val, f"{lo_p}–{hi_p}（不算 detail）", ok(good)))
+    C.append(check("pieces", "块数", val, f"{lo_p}–{hi_p}，一般 3–4；5 块要写 data-pieces-why（不算 detail）",
+                   ok(good)))
     C.append(check("accent_count", "强调色块数", f"{len(acc_pieces)} 块", "1（只有一处）", ok(len(acc_pieces) == 1)))
 
     # cut width between neighbouring pieces (the narrowest point of each pair)
@@ -1438,12 +1594,24 @@ def measure(renderer, text, root, name, ref):
     C.append(check("overlap", "不重叠", f"交集 {inter} px²（强调色的 {100 * ratio:.2f} %）",
                    f"≤ {100 * OVERLAP_MAX:.1f} %", ok(ratio <= OVERLAP_MAX)))
 
-    # accent share
+    # accent share; a pair's accent is the smaller (or equal) object: at most the hull of the largest body piece
     share = 100.0 * acc.sum() / hull
-    lo, hi = ACCENT_SHARE_BAND if info["accent_band"] else ACCENT_SHARE
+    kind = info["accent_kind"]
+    lo, hi = {"band": ACCENT_SHARE_BAND, "pair": ACCENT_SHARE_PAIR}.get(kind, ACCENT_SHARE)
     raw["accent_share"] = share
-    C.append(check("accent", "强调色占比", f"{share:.1f} % 强调色 / 凸包" + ("（斜纹带）" if info["accent_band"] else ""),
-                   f"{lo:.0f}–{hi:.0f} %", ok(lo <= round(share, 1) <= hi)))
+    val = f"{share:.1f} % 强调色 / 凸包" + {"band": "（AI 斜带）", "pair": "（一对物体）"}.get(kind, "")
+    good = lo <= round(share, 1) <= hi
+    if kind == "pair":
+        cap = max((hull_area(p) for p in components(body)), default=0.0)
+        ratio = float(acc.sum()) / cap if cap else math.inf
+        raw["pair_ratio"] = ratio
+        val += f" · 强调色 / 最大一块主体的凸包 {ratio:.2f}"
+        if ratio > 1.0:
+            val += "：pair 的强调色要是一对里较小（或一样大）的那个"
+            good = False
+    elif hi < share <= ACCENT_SHARE_PAIR[1] and not kind:
+        val += '（一对同类物体里较小的那个当强调色时写 data-accent="pair"，上限 33 %）'
+    C.append(check("accent", "强调色占比", val, f"{lo:.0f}–{hi:.0f} %", ok(good)))
 
     # size
     x0, y0, x1, y1 = bbox(union)
@@ -1581,9 +1749,12 @@ def measure(renderer, text, root, name, ref):
     else:
         C.append(check("cut_clarity", "切口清晰度", "没有 48 宽的切口可量", f"≤ {CUT_DL_MAX:.0f}", "INFO"))
 
-    # bands
-    if info["bands"]:
-        C.append(band_check(L, info, (cx, cy), raw))
+    # category mark (tools cut, image sun, video play hole, AI band) and the reserved green
+    C.append(category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, raw))
+    # the tile's edge in the App Store (dark and light), with the A/B variants for comparison
+    C.append(store_edge_check(full, acc_name, raw))
+    # Android themed icon: the base and the accent are gone, the shape has to carry it
+    C.append(themed_check(raw))
 
     # small sizes: same pieces at 40 px as at 1024 (without details)
     n_small = small_counts(renderer, make_small(text, k))
@@ -1622,58 +1793,182 @@ def measure(renderer, text, root, name, ref):
     return {"name": name, "checks": C, "raw": raw, "info": info}
 
 
-def band_check(L, info, centre, raw):
-    """2-3 bands at 45 deg, 72 wide, shorter further out; the shortest one marked class="detail"."""
-    target = (f"{BAND_COUNT[0]}–{BAND_COUNT[1]} 条，{BAND_ANGLE:.0f}° ± {BAND_ANGLE_TOL}（\\ 向），"
-              f"宽 {BAND_WIDTH:.0f} ± {BAND_WIDTH_TOL:.0f}，越外越短")
-    cov = L["band"][..., 3].astype(np.float32) / 255
-    det = L["band-detail"][..., 3] >= 128
-    bands_ = components(cov >= 0.5)
-    probs = []
-    if len(bands_) != len(info["bands"]):
-        probs.append(f"{len(info['bands'])} 个 data-part=band 只画出 {len(bands_)} 条（带之间要留切口）")
-    rows = []
-    for m in bands_:
-        ys, xs = np.nonzero(m)
-        P = np.stack([xs + 0.5, ys + 0.5], 1)
-        c = P.mean(0)
-        evals, evecs = np.linalg.eigh(np.cov((P - c).T))
-        major = evecs[:, 1]
-        a = math.degrees(math.atan2(major[1], major[0])) % 180
-        nrm = np.array([-major[1], major[0]])
-        e = edge_points(np.where(dilate(m, 2), cov, 0))
-        width = float((e @ nrm).max() - (e @ nrm).min())
-        length = float((e @ major).max() - (e @ major).min())
-        dist = abs(float((c - np.array(centre)) @ nrm))
-        rows.append({"angle": a, "width": width, "length": length, "dist": dist, "at": c,
-                     "detail": bool((m & det).sum() > 0.5 * m.sum())})
-    rows.sort(key=lambda r: r["dist"])
-    raw["bands"] = [{k_: (round(v, 1) if isinstance(v, float) else v) for k_, v in r.items() if k_ != "at"}
-                    for r in rows]
-    if not BAND_COUNT[0] <= len(rows) <= BAND_COUNT[1]:
-        probs.append(f"{len(rows)} 条")
-    for r in rows:
-        if abs(r["angle"] - BAND_ANGLE) > BAND_ANGLE_TOL:
-            probs.append(f"角度 {r['angle']:.1f}° {at(r['at'])}")
-        if abs(r["width"] - BAND_WIDTH) > BAND_WIDTH_TOL:
-            probs.append(f"宽 {r['width']:.1f} {at(r['at'])}")
-    if any(rows[i + 1]["length"] >= rows[i]["length"] for i in range(len(rows) - 1)):
-        probs.append("长度要越外越短")
-    if rows:
-        shortest = min(rows, key=lambda r: r["length"])
-        if not shortest["detail"]:
-            probs.append(f"最短那条 {at(shortest['at'])} 要标 class=\"detail\"")
-        extra = [r for r in rows if r["detail"] and r is not shortest]
-        if extra:
-            probs.append(f"detail 只给最短那条，{at(extra[0]['at'])} 这条不是")
-        # the Linear logo: a circle whose lower left is cut into bands (B9)
-        P = np.array([r["at"] for r in rows]).mean(0) - np.array(centre)
-        side = math.degrees(math.atan2(P[1], P[0]))
-        if info["shape"] == "circle" and math.hypot(*P) > 40 and abs((side - LINEAR_SIDE + 180) % 360 - 180) <= 30:
-            probs.append("圆 + 左下 45° 斜纹就是 Linear 的标：换位置或换物件")
-    val = (f"{len(rows)} 条 · 角度 " + "/".join(f"{r['angle']:.1f}" for r in rows) + " · 宽 "
-           + "/".join(f"{r['width']:.0f}" for r in rows) + " · 长 " + "/".join(f"{r['length']:.0f}" for r in rows))
-    return check("bands", "斜纹", val + ("；" + "；".join(probs) if probs else ""), target, ok(not probs))
+def tools_cut(union):
+    """The tools mark: the horizontal run of empty rows nearest 48 high that splits the silhouette into an upper
+    and a lower part. -> (height, top, bottom, centre as a share of the height, facing share) or None."""
+    x0, y0, x1, y1 = bbox(union)
+    empty = (~union[y0:y1, x0:x1].any(1)).astype(np.int8)
+    d = np.diff(np.concatenate([[0], empty, [0]]))
+    best = None
+    for s, e in zip(np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]):
+        ya, yb = y0 + int(s), y0 + int(e)
+        facing = float((union[ya - 1, x0:x1] & union[yb, x0:x1]).sum()) / (x1 - x0)
+        cand = (yb - ya, ya, yb, ((ya + yb) / 2 - y0) / (y1 - y0), facing)
+        if best is None or abs(cand[0] - CUT) < abs(best[0] - CUT):
+            best = cand
+    return best
+
+
+def play_hole(pieces, is_detail, hull):
+    """The video mark: the tallest hole in a piece that is a triangle pointing right.
+    -> (height, centre, width) or None."""
+    found = None
+    for p, det in zip(pieces, is_detail):
+        if det:
+            continue
+        for c in components(fill_holes(p) & ~p, max(MIN_PIECE, int(0.005 * hull))):
+            bx0, by0, bx1, by1 = bbox(c)
+            bw, bh = bx1 - bx0, by1 - by0
+            area = float(c.sum())
+            hx, hy = centre_of(c)
+            convex = area / max(hull_area(c), 1.0) >= 0.95
+            triangle = 0.42 <= area / (bw * bh) <= 0.75 and 0.7 <= bw / bh <= 1.0     # rounded corners fill out
+            right = (hx - bx0) / bw <= 0.42 and abs(hy - (by0 + by1) / 2) <= 0.06 * bh
+            if convex and triangle and right and (found is None or bh > found[0]):
+                found = (bh, (hx, hy), bw)
+    return found
+
+
+def min_width(points):
+    """Rotating calipers on edge points: (narrowest extent, its direction in degrees, extent across it)."""
+    t = np.radians(np.arange(0, 180, 0.25))
+    proj = points @ np.stack([np.cos(t), np.sin(t)])
+    ext = proj.max(0) - proj.min(0)
+    i = int(ext.argmin())
+    j = (i + len(t) // 2) % len(t)
+    return float(ext[i]), float(np.degrees(t[i])), float(ext[j])
+
+
+CATEGORY_TARGET = {"tools": "一道贯穿剪影的水平切口（48，中线在高度 35–75 %）",
+                   "image": "左上角一个正圆太阳（强调色）", "video": "一个镂空的播放三角（尖朝右）",
+                   "ai": "右下角一条「/」向 45° 斜带（宽 96，强调色）", "health": "强调色绿", "finance": "强调色绿"}
+
+
+def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, raw):
+    """data-category: the accent colour of the category and its mark; green only for health and finance;
+    the band only for AI."""
+    cat, kind = info["category"], info["accent_kind"]
+    x0, y0, x1, y1 = bbox(union)
+    W, H = x1 - x0, y1 - y0
+    if cat not in CATEGORIES:
+        probs = []
+        if acc_name == RESERVED:
+            probs.append('绿只给健康和财务：写 data-category="health" 或 "finance"，别的 app 换色')
+        if kind == "band":
+            probs.append('斜带只给 AI 类（data-category="ai"）')
+        return check("category", "类别记号", "没写 data-category：不属于四类" + ("；" + "；".join(probs) if probs else ""),
+                     "工具 / 图片 / 视频 / AI 各有记号", "FAIL" if probs else "INFO")
+    name, colour = CATEGORIES[cat]
+    raw["category"] = cat
+    notes, probs = [], []
+    if acc_name != colour:
+        probs.append(f"{name}类的强调色是{colour}，这里是{acc_name or '色板外的颜色'}")
+    if kind == "band" and cat != "ai":
+        probs.append("斜带只给 AI 类")
+    if cat == "tools":
+        cut = tools_cut(union)
+        if cut is None:
+            probs.append("没有一道水平切口把整个剪影切成上下两部分")
+        else:
+            gap, ya, yb, frac, facing = cut
+            raw["tools_cut"] = {"y": [ya, yb], "at": round(frac, 3), "facing": round(facing, 3)}
+            notes.append(f"水平切口 y {ya}–{yb}（{gap} px，中线在高度 {frac:.0%}，两边直边对齐 {facing:.0%}）")
+            if abs(gap - CUT) > 3:
+                probs.append("没有一道 48 的水平切口贯穿整个剪影" if gap > ADJACENT else f"水平切口 {gap} px，要 48")
+            if not TOOLS_CUT_AT[0] <= frac <= TOOLS_CUT_AT[1]:
+                probs.append(f"水平切口的中线要在剪影高度的 {TOOLS_CUT_AT[0]:.0%}–{TOOLS_CUT_AT[1]:.0%}")
+            if facing < TOOLS_FACING:
+                probs.append(f"切口上下两边要是水平直边（对齐的长度不到宽度的 {TOOLS_FACING:.0%}）")
+    elif cat == "image":
+        cx, cy = centre_of(acc)
+        e = edge_points(acc_c)
+        R = float(np.sqrt(((e - [cx, cy]) ** 2).sum(1)).max()) if len(e) else 0.0
+        round_ = float(acc.sum()) / (math.pi * R * R) if R else 0.0
+        fx, fy = (cx - x0) / W, (cy - y0) / H
+        raw["sun"] = {"r": round(R, 1), "roundness": round(round_, 3), "at": [round(fx, 3), round(fy, 3)]}
+        notes.append(f"太阳 r {R:.0f} · 圆度 {round_:.2f} · 圆心在外框 ({fx:.0%}, {fy:.0%})")
+        if round_ < SUN_ROUND:
+            probs.append("强调色要是一个完整的正圆（太阳），不切、不缺")
+        if R < SUN_R_MIN:
+            probs.append(f"太阳半径要 ≥ {SUN_R_MIN:.0f}")
+        if fx > SUN_CORNER or fy > SUN_CORNER:
+            probs.append(f"太阳要在左上角（圆心在外框左上 {SUN_CORNER:.0%} × {SUN_CORNER:.0%} 以内）")
+    elif cat == "video":
+        hole = play_hole(pieces, is_detail, hull)
+        if hole is None:
+            probs.append("没找到镂空的播放三角：在一块实形里挖一个尖朝右的三角（shapes.py play，再 minus）")
+        else:
+            raw["play_hole"] = {"height": hole[0], "at": [round(v, 1) for v in hole[1]]}
+            notes.append(f"镂空三角 高 {hole[0]} px {at(hole[1])}")
+            if hole[0] < PLAY_H_MIN:
+                probs.append(f"三角实测要高 ≥ {PLAY_H_MIN}（shapes.py play 的 H ≥ 200，--r 32）")
+    elif cat == "ai":
+        if kind != "band":
+            probs.append('AI 斜带就是强调色：#accent-shape 写 data-accent="band"')
+        else:
+            width, normal, length = min_width(edge_points(np.where(dilate(acc, 2), acc_c, 0)))
+            angle = (normal + 90) % 180
+            cx, cy = centre_of(acc)
+            fx, fy = (cx - x0) / W, (cy - y0) / H
+            raw["ai_band"] = {"angle": round(angle, 2), "width": round(width, 1), "length": round(length, 1),
+                              "at": [round(fx, 3), round(fy, 3)]}
+            notes.append(f"斜带 {angle:.1f}° · 宽 {width:.0f} · 长 {length:.0f} · 中心在外框 ({fx:.0%}, {fy:.0%})")
+            if abs(angle - BAND_ANGLE) > BAND_ANGLE_TOL:
+                probs.append("斜带要「/」向 45°（左下到右上，shapes.py aiband）")
+            if abs(width - BAND_WIDTH) > BAND_WIDTH_TOL:
+                probs.append(f"带宽要 {BAND_WIDTH:.0f}")
+            if (fx + fy) / 2 < AI_CORNER[0] or min(fx, fy) < AI_CORNER[1]:
+                probs.append("斜带要在右下角")
+            if info["shape"] == "circle":
+                probs.append("圆 + 斜带像 Linear 的标：AI 斜带不放在圆形物件上")
+    else:
+        notes.append("没有形状记号")
+    val = f"{name}类 · " + " · ".join(notes) + ("；" + "；".join(probs) if probs else "")
+    return check("category", "类别记号", val, CATEGORY_TARGET[cat], ok(not probs))
+
+
+def edge_ring(width=RIM_W):
+    """The outermost `width` px inside the iOS mask preview (superellipse n 4)."""
+    outer = np.asarray(mask_alpha("ios")) >= 128
+    inner = np.zeros_like(outer)
+    inner[width:1024 - width, width:1024 - width] = np.asarray(_superellipse(4.0, 1024 - 2 * width)) >= 128
+    return outer & ~inner
+
+
+def store_edge_check(full, acc_name, raw):
+    """Contrast of the tile's outer edge against the dark (#000) and the light (#FFF) App Store, for this
+    file and for the A/B variants --store-ab writes."""
+    ring = edge_ring()
+
+    def against(rgb):
+        m = np.asarray(rgb, np.float64)[ring].mean(0)
+        return contrast(m, hex_rgb(STORE_BG["dark"])), contrast(m, hex_rgb(STORE_BG["light"]))
+
+    own = against(full)
+    ab = {"lighter": against(vgrad(*LIGHTER_BG)), "rim": against(vgrad(*RIM))}
+    if acc_name in TINT_BG:
+        ab["tint"] = against(vgrad(*TINT_BG[acc_name]))
+    raw["store_edge"] = {"dark": round(own[0], 2), "light": round(own[1], 2),
+                         "ab_dark": {k: round(v[0], 2) for k, v in ab.items()}}
+    val = (f"对黑 {own[0]:.1f}:1 · 对白 {own[1]:.1f}:1 · A/B 变体对黑："
+           + " · ".join(f"{STORE_NAME[k]} {v[0]:.1f}" for k, v in ab.items()))
+    return check("store_edge", "商店边缘", val, "参考：深色商店里边缘要看得出（--store-ab 出变体）", "INFO")
+
+
+def themed_check(raw):
+    """Android themed icon, approximated: contrast of the glyph and of the accent (alpha .5) on the themed
+    background for the light and the dark sample wallpaper."""
+    parts, out = [], {}
+    for kind, label_ in (("light", "浅壁纸"), ("dark", "深壁纸")):
+        bg, fg, hue = themed_colors(kind)
+        a = float(MONO_ACCENT_OPACITY)
+        mix = bg * (1 - a) + fg * a
+        cg, ca = contrast(fg, bg), contrast(mix, bg)
+        out[kind] = {"seed_hue": round(hue, 1), "glyph": round(cg, 2), "accent": round(ca, 2)}
+        parts.append(f"{label_}（种子色相 {hue:.0f}°）图形 {cg:.1f}:1 · 强调色 {ca:.1f}:1")
+    raw["themed"] = out
+    return check("themed", "安卓主题图标", " · ".join(parts),
+                 "参考：底和强调色都没了，只剩形状；上架前在真机启动器上看", "INFO")
 
 
 # ---------------------------------------------------------------- report
@@ -1808,10 +2103,9 @@ def clear_tile(mono, kind):
 
 
 def themed(mono_scaled, kind):
-    """Android themed icon, approximated with fixed tones: light = tone 90 background, tone 10 glyph;
-    dark = tone 20 background, tone 90 glyph (the monochrome layer's alpha carries the accent at .5)."""
-    bgc, fgc = ("#DCE2F9", "#14213D") if kind == "light" else ("#262B36", "#D6E0F7")
-    bg, fg = hex_rgb(bgc), hex_rgb(fgc)
+    """Android themed icon, approximated: the monochrome layer recoloured with Material You tones from the
+    wallpaper's seed hue (THEMED_TONES; the layer's alpha carries the accent at .5)."""
+    bg, fg, _ = themed_colors(kind)
     a = np.asarray(mono_scaled)[..., 3:4].astype(np.float32) / 255
     return Image.fromarray(np.clip(bg * (1 - a) + fg * a, 0, 255).astype(np.uint8), "RGB")
 
@@ -1874,7 +2168,7 @@ SHEET = """<!doctype html><html><head><meta charset="utf-8"><style>
   <div class="strip">{sizes}</div>
   <div class="h">外观（Tinted、Clear 由 mono 近似）</div>
   <div class="row">{looks}</div>
-  <div class="h">Android（前景叠背景渐变取 72 dp 可见区；主题图标由 monochrome 近似）</div>
+  <div class="h">Android（前景叠背景渐变取 72 dp 可见区；主题图标：monochrome 层按壁纸取 Material You 色调，近似，上架前在真机启动器上看）</div>
   <div class="row">{android}</div>
 </div></body></html>"""
 
@@ -1899,7 +2193,9 @@ def build_sheet(renderer, result, ims, tide_im, path):
     """Review sheet at 2x: tiles are made at real pixel size and shown at half that in CSS px."""
     raw = result["raw"]
     fails = [c["key"] for c in result["checks"] if c["status"] == "FAIL"]
-    stat_lines = [f'剪影 {raw.get("silhouette_ratio", 0):.2f}× Tide · 凸包 {raw.get("hull_ratio", 0):.2f}×',
+    cat = raw.get("category")
+    stat_lines = [(f"{CATEGORIES[cat][0]}类 · {CATEGORIES[cat][1]}" if cat in CATEGORIES else "不属于四类")
+                  + f' · 剪影 {raw.get("silhouette_ratio", 0):.2f}× Tide · 凸包 {raw.get("hull_ratio", 0):.2f}×',
                   f'强调色 {raw.get("accent_share", 0):.1f} % · 长边 {raw.get("long_side", 0)} px · '
                   f'{raw.get("pieces_core", 0)} 块',
                   "切口 " + ("–".join(f"{v:.1f}" for v in (min(raw["cuts"]), max(raw["cuts"])))
@@ -1921,9 +2217,9 @@ def build_sheet(renderer, result, ims, tide_im, path):
     android = [box(cell(tile(ims["android"], T, "circle"), T / 2, "圆形遮罩"), "lite"),
                box(cell(tile(ims["android"], T, "squircle"), T / 2, "方圆遮罩"), "lite"),
                box(cell(tile(adaptive_visible(themed(ims["mono_scaled"], "light")), T, "circle"), T / 2,
-                        "主题图标 · 浅"), "mid"),
+                        "主题图标 · 浅壁纸"), "wall-light", wallpaper("light")),
                box(cell(tile(adaptive_visible(themed(ims["mono_scaled"], "dark")), T, "circle"), T / 2,
-                        "主题图标 · 深"), "dark"),
+                        "主题图标 · 深壁纸"), "wall-dark", wallpaper("dark")),
                box(cell(tile(ims["android"], 96, "circle"), 48, "圆形 48"), "lite"),
                box(cell(over(Image.new("RGB", (1024, 1024), (60, 64, 72)), ims["mono"]).resize((T, T), Image.LANCZOS),
                         T / 2, "mono 层"), "lite")]
@@ -2102,7 +2398,13 @@ IC_README = """Icon Composer 分层（{title}）
   组 2（强调色） Specular Automatic；Shadow Chromatic（代替平面版里的辉光，以实际版本的选项为准）
   Mono           主体 White；强调色 50 % 灰
 
-层文件里没有辉光、遮罩、背景、圆角、阴影和半透明。
+层文件里只有主体和强调色：没有辉光、遮罩、背景、圆角、阴影和半透明。底只在 Background 里设，
+深色外观换 Background 的渐变，层不变。
+
+不用 Icon Composer、走 asset catalog（AppIcon，单尺寸 1024）时用上一级目录的三张
+  Any            ios-1024.png          不透明，带石墨底
+  Dark           ios-1024-dark.png     透明底，系统自己垫深色底；主体用深色外观的渐变，保留辉光
+  Tinted         ios-1024-tinted.png   灰度，不透明黑底：主体白，强调色 50 % 灰，系统按用户选的色调上色
 """
 
 IC_LAUNCHER = """<?xml version="1.0" encoding="utf-8"?>
@@ -2192,6 +2494,13 @@ def export(renderer, text, root, looks, ims, result, out):
         written.append(name)
 
     save(ims["master"], "ios-1024.png")
+    # asset catalog Dark: transparent background (Apple: the system provides the dark background)
+    dark = renderer.image(without_background(looks["dark"]), 1024, transparent=True)
+    if np.asarray(dark)[..., 3][[0, 0, -1, -1], [0, -1, 0, -1]].any():
+        print("WARNING ios-1024-dark.png 的角上不透明：深色外观要透明底", file=sys.stderr)
+    save(dark, "ios-1024-dark.png")
+    # asset catalog Tinted: grayscale, the mono layer over black
+    save(over(Image.new("RGB", (1024, 1024)), ims["mono"]).convert("L"), "ios-1024-tinted.png")
     save(renderer.image(without_background(text), 1024, transparent=True), "icon-1024-transparent.png")
     play = renderer.image(text, 512).convert("RGBA")          # 32-bit, fully opaque
     play.save(out / "play-512.png", optimize=True)
@@ -2240,6 +2549,91 @@ def export(renderer, text, root, looks, ims, result, out):
     return written
 
 
+# ---------------------------------------------------------------- App Store A/B variants
+
+STORE_SHEET = """<!doctype html><html><head><meta charset="utf-8"><style>
+  * {{ box-sizing: border-box; margin: 0; }}
+  body {{ width: 1240px; font: 500 14px/1.35 -apple-system, "SF Pro Text", Inter, "PingFang SC", "Noto Sans CJK SC",
+         "WenQuanYi Zen Hei", "Helvetica Neue", sans-serif; background: #EEF0F2; color: #1B1C1D; }}
+  .sheet {{ width: 1240px; padding: 36px 44px 40px; background: linear-gradient(170deg, #F6F7F9, #E4E6EA);
+           display: flex; flex-direction: column; gap: 14px; }}
+  h1 {{ font-size: 22px; font-weight: 600; letter-spacing: -.01em; }}
+  .label {{ font-size: 13px; color: #646667; margin-bottom: 8px; }}
+  .h {{ font-size: 12px; font-weight: 600; color: #48494B; margin-top: 8px; }}
+  .row {{ display: grid; grid-template-columns: repeat({n}, 1fr); gap: 12px; }}
+  .box {{ height: 210px; border-radius: 14px; display: flex; flex-direction: column; align-items: center;
+          justify-content: center; gap: 12px; }}
+  .store-dark {{ background: #000000; color: #A0A1A3; }}
+  .store-light {{ background: #FFFFFF; color: #48494B; }}
+  .pair {{ display: flex; align-items: flex-end; gap: 18px; }}
+  .cap {{ font-size: 11px; opacity: .85; text-align: center; white-space: nowrap; }}
+  img {{ display: block; }}
+</style></head><body><div class="sheet">
+  <h1>{name} · 商店图标 A/B</h1>
+  <div class="label">只换底，图形和强调色不动；深色、Tinted 外观沿用主图标。边缘对比度 = iOS 遮罩内最外 16 px 的平均色对商店底</div>
+  <div class="h">深色 App Store（#000）</div>
+  <div class="row">{dark}</div>
+  <div class="h">浅色 App Store（#FFF）</div>
+  <div class="row">{light}</div>
+</div></body></html>"""
+
+STORE_README = """商店图标 A/B（{name}）
+
+文件
+{files}
+  {sheet}   对比图：默认和变体放在深色（#000）和浅色（#FFF）商店底上，标了边缘对比度
+
+怎么用
+  只在 App Store Connect 的产品页优化（Product Page Optimization）里做对照，主图标不改。
+  测试用的图标要作为备用图标（alternate app icon）打进当前上架版本的二进制里；从测试页下载的用户，
+  主屏上看到的也是它。
+  变体和主图标要一眼看出是同一个 app（审核指南 2.3.8）：只换底，图形、强调色和位置都不动。
+  深色和 Tinted 外观沿用主图标（export/ios-1024-dark.png、ios-1024-tinted.png），变体只换默认外观。
+  细亮边只出平面 PNG，跟着 iOS 遮罩走：不进 Icon Composer（玻璃自带边缘高光），也不拿去做 Android、网页图标。
+  一次只测一个变化，样本够了再定。结果只决定这个 app 的商店图标，不改石墨风格的底色。
+"""
+
+STORE_FILE = {"lighter": "浅一档：底 {0} → {1}（亮一档，主体和强调色不变）",
+              "rim": "细亮边：默认底，iOS 遮罩内沿一圈 16 px 亮边 {0} → {1}",
+              "tint": "类别色：底朝强调色的色相偏一点（色度 6）{0} → {1}"}
+
+
+def store_ab(renderer, text, result, ims, out):
+    """App Store A/B variants of the default look (style.md, 商店图标的 A/B 变体): .svg + .png each, a comparison
+    sheet on the dark and the light store, README.txt."""
+    out.mkdir(parents=True, exist_ok=True)
+    name, acc_name = result["name"], result["raw"].get("accent_colour")
+    kinds = [k for k in STORE_AB if k != "tint" or acc_name in TINT_BG]
+    pics, written, lines = {"default": ims["master"]}, [], []
+    for kind in kinds:
+        svg = make_store_variant(text, kind, acc_name)
+        (out / f"{name}-{kind}.svg").write_text(svg, encoding="utf-8")
+        pics[kind] = renderer.image(svg, 1024)
+        pics[kind].save(out / f"{name}-{kind}.png")
+        written += [f"{name}-{kind}.svg", f"{name}-{kind}.png"]
+        stops = {"lighter": LIGHTER_BG, "rim": RIM, "tint": TINT_BG.get(acc_name)}[kind]
+        lines.append((f"{name}-{kind}.svg/.png", STORE_FILE[kind].format(*stops)))
+    ring = edge_ring()
+    rows = {}
+    for store, bg in STORE_BG.items():
+        cells = []
+        for kind, im in pics.items():
+            ratio = contrast(np.asarray(im, np.float64)[ring].mean(0), hex_rgb(bg))
+            cap = ("默认" if kind == "default" else STORE_NAME[kind]) + f" · 边缘 {ratio:.1f}:1"
+            cells.append(f'<div class="box store-{store}"><div class="pair">'
+                         f'<img src="{png_uri(tile(im, 240))}" width="120" height="120">'
+                         f'<img src="{png_uri(tile(im, 120))}" width="60" height="60"></div>'
+                         f'<div class="cap">{cap}</div></div>')
+        rows[store] = "".join(cells)
+    renderer.sheet(STORE_SHEET.format(name=name, n=len(pics), dark=rows["dark"], light=rows["light"]),
+                   out / f"{name}-store-ab.png")
+    w = max(len(f) for f, _ in lines + [(f"{name}-store-ab.png", "")])
+    files = "\n".join(f"  {f.ljust(w)}   {t}" for f, t in lines)
+    (out / "README.txt").write_text(STORE_README.format(name=name, files=files, sheet=f"{name}-store-ab.png".ljust(w)),
+                                    encoding="utf-8")
+    return written + [f"{name}-store-ab.png", "README.txt"]
+
+
 # ---------------------------------------------------------------- main
 
 def jsonable(o):
@@ -2254,7 +2648,7 @@ def jsonable(o):
     raise TypeError(type(o))
 
 
-def render(svgs, out_dir, variants=False, export_files=False, json_out=False, tide=TIDE_SVG):
+def render(svgs, out_dir, variants=False, export_files=False, json_out=False, tide=TIDE_SVG, store=False):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     bad = 0
@@ -2294,6 +2688,13 @@ def render(svgs, out_dir, variants=False, export_files=False, json_out=False, ti
                 ex_dir = out_dir / "export" if len(svgs) == 1 else out_dir / "export" / name
                 files = export(renderer, text, root, looks, ims, result, ex_dir)
                 written.append(str(ex_dir.relative_to(out_dir)) + f"/ ({len(files)} 项)")
+            if store:
+                if result["info"]["variant"]:
+                    print("  这已经是商店变体，不再出 --store-ab")
+                else:
+                    sb_dir = out_dir / "store-ab" if len(svgs) == 1 else out_dir / "store-ab" / name
+                    files = store_ab(renderer, text, result, ims, sb_dir)
+                    written.append(str(sb_dir.relative_to(out_dir)) + f"/ ({len(files)} 项)")
             if json_out:
                 payload = {"name": name, "file": str(svg), "tide_reference": ref, "metrics": result["raw"],
                            "checks": result["checks"]}
@@ -2312,11 +2713,13 @@ def main():
     ap.add_argument("-o", "--out", type=Path, default=Path("renders"), metavar="DIR")
     ap.add_argument("--variants", action="store_true", help="also write the light, dark, mono and small looks")
     ap.add_argument("--export", action="store_true", help="also write the platform files to DIR/export/")
+    ap.add_argument("--store-ab", action="store_true",
+                    help="also write the App Store A/B variants (lighter base, rim, category tint) to DIR/store-ab/")
     ap.add_argument("--json", action="store_true", help="also write <name>-metrics.json")
     ap.add_argument("--tide", type=Path, default=TIDE_SVG, metavar="FILE",
                     help="Tide reference SVG (default examples/tide.svg)")
     args = ap.parse_args()
-    bad = render(args.svgs, args.out, args.variants, args.export, args.json, args.tide)
+    bad = render(args.svgs, args.out, args.variants, args.export, args.json, args.tide, args.store_ab)
     sys.exit(1 if bad else 0)
 
 

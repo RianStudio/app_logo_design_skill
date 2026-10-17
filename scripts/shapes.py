@@ -27,13 +27,23 @@ slanted edge makes ANGLE with the side, its tip is rounded by TIP_R and it meets
 arc of radius CONCAVE. --grow G offsets the whole outline outwards by G (corners R + G, tip TIP_R + G, concave
 arc CONCAVE - G): the knock-out for a G-wide cut around a front bubble (feed it to minus).
 
-    python3 scripts/shapes.py bands N D0 (--circle CX CY R | --rect X Y W H) --side (-45|135) [--width 72] [--gap 48]
-N parallel bands clipped to a circle or a rectangle, stacked from the clip's centre towards direction SIDE
-(-45 = upper right, 135 = lower left; both give bands running 45 deg, top left to bottom right). SIDE has no
-default: a circle with bands on its lower left is the Linear logo, which the style forbids. The first band's
-inner edge is D0 from the centre; each band is WIDTH wide, GAP apart. A band that reaches the circle becomes
-a small segment. Prints one <path data-part="band"> per band, inner first; the last (shortest) one gets
-class="detail" (it is dropped at 64 px and below).
+    python3 scripts/shapes.py poly "X1,Y1 X2,Y2 X3,Y3 ..." [--r 24 | --radii R1,R2,...] [--grow 0]
+polygon through the corner points (either winding), each corner rounded by its radius (0 = sharp; a concave
+corner gets a reverse arc of that radius). --grow G offsets the outline outwards by G (convex corners R + G,
+concave corners R - G, sharp once that reaches 0): the knock-out for a G-wide cut around it. Arrows,
+chevrons, chamfered cards and other straight-edged pieces.
+
+    python3 scripts/shapes.py play CX CY H [--r 32] [--grow 0]
+the video mark: an equilateral play triangle pointing right, its upright side H long, its centroid at
+(CX, CY), corners rounded by R (at least 30, so the measuring close keeps the hole's corners). Knock it out
+of a piece with minus (two loops: fill-rule="evenodd").
+
+    python3 scripts/shapes.py aiband "PATH" [--chamfer 48] [--width 96] [--gap 48]
+the AI mark: the outline's lower right corner taken off along a 45 deg line running "/" (bottom left to top
+right). The band is WIDTH wide, its outer edge CHAMFER inside the outline's farthest point towards the lower
+right; the rest of the outline stops GAP before the band. Prints the body path and the band path (the
+accent, data-accent="band"). The band's ends follow the outline, so keep CHAMFER large enough that both ends
+land on straight edges (a corner of radius R needs at least 0.3 R).
 
     python3 scripts/shapes.py cutline CX CY A R0 R1
 a <line> along direction A from radius R0 to radius R1 around (CX, CY), for the <g id="cuts"> group of a
@@ -46,9 +56,9 @@ bubble or rrect with --grow 48. Both may use M L H V A Z (absolute or relative, 
 edges from running along each other. Several loops in the result are printed with a fill-rule="evenodd" note.
 
 --k K (any command): the drawing's scale k (the #subject transform). Every number that is a house rule in
-final pixels is divided by k: --gap, --fillet, FILLET, --grow, --tip-r, --concave, and bands' --width and
---gap. Coordinates, radii and D0 stay source units. Example: k = 1.15, ring ... --gap 48 --k 1.15 writes a
-41.7 cut that renders 48 wide.
+final pixels is divided by k: --gap, --fillet, FILLET, --grow, --tip-r, --concave, poly's --r and --radii,
+play's --r, and aiband's --chamfer, --width and --gap. Coordinates, radii of circles and play's H stay
+source units. Example: k = 1.15, ring ... --gap 48 --k 1.15 writes a 41.7 cut that renders 48 wide.
 """
 import argparse
 import math
@@ -239,66 +249,95 @@ def bubble(x, y, w, h, r, tail, side="left", angle=55.0, tip_r=24.0, concave=56.
     return chain([(cx, cy, s + grow) for cx, cy, s in circles])
 
 
-def _strip_in_circle(c, R, n, t, d1, d2):
-    """Band between the chords at distances d1 < d2 (both inside the circle)."""
-    def pts(d):
-        hh = math.sqrt(R * R - d * d)
-        m = (c[0] + d * n[0], c[1] + d * n[1])
-        return (m[0] + hh * t[0], m[1] + hh * t[1]), (m[0] - hh * t[0], m[1] - hh * t[1])
-
-    (p1, q1), (p2, q2) = pts(d1), pts(d2)
-
-    def arc(p, q):
-        sweep = 1 if (ang(c, q) - ang(c, p)) % 360 < 180 else 0
-        return f"A {R:g} {R:g} 0 0 {sweep} {f(q)}"
-
-    return f"M {f(q1)} L {f(p1)} {arc(p1, p2)} L {f(q2)} {arc(q2, q1)} Z", 2 * math.sqrt(R * R - d2 * d2)
+def _turn(p, v, q):
+    """Cross product of the edges p -> v -> q: > 0 is a right turn on screen (y down), a convex corner of a
+    clockwise outline."""
+    return (v[0] - p[0]) * (q[1] - v[1]) - (v[1] - p[1]) * (q[0] - v[0])
 
 
-def _clip_polygon(poly, n, c, lo, hi):
-    """Sutherland-Hodgman: keep the part of poly with lo <= n . (p - c) <= hi."""
-    def clip(pts, keep):
-        out = []
-        for i in range(len(pts)):
-            p, q = pts[i], pts[(i + 1) % len(pts)]
-            vp, vq = keep(p), keep(q)
-            if vp >= 0:
-                out.append(p)
-            if (vp >= 0) != (vq >= 0):
-                s = vp / (vp - vq)
-                out.append((p[0] + s * (q[0] - p[0]), p[1] + s * (q[1] - p[1])))
-        return out
-    proj = lambda p: n[0] * (p[0] - c[0]) + n[1] * (p[1] - c[1])
-    return clip(clip(poly, lambda p: proj(p) - lo), lambda p: hi - proj(p))
+def poly(pts, radii, grow=0.0):
+    """Polygon with rounded corners (radius per corner, 0 = sharp), optionally offset outwards by grow."""
+    n = len(pts)
+    if n < 3:
+        raise ValueError("a polygon needs at least three corners")
+    if len(radii) != n:
+        raise ValueError(f"{n} corners but {len(radii)} radii")
+    area2 = sum(pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1] for i in range(n))
+    if area2 < 0:                             # anticlockwise on screen: walk it the other way
+        pts, radii = pts[::-1], radii[::-1]
+    circles, reach = [], []
+    for i in range(n):
+        p, v, q = pts[i - 1], pts[i], pts[(i + 1) % n]
+        u1 = (p[0] - v[0], p[1] - v[1])
+        u2 = (q[0] - v[0], q[1] - v[1])
+        l1, l2 = math.hypot(*u1), math.hypot(*u2)
+        turn = _turn(p, v, q)
+        if l1 < 1e-9 or l2 < 1e-9 or abs(turn) < 1e-9 * l1 * l2:
+            raise ValueError(f"corner {i + 1} repeats a point or lies on a straight line")
+        u1, u2 = (u1[0] / l1, u1[1] / l1), (u2[0] / l2, u2[1] / l2)
+        half = math.acos(max(-1.0, min(1.0, u1[0] * u2[0] + u1[1] * u2[1]))) / 2
+        b = (u1[0] + u2[0], u1[1] + u2[1])    # into the shape at a convex corner, out of it at a concave one
+        lb = math.hypot(*b)
+        b = (b[0] / lb, b[1] / lb)
+        r = radii[i]
+        reach.append(r / math.tan(half))      # where the arc meets each edge, measured from the corner
+        if turn > 0:                          # convex
+            d = r / math.sin(half)
+            circles.append((v[0] + b[0] * d, v[1] + b[1] * d, r + grow))
+        elif r - grow > 1e-9:                 # concave, still rounded after the offset
+            d = r / math.sin(half)
+            circles.append((v[0] + b[0] * d, v[1] + b[1] * d, -(r - grow)))
+        else:                                 # concave, sharp: where the two offset edges meet
+            d = grow / math.sin(half)
+            circles.append((v[0] + b[0] * d, v[1] + b[1] * d, 0.0))
+    for i in range(n):
+        j = (i + 1) % n
+        edge = math.hypot(pts[j][0] - pts[i][0], pts[j][1] - pts[i][1])
+        if reach[i] + reach[j] > edge + 1e-6:
+            raise ValueError(f"corners {i + 1} and {j + 1}: radii too large for the {edge:.0f} long edge between them")
+    return chain(circles)
 
 
-def bands(count, d0, width=72.0, gap=48.0, side=-45.0, circle=None, rect=None):
-    """count bands stacked towards `side`; returns [(path, length)], inner band first."""
-    n = unit(side)
+def play(cx, cy, h, r=32.0, grow=0.0):
+    """Equilateral play triangle pointing right: upright side h, centroid (cx, cy), corners rounded by r."""
+    alt = h * math.sqrt(3) / 2
+    xb = cx - alt / 3
+    return poly([(xb, cy - h / 2), (xb + alt, cy), (xb, cy + h / 2)], [r, r, r], grow)
+
+
+def _half_plane(n, dist, beyond):
+    """A big quadrilateral covering n . p >= dist (beyond) or n . p <= dist, for minus."""
+    far = 8000.0
     t = (-n[1], n[0])
-    out = []
-    for i in range(int(count)):
-        d1 = d0 + i * (width + gap)
-        d2 = d1 + width
-        if circle:
-            cx, cy, R = circle
-            if d1 >= R:
-                raise ValueError(f"band {i + 1} starts outside the circle (D0 or N too large)")
-            if d2 >= R:
-                if abs(d1) >= R:
-                    raise ValueError(f"band {i + 1} does not cross the circle")
-                out.append((segment(cx, cy, R, side, d1), 2 * math.sqrt(R * R - d1 * d1)))
-            else:
-                out.append(_strip_in_circle((cx, cy), R, n, t, d1, d2))
-        else:
-            x, y, w, h = rect
-            c = (x + w / 2, y + h / 2)
-            poly = _clip_polygon([(x, y), (x + w, y), (x + w, y + h), (x, y + h)], n, c, d1, d2)
-            if len(poly) < 3:
-                raise ValueError(f"band {i + 1} misses the rectangle")
-            along = [t[0] * p[0] + t[1] * p[1] for p in poly]
-            out.append(("M " + " L ".join(f(p) for p in poly) + " Z", max(along) - min(along)))
-    return out
+    s = 1 if beyond else -1
+    c = (n[0] * dist, n[1] * dist)
+    pts = [(c[0] + far * t[0], c[1] + far * t[1]), (c[0] - far * t[0], c[1] - far * t[1]),
+           (c[0] - far * t[0] + s * far * n[0], c[1] - far * t[1] + s * far * n[1]),
+           (c[0] + far * t[0] + s * far * n[0], c[1] + far * t[1] + s * far * n[1])]
+    return "M " + " L ".join(f"{x:.4f} {y:.4f}" for x, y in pts) + " Z"
+
+
+def aiband(path, chamfer=48.0, width=96.0, gap=48.0):
+    """The AI mark on an outline: (body path, body loops, band path, farthest reach, band's inner and outer
+    distance along the lower right diagonal)."""
+    n = (math.sqrt(0.5), math.sqrt(0.5))       # towards the lower right; the band runs "/" across it
+    reach = max(n[0] * p[0] + n[1] * p[1] for loop in parse_path(path) for p in _polyline_fine(loop))
+    outer = reach - chamfer
+    inner = outer - width
+    body, loops = minus(path, _half_plane(n, inner - gap, True))
+    band, band_loops = minus(path, _half_plane(n, outer, True))
+    band, band_loops = minus(band, _half_plane(n, inner, False))
+    if band_loops != 1:
+        raise ValueError("the band falls apart: move it (CHAMFER) or check the outline")
+    return body, loops, band, reach, inner, outer
+
+
+def _polyline_fine(loop):
+    pts = []
+    for s in loop:
+        n = 1 if s["arc"] is None else max(8, int(abs(s["arc"][3]) / math.radians(0.25)) + 1)
+        pts += [_point(s, k / n) for k in range(n + 1)]
+    return pts
 
 
 def cutline(cx, cy, a, r0, r1):
@@ -622,8 +661,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     kp = argparse.ArgumentParser(add_help=False)
     kp.add_argument("--k", type=float, default=1.0,
-                    help="the #subject scale: rule numbers in final px (gap, fillet, grow, tip-r, concave, band "
-                         "width and gap) are divided by it")
+                    help="the #subject scale: rule numbers in final px (gap, fillet, grow, tip-r, concave, corner "
+                         "radii, chamfer, band width) are divided by it")
     sub = ap.add_subparsers(dest="cmd")
     p = sub.add_parser("sector", parents=[kp])
     for a in ("cx", "cy", "r", "a0", "a1", "fillet"):
@@ -649,15 +688,21 @@ def main():
     p.add_argument("--tip-r", type=float, default=24.0)
     p.add_argument("--concave", type=float, default=56.0)
     p.add_argument("--grow", type=float, default=0.0)
-    p = sub.add_parser("bands", parents=[kp])
-    p.add_argument("n", type=int)
-    p.add_argument("d0", type=float)
-    g = p.add_mutually_exclusive_group(required=True)
-    g.add_argument("--circle", type=float, nargs=3, metavar=("CX", "CY", "R"))
-    g.add_argument("--rect", type=float, nargs=4, metavar=("X", "Y", "W", "H"))
-    p.add_argument("--side", type=float, required=True, choices=[-45.0, 135.0],
-                   help="-45 upper right or 135 lower left (no default: circle + lower left bands = Linear logo)")
-    p.add_argument("--width", type=float, default=72.0)
+    p = sub.add_parser("poly", parents=[kp])
+    p.add_argument("points", metavar="POINTS", help='corner points "X1,Y1 X2,Y2 ..."')
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--r", type=float, default=0.0, help="one radius for every corner")
+    g.add_argument("--radii", metavar="R1,R2,...", help="one radius per corner, in order")
+    p.add_argument("--grow", type=float, default=0.0)
+    p = sub.add_parser("play", parents=[kp])
+    for a in ("cx", "cy", "h"):
+        p.add_argument(a, type=float)
+    p.add_argument("--r", type=float, default=32.0)
+    p.add_argument("--grow", type=float, default=0.0)
+    p = sub.add_parser("aiband", parents=[kp])
+    p.add_argument("path", metavar="PATH")
+    p.add_argument("--chamfer", type=float, default=48.0)
+    p.add_argument("--width", type=float, default=96.0)
     p.add_argument("--gap", type=float, default=48.0)
     p = sub.add_parser("cutline", parents=[kp])
     for a in ("cx", "cy", "a", "r0", "r1"):
@@ -681,13 +726,23 @@ def main():
         elif args.cmd == "bubble":
             print(bubble(args.x, args.y, args.w, args.h, args.r, args.tail, args.side, args.angle,
                          px(args.tip_r), px(args.concave), px(args.grow)))
-        elif args.cmd == "bands":
-            res = bands(args.n, args.d0, px(args.width), px(args.gap), args.side, args.circle, args.rect)
-            for i, (d, length) in enumerate(res):
-                last = i == len(res) - 1 and len(res) > 1
-                cls = ' class="detail"' if last else ""
-                print(f"<!-- band {i + 1}: {px(args.width):g} wide, {length:.0f} long{', shortest' if last else ''} -->")
-                print(f'<path data-part="band"{cls} d="{d}"/>')
+        elif args.cmd == "poly":
+            pts = [tuple(float(v) for v in xy.split(",")) for xy in args.points.replace(";", " ").split()]
+            if any(len(p) != 2 for p in pts):
+                sys.exit('POINTS are "X1,Y1 X2,Y2 ...": a comma inside each pair, spaces between pairs')
+            radii = [float(v) for v in args.radii.split(",")] if args.radii else [args.r] * len(pts)
+            print(poly(pts, [px(r) for r in radii], px(args.grow)))
+        elif args.cmd == "play":
+            print(play(args.cx, args.cy, args.h, px(args.r), px(args.grow)))
+        elif args.cmd == "aiband":
+            body, loops, band, reach, inner, outer = aiband(args.path, px(args.chamfer), px(args.width),
+                                                            px(args.gap))
+            print(f"<!-- body: the outline up to {inner - px(args.gap):.1f} along the lower right diagonal"
+                  + (f'; {loops} loops: give it fill-rule="evenodd"' if loops > 1 else "") + " -->")
+            print(body)
+            print(f"<!-- band (accent, data-accent=\"band\"): {inner:.1f} to {outer:.1f} along the diagonal, "
+                  f"{px(args.width):g} wide; the outline reaches {reach:.1f}, so {px(args.chamfer):g} is cut off -->")
+            print(band)
         elif args.cmd == "cutline":
             print(cutline(args.cx, args.cy, args.a, args.r0, args.r1))
         elif args.cmd == "minus":

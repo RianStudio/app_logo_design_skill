@@ -2,8 +2,9 @@
   <!--
     Rian app icon template (graphite style). Copy this file and change only the parts marked TODO.
     Example: Tide, a focus timer: a stopwatch whose coral ring segment is 25 of 60 minutes (examples/tide.svg).
-    The style: 2 to 5 SOLID pieces on a graphite gradient, neighbours separated by 48 px negative-space cuts,
-    exactly one accent piece, no strokes, no letters, no shadows.
+    The style: 2 to 4 SOLID pieces (3 or 4 as a rule) on a graphite gradient, neighbours separated by 48 px
+    negative-space cuts, exactly one accent piece, no strokes, no letters, no shadows. Tools, image, video and
+    AI apps also carry their category mark (references/style.md, 类别记号).
     Every number lives in references/style.md. Layers, attributes, geometry recipes and variants:
     references/construction.md. Check with python3 scripts/render.py icon.svg -o renders plus the variants flag
     (one metrics line per rule, PASS / FAIL / INFO). Never put two hyphens in a row inside a comment:
@@ -25,7 +26,8 @@
       <stop offset="0" stop-color="#F8F9FB"/>
       <stop offset="1" stop-color="#C6C8CB"/>
     </linearGradient>
-    <!-- TODO accent gradient: ONE colour from the palette in style.md, light → main.
+    <!-- TODO accent gradient: ONE colour from the palette in style.md, light → main; with data-category it is
+         that category's colour (tools blue, image yellow, video coral, AI purple, health and finance green).
          Span 480 ÷ k, centred on the accent shape's vertical range.
          Here: coral #FF9C86 → #EC5B45; the segment runs y 247..774 (centre 510.5), so y1 270.5, y2 750.5.
          Two opaque stops, exactly the palette pair: a third colour or a highlight band FAILs. -->
@@ -64,6 +66,12 @@
        0.90 to 1.15 × Tide's hull. Keylines to start from: circle 580, square 520 × 520, tall 464 × 580,
        wide 580 × 464; open is sized by its hull (about 300k px², an outer box near 690 × 580); long side ≤ 720.
        data-cut stays 48.
+       TODO data-category: tools | image | video | ai | health | finance; leave it out for an app outside these
+       (Tide, a focus timer, has none). It fixes the accent colour and the mark: tools a horizontal 48 cut through
+       the whole silhouette (centre line at 35 to 75 % of its height), image a whole round sun in the top left
+       corner, video a play triangle knocked out of a piece (scripts/shapes.py play, H ≥ 200), AI a 45° band
+       running "/" across the lower right corner (scripts/shapes.py aiband, data-accent="band" on the accent,
+       never on a circle). Green only for health and finance, the band only for AI.
        TODO transform: translate(512 512) scale(k) translate(-512 -512) translate(tx ty). Draw in final pixels
        with k = 1. When the size line FAILs it prints the k to use; then redo the cut and corner paths with
        shapes.py and its k flag. translate puts the filled silhouette's centroid within 12 of (512, 512) (open:
@@ -75,16 +83,16 @@
     <!-- glow: keep as it is (first child, the accent's blurred copy), or delete it with the filter -->
     <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
     <!-- TODO body: every body piece inside this one group, no fill, opacity or stroke of their own.
-         Rules: 2 to 5 pieces in all (accent included); neighbouring pieces exactly 48 apart at their narrowest
+         Rules: 2 to 4 pieces in all (accent included), 3 or 4 as a rule, one metaphor; a fifth piece only with
+         data-pieces-why="…" on #subject saying why; neighbouring pieces exactly 48 apart at their narrowest
          point (pieces you do not want to touch at least 96 apart); every cut runs through, both ends outside the
-         outline; free cuts 45°
-         (top left to bottom right); thinnest part ≥ 72 (rings ≥ 84); corners: rounded rectangles rx ≥ 20 % of
-         the short side, sector corners 24, concave corners r ≥ 24; the body truly knocked out where the accent is.
-         Paths from scripts/shapes.py (ring, segment, sector, rrect, bands, bubble, minus); circle, ellipse,
-         rect and polygon bake too. Marks on single pieces:
-           class="detail"     dropped at 64 px and below; only a fragment under 2 % of the hull or the shortest
-                              band (on a bigger piece it FAILs the piece count)
-           data-part="band"   one of 2 or 3 parallel 45° bands (72 wide, 48 apart, shorter further out) -->
+         outline; free cuts 45° (top left to bottom right; the tools cut is horizontal, the AI band runs "/");
+         thinnest part ≥ 72 (rings ≥ 84); corners: rounded rectangles rx ≥ 20 % of the short side, sector
+         corners 24, polygon corners ≥ 24, concave corners r ≥ 24; the body truly knocked out where the accent is.
+         Paths from scripts/shapes.py (ring, segment, sector, rrect, poly, bubble, play, aiband, minus); circle,
+         ellipse, rect and polygon bake too. Mark on single pieces:
+           class="detail"     dropped at 64 px and below; only a fragment under 2 % of the hull
+                              (on a bigger piece it FAILs the piece count) -->
     <g id="body" fill="url(#body-fill)">
       <!-- dial: disc r 158 at the ring centre (512, 536); 206 − 158 = 48 to the ring (concentric cut) -->
       <circle cx="512" cy="536" r="158"/>
@@ -97,8 +105,9 @@
     </g>
     <!-- TODO accent shape: ONE element (path, or g of paths), fill url(#accent), drawn after #body.
          Best the most meaningful part of the object (the progress, the sun, the pulled-out slice); 48 from the body
-         at the nearest point, never touching or overlapping it; 10 to 25 % of the silhouette's convex hull (a band
-         accent: data-accent="band", 4 to 15 %). No opacity of its own.
+         at the nearest point, never touching or overlapping it; 10 to 25 % of the silhouette's convex hull (the AI
+         band: data-accent="band", 8 to 18 %; the smaller of a pair of like objects, such as two swap arrows:
+         data-accent="pair", up to 33 %). No opacity of its own.
          Here: 25 of 60 minutes = 150°, from 12 o'clock (−90°) clockwise to 60°, the same ring and seams.
          python3 scripts/shapes.py ring 512 536 290 206 -90 60, gap flag 48 -->
     <path id="accent-shape" fill="url(#accent)" d="M 536.0 247.0 A 290 290 0 0 1 677.3 774.3 L 635.1 701.2 A 206 206 0 0 0 536.0 331.4 Z"/>

@@ -11,11 +11,15 @@
 | [Linear · How we redesigned the Linear UI](https://linear.app/now/how-we-redesigned-the-linear-ui) | 在 LCH 里从少数几个输入生成整套中性色：石墨底的色相和明度阶梯照这个思路推导，和 `rian-app-theme` 的界面底同色相 |
 | [Linear · Behind the latest design refresh](https://linear.app/now/behind-the-latest-design-refresh) | 去掉多余的线和装饰、只靠明度分层的克制；图标不画投影、不加装饰也出于同样的取舍 |
 | [Apple HIG · App icons](https://developer.apple.com/design/human-interface-guidelines/app-icons) | 1024 全出血母版、系统加遮罩；避免极细线宽和尖角；分层图标与 Liquid Glass（反射、折射、阴影、高光由系统加）；Default / Dark / Tinted / Clear 外观，至少一个元素是白色或接近白色 |
+| [Apple · Configuring your app icon](https://developer.apple.com/documentation/xcode/configuring-your-app-icon) | asset catalog 的 Any / Dark / Tinted 三种外观：深色图标用透明底，让系统垫的底透出来；Tinted 交灰度图。`ios-1024-dark.png`、`ios-1024-tinted.png` 照它出 |
+| [Apple · Product page optimization](https://developer.apple.com/app-store/product-page-optimization/) | 在 App Store 产品页上 A/B 测试图标：一次最多三个对照组；测试里的备用图标要全部打进已上架版本的安装包，下载的用户主屏上看到的也是它。`--store-ab` 的变体和 README.txt 照它写 |
+| [Apple · App Review Guidelines 2.3.8](https://developer.apple.com/app-store/review/guidelines/#accurate-metadata) | 应用名和各尺寸图标、备用图标要彼此相像，不让用户混淆：商店变体只换底或加边，图形不动 |
 | [Apple · Creating your app icon using Icon Composer](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer) | 分组和层、Fill 渐变、Specular、组阴影、各外观的设定：`export/icon-composer/` 的两层和 README.txt 照它写 |
-| [Android · Adaptive icons](https://developer.android.com/develop/ui/views/launch/icon_design_adaptive) | 108 dp 的 background / foreground / monochrome 三层，66 dp 安全圆，72 dp 可见区；Android 13 起的主题图标 |
+| [Android · Adaptive icons](https://developer.android.com/develop/ui/views/launch/icon_design_adaptive) | 108 dp 的 background / foreground / monochrome 三层，66 dp 安全圆，72 dp 可见区；Android 13 起的主题图标：系统按壁纸颜色给 monochrome 层重新上色 |
+| [material-foundation · material-color-utilities](https://github.com/material-foundation/material-color-utilities)（`dynamic_scheme.ts`） | Material You 从种子色生成色调盘：Android 12、13 默认的 tonal spot 方案 primary 彩度 36、neutral variant 8，色调就是 L*。对照图里主题图标的模拟照它近似（用 CIE LCh 代替 HCT） |
 | [Google Play · Icon design specifications](https://developer.android.com/distribute/google-play/resources/icon-design-specifications) | 512 × 512、32-bit PNG、sRGB、≤ 1024 KB、满幅方形；Play 自己加 30 % 圆角和投影 |
 
-**待验证**：Icon Composer 的 Chromatic 组阴影（以实际版本的选项为准）；Android monochrome 层是否只按 alpha 通道着色（官方页面没写）。
+**待验证**：Icon Composer 的 Chromatic 组阴影（以实际版本的选项为准）；Android monochrome 层是否只按 alpha 通道着色（官方页面没写）；主题图标用的色调（render.py 取浅壁纸 accent1 90 底、neutral2 30 图形，深壁纸 neutral1 20 底、accent1 90 图形）没对过 AOSP Launcher3 源码；neutral1 的彩度取 4（material-color-utilities 2021 版写的是 6）；各家启动器也不一样。所以验收清单要求上架前在真机启动器上看。
 
 ## 流程上借鉴的开源项目
 
