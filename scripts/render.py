@@ -100,6 +100,9 @@ GAP_ACCENT = 60.0             # clear gap from the filled accent to any line: on
                               # the small version, lines 76, clogs it at 40 px)
 OVERLAP_MAX = 0.002           # body & accent pixels / accent pixels
 PARTS_MAX = 4                 # separate lines (connected strokes) in the body
+# soft rules (style.md 规则分级): data-relax on #subject may turn their FAIL into INFO when they would
+# otherwise drop an element the user named; every other check stays hard
+RELAXABLE = {"parts", "long_side", "silhouette", "hull", "accent", "category"}
 MIN_PIECE = 50                # px²: smaller specks are antialiasing noise
 CLOSE_R = 30                  # closing radius that shuts the gaps for the silhouette
 LONG_SIDE_MAX = 720
@@ -567,6 +570,11 @@ def static_info(root):
     info["accent_kind"] = accent.get("data-accent") if accent is not None else None
     info["accent_band"] = info["accent_kind"] == "band"
     info["variant"] = root.get("data-variant")
+    info["relax"] = (subject.get("data-relax") or "").split() if subject is not None else []
+    hard = [k for k in info["relax"] if k not in RELAXABLE]
+    if hard:
+        info["errors"].append(f'data-relax 只能放宽软规则 {" ".join(sorted(RELAXABLE))}，'
+                              f'不能放宽 {" ".join(hard)}（style.md「规则分级」）')
     if info["category"] is not None and info["category"] not in CATEGORIES:
         info["errors"].append(f'data-category="{info["category"]}" 不认识：tools | image | video | ai | health | '
                               "finance，不属于这几类就不写")
@@ -1806,7 +1814,17 @@ def measure(renderer, text, root, name, ref):
     C.append(check("pwa", "PWA 遮罩圆", f"r_max {r_max:.0f} {'>' if r_max > PWA_R else '≤'} 409.6 → ×{p_s:.3f}"
                    + (f"（封顶 Tide 的 ×{pwa_cap:.3f}）" if PWA_R / r_max > pwa_cap + 1e-6 else ""),
                    "min(409.6 / r_max, Tide 的系数)，导出自动缩放", "INFO"))
+    relax_checks(C, info["relax"])
     return {"name": name, "checks": C, "raw": raw, "info": info}
+
+
+def relax_checks(C, relax):
+    """data-relax on #subject: the listed soft rules give way to elements the user asked for. Their FAIL
+    becomes INFO, marked, so the report still shows the number and the delivery notes can name the trade."""
+    for c in C:
+        if c["key"] in relax and c["status"] == "FAIL":
+            c["status"] = "INFO"
+            c["value"] += "（data-relax：让给用户点名的内容）"
 
 
 def tools_line(union):

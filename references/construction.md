@@ -13,7 +13,7 @@
   #body-fill     linearGradient：线，跨度 600 ÷ k（不叫 #body，那是线稿组的 id）
   #accent        linearGradient：强调色「浅 → 主」，跨度 480 ÷ k
 #background      一个 rect：0 0 1024 1024，fill url(#bg)，里面不放东西
-#subject         transform；data-shape；data-category；没有体积层时 data-volume="none"
+#subject         transform；data-shape；data-category；没有体积层时 data-volume="none"；放宽软规则时 data-relax
   #volume        一个平涂实形，fill #FFFFFF，fill-opacity 0.14，第一个子元素；边沿走线的中线
   #body          <g fill="none" stroke="url(#body-fill)" stroke-width="60÷k" stroke-linecap="round" stroke-linejoin="round">：所有线的中线
   #accent-shape  一个元素（path、circle 或 g），fill url(#accent)，不描边
@@ -50,6 +50,7 @@ render.py 靠这些标记测量、换外观、导出分层，画的时候顺手�
 | `#subject` | `data-shape="circle｜square｜tall｜wide｜open"`、`transform="translate(512 512) scale(k) translate(-512 -512) translate(tx ty)"` | 选尺寸检查（封闭的线稿看剪影，`open` 看凸包）；k 用来换算源坐标 |
 | `#subject` | `data-category="tools｜image｜video｜ai｜health｜finance"`，不属于这些类就不写 | 按类别查强调色和类别记号 |
 | `#subject` | `data-volume="none"`：只在不画体积层时写 | 体积层一行改报 INFO |
+| `#subject` | `data-relax="parts long_side silhouette hull accent category"` 中的几个：只在它们挡住用户点名的元素时写（`style.md`「规则分级」） | 这几项的 FAIL 改报 INFO，数值后标「data-relax」；写了别的 key 报结构 FAIL |
 | `#volume` | `#subject` 的第一个子元素，一个 `path`、`circle`、`rect`、`ellipse` 或 `polygon`，`fill="#FFFFFF" fill-opacity="0.14"`；不描边、不写 `opacity`、不用渐变 | 体积层检查；Icon Composer 组 1；换外观时改颜色和透明度 |
 | `#body` | `<g fill="none" stroke="url(#body-fill)" stroke-width="60÷k" stroke-linecap="round" stroke-linejoin="round">`，里面是 `path`、`circle`、`rect`、`line`、`polyline`、`polygon`；单个元素不写自己的 fill、stroke、stroke-width、opacity | 线宽、圆头圆角、线间净空、夹缝、线对底 |
 | `#accent-shape` | 一个元素，fill `url(#accent)`，不写 stroke 和 opacity | 强调色占比、到线的净空 |
@@ -194,6 +195,7 @@ pip install playwright pillow numpy && playwright install chromium   # 第一次
 python3 scripts/render.py ICON.svg [more.svg ...] [-o DIR] [--variants] [--export] [--store-ab] [--json] [--tide FILE]
 python3 scripts/overview.py examples/tide.svg icon.svg -o renders/compare.png   # 新图标和 Tide 并排，看轻重
 python3 scripts/series.py icon.svg [more.svg ...] [--with EXISTING.svg ...] [-o DIR] [--json]   # 系列检查
+python3 scripts/concepts.py a.svg b.svg ... [-o FILE] [--blind]   # 概念板；--blind 只标字母，给盲测
 ```
 
 | 参数 | 输出 |
@@ -212,20 +214,20 @@ python3 scripts/series.py icon.svg [more.svg ...] [--with EXISTING.svg ...] [-o 
   | 结构（id、图层和顺序；id 重复；`#background` 是不是一个干净的全画布 rect；旧风格的 `#cut`、`data-cut`、`detail`、`#line`、`#backing`） | `structure` | 有问题才出现，FAIL |
   | 线宽（60 ± 1，一种线宽，圆头圆角；#body 不填色；强调色不描边；两层之外没有图形） | `stroke` | FAIL |
   | 颜色（每个 stop 都在那一对值里、不透明；线的 stroke 是 `url(#body-fill)`；单个元素不带自己的颜色、线宽和透明度） | `palette` | FAIL |
-  | 线条段数（1–4）；强调色块数 = 1 | `parts`、`accent_count` | FAIL |
+  | 线条段数（1–4）；强调色块数 = 1 | `parts`、`accent_count` | FAIL（`parts` 可 `data-relax`） |
   | 线间净空（分开的线之间 ≥ 60） | `line_gap` | FAIL |
   | 线间夹缝（半径 30 闭运算后多出的一块 ≤ 3000 px²） | `pinch` | FAIL |
   | 强调色到线（≥ 60，不压线） | `accent_gap` | FAIL |
-  | 强调色占比（`band` 有自己的范围） | `accent` | FAIL |
-  | 长边 | `long_side` | FAIL |
+  | 强调色占比（`band` 有自己的范围） | `accent` | FAIL（可 `data-relax`） |
+  | 长边 | `long_side` | FAIL（可 `data-relax`） |
   | 形状（外框比关键线大多少） | `shape` | INFO |
-  | 剪影面积 / 凸包面积（和 Tide 比；封闭的线稿看剪影，`open` 看凸包，另一项 INFO；FAIL 时给出新的 k） | `silhouette`、`hull` | FAIL |
+  | 剪影面积 / 凸包面积（和 Tide 比；封闭的线稿看剪影，`open` 看凸包，另一项 INFO；FAIL 时给出新的 k） | `silhouette`、`hull` | FAIL（可 `data-relax`） |
   | 墨量（实际上色的面积和 Tide 比） | `ink` | INFO |
   | 重心（FAIL 时给出新的 translate） | `centroid` | FAIL |
   | 线对底、强调色对底（线对体积层、浅色外观的数字附在后面，INFO） | `contrast_body`、`contrast_accent` | FAIL |
   | 体积层（边沿 ≥ 90 % 藏在线或强调色下，伸出凸包 ≤ 1 %，占凸包多少只报数；`data-volume="none"` 时 INFO） | `volume` | FAIL |
 | 辉光和滤镜（有 `#glow` 或任何 filter 就 FAIL） | `glow` | FAIL |
-  | 类别记号（强调色是不是这一类的颜色，记号在不在；绿只给健康、财务，斜带只给 AI；没写 `data-category` 时 INFO） | `category` | FAIL |
+  | 类别记号（强调色是不是这一类的颜色，记号在不在；绿只给健康、财务，斜带只给 AI；没写 `data-category` 时 INFO） | `category` | FAIL（可 `data-relax`） |
   | 商店边缘 | `store_edge` | INFO |
   | 安卓主题图标 | `themed` | INFO |
   | 商店变体（文件根上有 `data-variant`） | `variant` | 有才出现，INFO |
@@ -235,4 +237,5 @@ python3 scripts/series.py icon.svg [more.svg ...] [--with EXISTING.svg ...] [-o 
 
 - **对照图**（`<name>-sheet.png`）：iOS 遮罩下的默认外观（平面）和读数（第一行是类别和强调色）；180 / 120 / 80 / 60 / 40 / 29 px（60 及以下用 small 版）；和 Tide 同尺寸并排；iOS 26 的六种外观（近似的 Liquid Glass）；平面版的默认、浅色、深色、mono；Android 圆形遮罩、方圆遮罩、主题图标（mono 层按浅色、深色主题的色调上色，色相取自壁纸，放在壁纸上）、圆形 48 px、mono 层。
 - **系列检查**（`series.py`）：新图标和已有图标（`--with`；不写时用 `examples/*.svg` 作参考，只算配对、不算扎堆）一起渲染，写 `DIR/series-sheet.png`（加 `--json` 另写 `series.json`），终端打印强调色登记、配对分数、扎堆和占了记号的角。规则和阈值见 `style.md`「系列检查」。
+- **概念板和盲测**（`concepts.py`）：每个 SVG 出 180 px、80 px 和 80 px 单色三格，iOS 遮罩，深底，一行最多 4 个。默认写 `concepts.png`，标签是字母加 `<title>`（没有就用文件名）；`--blind` 写 `blind.png`，只标字母，字母和文件的对照只打印在终端。草图不用过 render.py，有 `#body` 和 `#accent-shape` 时单色那格才准。
 - 用 Chromium 渲染，和浏览器一致。机器上已有 Chromium 时设 `CHROMIUM_PATH` 跳过下载。

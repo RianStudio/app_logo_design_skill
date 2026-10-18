@@ -1,6 +1,6 @@
 ---
 name: rian-app-icon
-description: Design app icons as production SVG in Rian's house style, the graphite line style with Apple and Google platform specs - a light round-cap line drawing (60 px at 1024, the same line as the UI's Lucide icons) on a graphite gradient, a translucent white flat volume inside the object behind the lines, and one filled accent shape, following Apple's iOS 26 icon guidance (Icon Composer groups, six appearances, no baked glow). No opaque fills and no letters; every gap at least one line width, so the mark survives monochrome and small sizes, and tools, image, video and AI apps each carry a fixed category mark. Renders a review sheet with automatic stroke, gap, size, contrast, volume, accent and category checks and an approximate Liquid Glass row of the six iOS 26 appearances, runs a series check against existing icons, and generates light, dark and mono appearances, three Icon Composer groups, Android adaptive and themed icons, Play, PWA and favicon exports, and App Store A/B variants. Use when asked to create, redesign or iterate on an app icon, launcher icon, app logo mark or favicon. Not for wordmarks or logos with letters, and not for in-app UI icons. 用于按 Rian 的石墨线稿风格（深石墨底、60 px 圆头亮线、物件里一层半透明白的体积、一块填色强调色，和界面的 Lucide 细线图标同一种线）设计应用图标、启动图标和 favicon（SVG）；不做字标或带字母的 logo，也不做界面里的小图标。
+description: Design app icons as production SVG in Rian's house style, the graphite line style with Apple and Google platform specs - a light round-cap line drawing (60 px at 1024, the same line as the UI's Lucide icons) on a graphite gradient, a translucent white flat volume inside the object behind the lines, and one filled accent shape, following Apple's iOS 26 icon guidance (Icon Composer groups, six appearances, no baked glow). No opaque fills and no letters; every gap at least one line width, so the mark survives monochrome and small sizes, and tools, image, video and AI apps each carry a fixed category mark. Renders a review sheet with automatic stroke, gap, size, contrast, volume, accent and category checks and an approximate Liquid Glass row of the six iOS 26 appearances, runs a series check against existing icons, and generates light, dark and mono appearances, three Icon Composer groups, Android adaptive and themed icons, Play, PWA and favicon exports, and App Store A/B variants. Starts from a product brief (keeping every element the user names) and a concept board of several directions for the user to pick, and gates the result with a blind product-fit test; soft rules give way to what the user asked for. Use when asked to create, redesign or iterate on an app icon, launcher icon, app logo mark or favicon. Not for wordmarks or logos with letters, and not for in-app UI icons. 用于按 Rian 的石墨线稿风格（深石墨底、60 px 圆头亮线、物件里一层半透明白的体积、一块填色强调色，和界面的 Lucide 细线图标同一种线）设计应用图标、启动图标和 favicon（SVG）；不做字标或带字母的 logo，也不做界面里的小图标。
 ---
 
 # Rian App Icon
@@ -11,7 +11,7 @@ description: Design app icons as production SVG in Rian's house style, the graph
 
 **动笔前读 `references/style.md`**：风格规则、线宽的来由、全部阈值和验收清单都在那里。**画 SVG 时再查 `references/construction.md`** 的「几何速查」（`shapes.py` 各命令、常用写法）和「属性和类」；平台规格也在它的「平台导出」。
 
-目标是快：第一版渲染出来之前不停下来问用户。
+先对，再快：图标先要像这个产品，再谈好看和合规。整个流程只在概念板停一次让用户挑方向（第 2 步），其余不停下来问用户。
 
 ## 示例
 
@@ -27,26 +27,42 @@ description: Design app icons as production SVG in Rian's house style, the graph
 
 ## 工作流程
 
-### 1. 读懂产品
+### 1. 读懂产品，写简报
 
 用户用什么语言说话，说明和交付就用什么语言。
 
-需要三样：**名字**、**一句话说清它做什么**、**品牌色**（可选）。「一句话」要具体到动作或对象，比如「把待办拆成 25 分钟的专注块」，不能只说「效率工具」。信息不全时不要追问：自己补一个合理版本，标明「这是我的假设」，然后继续。
+能读到产品资料（仓库的 README、package.json、官网文案、截图）就先读。然后写一份五项的**简报**，交付时放在说明的最前面：
 
-### 2. 定隐喻
+1. **名字**
+2. **一句话**：具体到动作或对象，比如「把待办拆成 25 分钟的专注块」，不能只说「效率工具」。
+3. **用户点名的元素**：用户说到的物件、形状、动作，原样抄下来，比如「文件夹，里面有圆、三角、正方形，还要有搜索」。这些是**必须出现**的内容：后面任何规则都不能删掉它们，只能改它们的画法（`style.md`「规则分级」）。没点名就写「无」。
+4. **三个感受词**：用户第一眼该感到什么，比如「整齐、好找、专业」。
+5. **同类图标**：凭记忆写出 5–8 个同类 app 的图标（App Store 搜这个品类，前几名长什么样），指出最常见的俗套（扫码都是 QR 方块，笔记都是黄便签）。新图标要让人读得出属于这一类，但不照搬俗套本身。
 
-这个风格追求**一眼看懂**，像 Apple 和 Google 自己的 app：计时就是秒表，天气就是太阳和云，记账就是饼图。
+品牌色可选。信息不全时不要追问：补一个合理版本，标明「这是我的假设」，然后继续。
+
+### 2. 定概念：出概念板，停一次
+
+这个风格追求**一眼看懂这是什么 app**，像 Apple 和 Google 自己的 app：计时就是秒表，天气就是太阳和云，记账就是饼图。概念错了，后面怎么打磨都救不回来，所以图标像不像这个产品，在这一步就定了。
 
 先定类别：工具、图片、视频、AI，健康、财务，或者都不是（按主要功能归，顺序见 `style.md`「类别记号」：先看是不是靠模型，再看处理的是图片、视频还是文件；计时、笔记、翻译这类不归类）。类别定了强调色和类别记号，隐喻要放得下这个记号：工具是一条横贯整幅的水平直线，图片是左上角的圆太阳，视频是一个线画的播放三角，AI 是外轮廓右下角的 45° 斜角加旁边的「/」斜带。
 
-1. 写 3 个方向，每个一行：**画什么物件 → 强调色是哪一块 → 为什么一眼能懂**。
-2. 每个方向按三项各打 0–2 分：**一眼看懂**、**有自己的一处**、**能用 1–4 段线加一块填色画出**（放进类别记号之后）。
-3. 自己选总分最高的一个往下做，不等用户确认。用户要多方案时，3 个都画。
+1. **词表**：围绕简报的一句话写四列，每列 3–5 个：**物件**（文件夹、托盘）、**动作**（搜索、收纳、拖进来）、**结果**（找到了、整整齐齐）、**领域符号**（这一行的人一看就懂的东西：矢量的锚点和手柄、圆三角方、`< >`）。用户点名的元素直接放进词表。
+2. **六个方向，每个换一个视角**，每个一行：**画什么 → 强调色是哪一块 → 为什么一眼能懂**。六个视角：直译物件、动作、结果、领域符号、两样组合、抽象形。用户点名了元素时，至少一半的方向要把点名的元素全部画进去。
+3. **打分**，每项 0–2：**像这个产品**（遮住名字，同类 app 的用户能说出它是做什么的，而不只是认出一个物件）、**一眼看懂**、**有自己的一处**、**点名的元素都在**（没点名时记 2）。「能不能用 1–4 段线画出」不打分：画不下是画法问题，到第 4 步按「规则分级」解决，不是淘汰方向的理由。
+4. **概念板**：分数前 3–4 的方向各画一张草图 SVG（1024 viewBox，线加一块强调色就够，不用过 render.py；`<title>` 写这个方向的一行说明），然后跑：
 
-- 只画一个隐喻，抓产品最核心的那个结果，不必把每个功能都画进去。线越多，29 px 下越糊。
+   ```bash
+   python3 <skill 目录>/scripts/concepts.py concept-a.svg concept-b.svg ... -o renders/concepts.png
+   ```
+
+   每个方向出 180 px、80 px 和 80 px 单色三格。80 px 或单色下认不出的方向直接淘汰。
+5. **停一次**：把概念板发给用户，推荐一个并说一句理由，请用户选（能发选项卡片就用卡片）。这是整个流程里唯一停下来等的地方。用户说过「直接做」「不用问」，或者是批量出图时，自己选总分最高的往下做，概念板随交付一起给。
+
+- 只画一个隐喻，抓产品最核心的那个结果，不必把每个功能都画进去。线越多，29 px 下越糊。用户点名的几样东西合起来就是这一个隐喻，不算两个。
 - **有自己的一处**：先找 SF Symbols、Material Symbols 和 Lucide 里的同名符号（线稿风格最容易撞 Lucide）。剪影一样的，必须在轮廓或结构上改一处：物件的局部形状、线在哪里断开、哪一块是强调色。只挪强调色的位置不算。不要沿用示例的整体框架，也不要画成 Linear 的标。
 - **强调色本身可以就是第二个物件**：剪辑手柄、扫描光束、词典的书签。隐喻本身是一对同类物体时（互换的两支箭头），一个画线，另一个填色（Convert）。
-- 用户已有别的 app 图标时，新图标的外形和强调色位置要和它们拉开，第 5 步用 `series.py` 查。
+- 用户已有别的 app 图标时，新图标的外形和强调色位置尽量和它们拉开，第 5 步用 `series.py` 查。系列检查是软规则：和用户点名的内容冲突时让内容。
 - 不用字母、文字，不用 ✦ 闪光这类 AI 套路符号：AI 类用右下角的斜带。标准图标就是字母的品类，用这张表（表里的品类默认不写 `data-category`；用户把它归进四类之一时，比如字幕归视频，再加上那一类的记号和颜色）：
 
 | 品类 | 画什么（线） | 强调色 |
@@ -72,6 +88,8 @@ description: Design app icons as production SVG in Rian's house style, the graph
 
 复制 `assets/template.svg`，只改标了 TODO 的地方：`data-shape`、`data-category`、transform（k 和 translate）、线稿、体积层、强调色、两个渐变的 y1 / y2。体积层复用线的几何，边沿走线的中线（开口处沿某一笔的中线封口）；线稿没有「里面」时删掉 `#volume`，在 `#subject` 上写 `data-volume="none"`。线写成中线，`#body` 组上统一写 stroke（60 ÷ k、圆头圆角），单个元素不带颜色和线宽。圆弧、圆角矩形、气泡、多边形和折线、播放三角用 `scripts/shapes.py` 出中线；扇形、弓形、环段、胶囊、AI 斜带出强调色的轮廓，强调色被线挡住的地方用 `shapes.py minus` 减掉。坐标用整齐的数字，在注释里写出几何关系和净空，并把生成每一笔用的 `shapes.py` 命令留在注释里。写法见 `construction.md`「几何速查」和「属性和类」。
 
+**用户点名的元素一个都不能少。** 画不下时按 `style.md`「规则分级」的顺序让：先改画法（缩小元素；几样东西共用一笔线，比如圆就是放大镜的镜片、方块就是文件夹前片上的窗口；把一样东西做成强调色），还不行就在 `#subject` 上写 `data-relax`，放宽挡路的软规则（线条段数、尺寸、强调色占比、类别记号），并在交付的「可再调」里写明放宽了什么、为什么。硬规则（线宽、线间净空、夹缝、强调色到线、小尺寸）不放宽：放宽了，图标在主屏上会糊掉。
+
 **直接按最终像素画（k = 1）**，位置只靠 translate 调。报告说凸包或剪影不够时会给出「k 改为 …」：改 k 之后 stroke-width 写 60 ÷ k，把注释里的 `shapes.py` 命令加上 `--k <新 k>` 重跑一遍，再按下一次报告给的 translate 调位置。
 
 ### 5. 渲染、自检
@@ -88,9 +106,17 @@ python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants
 python3 <skill 目录>/scripts/series.py icon.svg --with <已有图标>.svg ... -o renders
 ```
 
-看 `series-sheet.png` 和终端的「像」「扎堆」「占了记号的角」：新图标三项都要是 0。
+看 `series-sheet.png` 和终端的「像」「扎堆」「占了记号的角」：新图标三项尽量是 0。和用户点名的内容冲突时让内容，把像的那一对写进「可再调」，不为了拉开系列删元素或扭曲物件。
 
-**节奏**：第一次渲染后只修报告里 FAIL 的项和验收清单里没过的项，最多 2 轮。一轮 = 改一次 SVG 再跑一次 render.py；`overview.py`、`series.py` 和定稿时加 `--export` 的那次不算。猜错用途时换方向也算 1 轮；2 轮用完就交付，把没画的方向写进「可再调」。剩下的问题也写进「可再调」，不要无限打磨。打磨时不加东西，只调准已有的东西：比例、断口、强调色的大小和位置。
+最后过**产品契合**这一关（盲测）。报告没有 FAIL 以后跑：
+
+```bash
+python3 <skill 目录>/scripts/concepts.py icon.svg [概念板上另外的方向.svg ...] --blind -o renders
+```
+
+把 `renders/blind.png` 交给一个不知道题目的审阅者：另起一个子代理，只给这张图，不给名字、简报和文件名（字母和文件的对照只打印在终端），问「这是什么 app？它帮你做什么？哪一处让你这么想？」。答出的用途和简报的一句话对得上才算过；只认出物件、猜错用途算没过，回第 2 步换方向。审阅者的原话写进交付说明。起不了子代理时自己遮住名字看 80 px 那一格，并在交付里写明这次是自评。
+
+**节奏**：第一次渲染后只修报告里 FAIL 的项和验收清单里没过的项，最多 2 轮。一轮 = 改一次 SVG 再跑一次 render.py；`overview.py`、`series.py` 和定稿时加 `--export` 的那次不算。盲测没过、回第 2 步换方向不算轮数：那是概念问题，不是打磨问题。同一个方向的精修 2 轮用完就交付。剩下的问题也写进「可再调」，不要无限打磨。打磨时不加东西，只调准已有的东西：比例、断口、强调色的大小和位置。
 
 | 看到 | 哪项指标会报（报告里的 key） | 改 |
 |---|---|---|
@@ -114,7 +140,8 @@ python3 <skill 目录>/scripts/series.py icon.svg --with <已有图标>.svg ... 
 | 浅色版里白线读成了别的东西（白云变乌云） | 线对底的浅色外观数字（INFO） | 已知取舍，不改：写进「可再调」，营销图用默认石墨版 |
 | 和同名系统符号一模一样 | 无（凭记忆比对） | 在轮廓或结构上改一处，见第 2 步 |
 | 认不出来 | 对照图 80 px | 换更具体的物件，或把强调色挪到最能说明用途的那一块 |
-| 认得出物件，但猜错用途 | 对照图 80 px | 回第 2 步换方向（算 1 轮） |
+| 认得出物件，但猜错用途 | 盲测 `blind.png`、对照图 80 px | 回第 2 步换方向（不算轮数） |
+| 为了过某条规则，要删掉用户点名的元素，或把物件扭成别的形状 | `parts`、`silhouette` / `hull`、`long_side`、`accent`、`category`、`series.py` | 不删、不扭：按「规则分级」先改画法；还不行就 `data-relax` 放宽这一条，写进「可再调」 |
 | 两轮后仍不满意 | 无 | 交付，并写明还差什么 |
 
 ### 6. 交付
@@ -128,10 +155,13 @@ python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants --export
 默认交付默认（石墨）、浅色、深色、单色四种平面外观，加 Icon Composer 三组分层（体积层、线稿、强调色；在 Icon Composer 里要设的透明度和阴影写在它的 `README.txt`）。给用户：
 
 - 对照图、SVG 母版、四张 PNG（`<name>-1024`、`-light`、`-dark`、`-mono`）和 `renders/export/icon-composer/` 的路径
+- 简报（第 1 步的五项），用户点名的元素逐个说明画在哪里
 - 三行设计说明：画了什么物件、强调色是哪一块、用的强调色
 - 一句和同名 SF Symbol / Material Symbol / Lucide 图标的差别
-- 另外两个方向，各一行
-- 系列检查的结论：和哪个已有图标分数最高、多少
+- 概念板 `renders/concepts.png` 的路径，没选的方向各一行
+- 盲测：审阅者的原话，过没过
+- 写了 `data-relax` 时：放宽了哪几条软规则、为什么
+- 系列检查的结论：和哪个已有图标分数最高、多少（为点名的内容让步的，说一句）
 - 「可再调」：没修完的问题和已知取舍（比如浅色版里白云读成乌云），没有就省略
 - 一句提醒：安卓主题图标在对照图里是近似，上架前在开启主题图标的真机启动器上看一遍
 - 出了 `--store-ab` 时一句：深色 App Store 里石墨底的边缘看不清，`renders/store-ab/` 的浅一档底、细亮边（和类别色底）可以在产品页优化里和主图标对照，测试图标要作为备用图标打进安装包（`README.txt` 有步骤）
