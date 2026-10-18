@@ -28,12 +28,6 @@
       <stop offset="0" stop-color="#FF9C86"/>
       <stop offset="1" stop-color="#EC5B45"/>
     </linearGradient>
-    <!-- glow-blur: the accent's main colour #EC5B45 at .16, blur 24 (= 24 / k), no offset -->
-    <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
-      <feFlood flood-color="#EC5B45" flood-opacity="0.16"/>
-      <feComposite in2="b" operator="in"/>
-    </filter>
   </defs>
 
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
@@ -45,8 +39,9 @@
        centre, r_max 401 (Android ×0.723 and PWA ×1.022: the caps every other icon shares come from here).
        Tide is the size reference: silhouette, hull and ink 1.00. -->
   <g id="subject" data-shape="circle" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 -20)">
-    <!-- glow: the coral sector's blurred copy, first child, under everything else -->
-    <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
+    <!-- volume: the ring's inside: the same circle as the ring's centre line, so its edge hides under the line; the sector lies on it. Flat white at .14 (Apple HIG: filled, overlapping layers at different
+         opacities; the system adds the light). No glow: iOS 26 adds shadow and specular highlights itself -->
+    <circle id="volume" cx="512" cy="550" r="250" fill="#FFFFFF" fill-opacity="0.14"/>
     <!-- the line drawing: centre lines only, stroke 60 (= 60 / k), round caps and joins, no fill -->
     <g id="body" fill="none" stroke="url(#body-fill)" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
       <!-- ring: centre line r 250, so the stroke runs from r 220 to r 280 -->

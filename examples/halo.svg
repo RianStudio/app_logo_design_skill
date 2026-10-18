@@ -4,7 +4,7 @@
     cloud. The cloud is one closed line (Lucide's cloud, scaled 28 px per unit), the sun the filled accent.
     The sun is a disc r 130 with the cloud's two bumps taken out, each grown by 30 + 60 (half the line plus one
     line width), so it stays one line width clear of the cloud along its whole edge: a crescent, not a chord.
-    The faint glow around the sun is the "halo" of the name. Drawn at final size: k = 1.
+    The cloud's inside is the translucent volume; the sun is the "halo" of the name. Drawn at final size: k = 1.
     Rules and numbers: references/style.md. Layers, attributes and variants: references/construction.md.
   -->
   <defs>
@@ -20,18 +20,15 @@
       <stop offset="0" stop-color="#FFD978"/>
       <stop offset="1" stop-color="#F2AE2E"/>
     </linearGradient>
-    <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
-      <feFlood flood-color="#F2AE2E" flood-opacity="0.16"/>
-      <feComposite in2="b" operator="in"/>
-    </filter>
   </defs>
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
   <!-- transform: k = 1, then (−9.6, −33.1) so the silhouette centroid sits on the centre (render.py prints it).
        data-shape open: a composite shape (cloud plus sun); render.py judges its size by the convex hull.
        render.py: 1 line, accent 11.2 % of the hull, about 60 clear of the cloud, hull 0.96 × Tide. -->
   <g id="subject" data-shape="open" transform="translate(512 512) scale(1) translate(-512 -512) translate(-9.6 -33.1)">
-    <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
+    <!-- volume: the cloud's inside: the cloud's own centre line, filled. Flat white at .14 (Apple HIG: filled, overlapping layers at different
+         opacities; the system adds the light). No glow: iOS 26 adds shadow and specular highlights itself -->
+    <path id="volume" fill="#FFFFFF" fill-opacity="0.14" d="M 666 756 H 428 A 196 196 0 1 1 615.9 504 H 666 A 126 126 0 1 1 666 756 Z"/>
     <!-- the line drawing: centre lines only, stroke 60, round caps and joins, no fill -->
     <!-- cloud: base y 756 from x 428 to 666; big bump circle (428, 560) r 196, small bump (666, 630) r 126 -->
     <g id="body" fill="none" stroke="url(#body-fill)" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">

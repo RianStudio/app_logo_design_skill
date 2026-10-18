@@ -4,9 +4,10 @@
     Example: Tide, a focus timer: a stopwatch drawn in one line whose coral sector is 25 of 60 minutes
     (examples/tide.svg).
     The style: 1 to 4 connected lines, all 60 px wide with round caps and joins (the same line as the UI's
-    Lucide icons), on a graphite gradient; exactly one accent, a FILLED shape; every gap between two lines,
-    and between a line and the accent, at least one line width (60). No fills in the body, no letters, no
-    shadows. Tools, image, video and AI apps also carry their category mark (references/style.md, 类别记号).
+    Lucide icons), on a graphite gradient; one translucent white volume (a flat solid shape inside the
+    object, behind the lines, its edge hidden under them); exactly one accent, a FILLED shape; every gap
+    between two lines, and between a line and the accent, at least one line width (60). No fills in the
+    body, no letters, no glow, no shadows, no filters: iOS 26 adds the Liquid Glass light itself. Tools, image, video and AI apps also carry their category mark (references/style.md, 类别记号).
     Every number lives in references/style.md. Layers, attributes, geometry recipes and variants:
     references/construction.md. Check with python3 scripts/render.py icon.svg -o renders plus the variants flag
     (one metrics line per rule, PASS / FAIL / INFO). Never put two hyphens in a row inside a comment:
@@ -37,14 +38,6 @@
       <stop offset="0" stop-color="#FF9C86"/>
       <stop offset="1" stop-color="#EC5B45"/>
     </linearGradient>
-    <!-- TODO glow (optional): flood-color = the accent's MAIN colour, flood-opacity ≤ 0.16,
-         stdDeviation 24 ÷ k (at most 28 ÷ k), no feOffset. The id stays glow-blur (#glow is the use below).
-         No glow: delete this filter and the use id="glow". -->
-    <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
-      <feFlood flood-color="#EC5B45" flood-opacity="0.16"/>
-      <feComposite in2="b" operator="in"/>
-    </filter>
   </defs>
 
   <!-- background: this one rect, 0 0 1024 1024, nothing inside it; no other graphics beside it and #subject -->
@@ -68,8 +61,14 @@
        centroid within 12 of (512, 512); when it FAILs the centroid line prints the translate to write.
        Here: k = 1, up 20; ring 560 across, outer box 560 × 694. -->
   <g id="subject" data-shape="circle" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 -20)">
-    <!-- glow: keep as it is (first child, the accent's blurred copy), or delete it with the filter -->
-    <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
+    <!-- TODO volume: ONE flat shape that fills the object's inside, drawn BEFORE #body: fill #FFFFFF with
+         fill-opacity 0.14, no stroke, no opacity, no gradient. Its outline follows the lines' CENTRE line, so its
+         edge hides under the strokes (render.py: ≥ 90 % of the edge under a line, nothing spilling outside the
+         hull). It is Icon Composer group 1, behind the lines (group 2) and the accent (group 3); the accent may
+         sit on it. Open shapes close along a line's centre line. A drawing with no inside (two arrows) leaves it
+         out and puts data-volume="none" on #subject.
+         Here: the ring's inside, r 250 = the ring's centre line. -->
+    <circle id="volume" cx="512" cy="550" r="250" fill="#FFFFFF" fill-opacity="0.14"/>
     <!-- TODO lines: the centre line of every stroke inside this one group, which carries the stroke: no fill,
          stroke, stroke-width or opacity on the elements themselves. stroke-width = 60 ÷ k.
          Rules: 1 to 4 connected lines, one metaphor; two separate lines at least 60 apart edge to edge (their

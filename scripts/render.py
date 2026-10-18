@@ -8,17 +8,19 @@ Render and check a Rian app icon SVG (graphite line style).
 Always writes, for each SVG:
   DIR/<name>-1024.png    full-bleed opaque 1024 master, default (graphite) look
   DIR/<name>-sheet.png   review sheet: iOS-masked master; 180/120/80/60/40/29 px (40 and 29 from the small
-                         version); light and dark looks; Tinted yellow and blue; Clear on a light and a dark
-                         wallpaper; Android circle and squircle masks, the themed icon in the light and the
+                         version); Apple's six iOS 26 appearances (default, dark, clear light and dark, tinted
+                         light and dark) with an approximate Liquid Glass (specular rim and shadow per group);
+                         the flat light, dark and mono looks; Android circle and squircle masks, the themed icon in the light and the
                          dark theme (monochrome layer recoloured with the theme's Material You tones, seed hue
                          from a light and a dark wallpaper); the icon next to Tide at the same size
 and prints a metrics report, one line per check with value, target and PASS / FAIL / INFO.
 Exit code 0 even when a check fails (1 only when an SVG cannot be read).
 
   --variants  also writes <name>-light.svg/.png, <name>-dark.svg/.png, <name>-mono.svg/.png (transparent)
-              and <name>-small.svg (64 px and below: the line 76 instead of 60, no glow), and
-              and the flat marks for in-app brand art (rian-app-theme's brand panels): #subject alone, no glow,
-              every line one solid colour and the accent its main tone, transparent, cropped to the subject:
+              and <name>-small.svg (64 px and below: the line 76 instead of 60), and
+              the flat marks for in-app brand art (rian-app-theme's brand panels): #subject alone, every line one
+              solid colour, the volume that colour at a low opacity and the accent its main tone, transparent,
+              cropped to the subject:
               <name>-mark.svg/.png (light lines, for the dark graphite panel) and <name>-mark-light.svg/.png (dark
               lines, for the light panel)
   --export    also writes DIR/export/ (DIR/export/<name>/ when several SVGs are given):
@@ -31,7 +33,8 @@ Exit code 0 even when a check fails (1 only when an SVG cannot be read).
               android/drawable/ic_launcher_background.xml,
               android/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher_foreground.png + _monochrome.png,
               plus legacy 48 dp ic_launcher.png + ic_launcher_round.png for API 25 and below,
-              icon-composer/1_body.svg (the strokes, transform baked in) + 1_body.png, 2_accent.svg + 2_accent.png
+              icon-composer/1_volume.svg + .png (the volume, opaque: set its opacity in Icon Composer),
+              2_body.svg (the strokes, transform baked in) + 2_body.png, 3_accent.svg + 3_accent.png
               (only the PNG when a layer uses a mask and cannot be baked to plain paths), icon-composer/README.txt
               Android layers are scaled by min(290 / r_max, 0.72), the PWA maskable icon by
               min(409.6 / r_max, 409.6 / Tide's r_max), so compact icons are not blown up past Tide.
@@ -49,10 +52,10 @@ separately in headless Chromium (Playwright) and measured with numpy. Install on
 If a Chromium build already exists on the machine, set CHROMIUM_PATH to its executable.
 
 SVG conventions read here (references/construction.md):
-  defs: #bg, #body-fill, #accent linearGradients (userSpaceOnUse); optional #glow-blur filter
+  defs: #bg, #body-fill, #accent linearGradients (userSpaceOnUse); no filters (no glow)
   #background (full-bleed rect), #subject (transform, data-shape = circle | square | tall | wide | open,
-  data-category = tools | image | video | ai | health | finance), #glow (optional first child:
-  <use href="#accent-shape" filter="url(#glow-blur)"/>), #body (<g fill="none" stroke="url(#body-fill)"
+  data-category = tools | image | video | ai | health | finance), #volume (first child: one flat shape,
+  fill #FFFFFF, fill-opacity 0.14, bounded by the lines' centre line), #body (<g fill="none" stroke="url(#body-fill)"
   stroke-width="60 / k" stroke-linecap="round" stroke-linejoin="round"> with every line), #accent-shape (one
   filled element, fill url(#accent), no stroke; data-accent="band" for the AI band).
   Store A/B variants written by --store-ab carry data-variant = lighter | rim | tint on the root (rim adds
@@ -113,8 +116,15 @@ BODY_TOL = 6
 PROTRUSION_W = 80             # parts thinner than this (an opening of radius 40) count as protrusions
 CONTRAST_BODY = 7.0           # lines over background, default look
 CONTRAST_ACCENT = 3.0         # accent over background, default look
-GLOW_OPACITY_MAX = 0.16
-GLOW_SD_MAX = 28.0            # stdDeviation x k
+# the volume (Apple HIG, iOS 26: filled, overlapping shapes at different opacities give the layers depth; the system adds
+# the light): one flat translucent shape under the lines, bounded by the lines' centre line, so its edge hides under
+# them. Colour and opacity per look; the master is the default look
+VOLUME_FILL = "#FFFFFF"
+VOLUME_OPACITY = 0.14
+VOLUME_TOL = 0.005
+VOLUME_SPILL = 0.01           # volume pixels outside the (filled) silhouette / volume pixels
+VOLUME_EDGE = 0.90            # share of the volume's edge hidden under a line or the accent
+VOLUME_ALPHA = 8              # alpha above this counts as volume when measuring (0.14 renders as about 36)
 BAND_ANGLE = 135.0            # the AI band's long axis, y down: bottom left to top right ("/")
 BAND_ANGLE_TOL = 1.5
 BAND_WIDTH = 80.0
@@ -148,19 +158,22 @@ BODY_GRAD = "body-fill"       # the body gradient's id (the <g id="body"> group 
 
 # looks (brief B4): background and body gradient stops, top -> bottom
 LOOKS = {
-    "default": {"bg": ("#26282B", "#191C1F"), "body": ("#F8F9FB", "#C6C8CB")},
-    "light": {"bg": ("#FBFCFE", "#E9EBEE"), "body": ("#333538", "#1E2022")},
-    "dark": {"bg": ("#191C1F", "#0E1115"), "body": ("#EDEEEF", "#BDBFC2")},
+    "default": {"bg": ("#26282B", "#191C1F"), "body": ("#F8F9FB", "#C6C8CB"), "volume": (VOLUME_FILL, VOLUME_OPACITY)},
+    "light": {"bg": ("#FBFCFE", "#E9EBEE"), "body": ("#333538", "#1E2022"), "volume": ("#1E2022", 0.07)},
+    "dark": {"bg": ("#191C1F", "#0E1115"), "body": ("#EDEEEF", "#BDBFC2"), "volume": ("#FFFFFF", 0.10)},
 }
 MONO_ACCENT_OPACITY = ".5"
+MONO_VOLUME_OPACITY = 0.3     # mono (Tinted, Clear, Android monochrome): lines 100 %, accent 50 %, volume 30 %
 MARK_PAD = 8                  # <name>-mark: transparent margin around the subject, px
 # in-app brand marks (rian-app-theme's brand panels): flat, like the UI's Lucide lines. The suffix names the scheme the
 # mark is for, like -light / -dark for the icon: <name>-mark (light lines) on the dark graphite panel, <name>-mark-light
 # (dark lines) on the light panel. The accent is its main tone in both. Same values as rian-app-theme's brand.line.
 MARK_LINE = {"mark": "#E6E8EB", "mark-light": "#2A2C2F"}
+# the marks keep the volume, flat, in the line colour at a low opacity: the in-app art reads as the same object
+MARK_VOLUME = {"mark": 0.14, "mark-light": 0.08}
 PALETTE = {"蓝": ("#7AAEFF", "#3B7BEA"), "绿": ("#6FD3A6", "#23A36B"), "黄": ("#FFD978", "#F2AE2E"),
            "珊瑚": ("#FF9C86", "#EC5B45"), "紫": ("#B3A6FF", "#7A63F0"), "灰": ("#C8C7C3", "#8E8D89")}
-TINTS = (("Tinted 黄", "#F5C542"), ("Tinted 蓝", "#5E9BFF"))
+TINT = "#5E9BFF"              # the tint the sheet's two Tinted tiles use (the user picks it on the device)
 FAVICON_RADIUS = 0.22         # favicon: graphite tile with 22 % corners
 IOS_CORNER = 0.2237           # Apple's icon shape: corner radius / side ...
 IOS_SMOOTH = 0.6              # ... with 60 % corner smoothing (previews, the store rim, its edge ring)
@@ -497,6 +510,13 @@ def static_info(root):
     P = parents(root)
     subject, body = node(root, "subject"), node(root, "body")
     accent, background = node(root, "accent-shape"), node(root, "background")
+    volume = node(root, "volume")
+    info["no_volume"] = subject is not None and subject.get("data-volume") == "none"
+    if volume is None and not info["no_volume"]:
+        info["errors"].append('缺 #volume：线稿下面垫一层半透明白色实形，边落在线的中线上（style.md「体积层」）；'
+                              '物件没有「里面」（一支箭头、一条线）时在 #subject 上写 data-volume="none"')
+    if volume is not None and info["no_volume"]:
+        info["errors"].append('有 #volume 就不写 data-volume="none"')
     for el, name in ((subject, "#subject"), (body, "#body"), (accent, "#accent-shape")):
         if el is None:
             info["errors"].append(f"缺 {name}")
@@ -559,17 +579,22 @@ def static_info(root):
     info["accent_matrix"] = M @ chain_matrix(accent, accent, P) if accent is not None else M
 
     glow = node(root, "glow")
+    if glow is not None or defn(root, "glow-blur") is not None:
+        info["errors"].append("不再画辉光：删掉 #glow 和 #glow-blur（iOS 26 的阴影、高光由系统加；Icon Composer 里强调色组设 Chromatic 阴影）")
     if subject is not None:
         kids = [c for c in subject if local(c) in GRAPHIC]
-        allowed = [e for e in (glow, body, accent) if e is not None]
-        extra = [c for c in kids if c not in allowed]
+        allowed = [e for e in (volume, body, accent) if e is not None]
+        extra = [c for c in kids if c not in allowed and c is not glow]
         if extra:
-            info["errors"].append("#subject 里只放 #glow、#body、#accent-shape，多了 "
+            info["errors"].append("#subject 里只放 #volume、#body、#accent-shape，多了 "
                                   + ", ".join(f"<{local(c)}{' id=' + c.get('id') if c.get('id') else ''}>"
                                               for c in extra[:3]))
         if body is not None and accent is not None and body in kids and accent in kids \
                 and kids.index(accent) < kids.index(body):
             info["errors"].append("#accent-shape 要画在 #body 后面")
+        if volume is not None and body is not None and volume in kids and body in kids \
+                and kids.index(volume) > kids.index(body):
+            info["errors"].append("#volume 要画在 #body 前面（在线的下面）")
     sub_nodes = [e for e in rendered(subject)] if subject is not None else []
 
     # gradients and fills
@@ -617,6 +642,24 @@ def static_info(root):
                 if o is not None and o < 1:
                     own.append(f"<{local(e)}> {a}={o:g}")
     info["piece_fills"] = own
+    vol = {"fill": None, "opacity": None, "problems": []}
+    if volume is not None:
+        vol["fill"] = norm_color(get_prop(volume, "fill") or "").upper() or None
+        vol["opacity"] = num(get_prop(volume, "fill-opacity"), 1.0)
+        if (get_prop(volume, "stroke") or "none").strip().lower() != "none":
+            vol["problems"].append("#volume 不描边")
+        if num(get_prop(volume, "opacity")) is not None:
+            vol["problems"].append("透明度写 fill-opacity，不写 opacity")
+        for e in rendered(volume):
+            if e is volume:
+                continue
+            for a in ("fill", "stroke", "opacity", "fill-opacity", "stroke-width"):
+                if get_prop(e, a) is not None and (get_prop(e, a) or "").strip().lower() != "inherit":
+                    vol["problems"].append(f"<{local(e)}> 自带 {a}")
+                    break
+        if not [e for e in rendered(volume) if local(e) in GEOMETRY]:
+            vol["problems"].append("#volume 里没有形状")
+    info["volume"] = vol
 
     # glow and other filters
     info["glow"] = None
@@ -641,7 +684,7 @@ def static_info(root):
                              for e in sub_nodes if get_prop(e, "filter") and e is not glow]
 
     info["masked"] = {name: any(get_prop(e, "mask") or get_prop(e, "clip-path") for e in el.iter())
-                      for name, el in (("body", body), ("accent", accent)) if el is not None}
+                      for name, el in (("body", body), ("accent", accent), ("volume", volume)) if el is not None}
     return info
 
 
@@ -671,34 +714,47 @@ def _bg_gradient_id(root):
     return (url_id(get_prop(bg, "fill")) if bg is not None else None) or "bg"
 
 
-def _look(text, look, glow):
+def _set_volume(root, colour, opacity):
+    v = node(root, "volume")
+    if v is not None:
+        set_prop(v, "fill", colour)
+        set_prop(v, "fill-opacity", f"{opacity:g}")
+
+
+def _drop_glow(root):
+    """Older masters may still carry a glow: no look keeps it."""
+    _remove(root, node(root, "glow"))
+
+
+def _look(text, look):
     root = ET.fromstring(strip_xml_prolog(text))
     _remove(root, node(root, "rim"))
+    _drop_glow(root)
     _set_stops(root, _bg_gradient_id(root), LOOKS[look]["bg"])
     body = node(root, "body")
     _set_stops(root, (url_id(get_prop(body, "stroke")) if body is not None else None) or BODY_GRAD, LOOKS[look]["body"])
-    if not glow:
-        _remove(root, node(root, "glow"))
+    _set_volume(root, *LOOKS[look]["volume"])
     return serialize(prune_defs(root))
 
 
 def make_light(text):
-    """Light look: background #FBFCFE -> #E9EBEE, body #333538 -> #1E2022, no glow, accent unchanged."""
-    return _look(text, "light", glow=False)
+    """Light look: background #FBFCFE -> #E9EBEE, body #333538 -> #1E2022, volume #1E2022 at .07, accent unchanged."""
+    return _look(text, "light")
 
 
 def make_dark(text):
-    """iOS Dark look: background #191C1F -> #0E1115, body #EDEEEF -> #BDBFC2, glow kept, accent unchanged."""
-    return _look(text, "dark", glow=True)
+    """iOS Dark look: background #191C1F -> #0E1115, body #EDEEEF -> #BDBFC2, volume white at .10, accent unchanged."""
+    return _look(text, "dark")
 
 
 def make_mono(text):
-    """Mono (iOS Tinted / Clear source, Android monochrome): no background, no glow,
-    body white 100 %, accent white 50 %."""
+    """Mono (iOS Tinted / Clear source, Android monochrome): no background, body white 100 %, accent white 50 %,
+    volume white 30 %."""
     root = ET.fromstring(strip_xml_prolog(text))
     _remove(root, node(root, "background"))
     _remove(root, node(root, "rim"))
-    _remove(root, node(root, "glow"))
+    _drop_glow(root)
+    _set_volume(root, "#FFFFFF", MONO_VOLUME_OPACITY)
     body, accent = node(root, "body"), node(root, "accent-shape")
     _set_stops(root, (url_id(get_prop(body, "stroke")) if body is not None else None) or BODY_GRAD,
                ("#FFFFFF", "#FFFFFF"))
@@ -708,28 +764,14 @@ def make_mono(text):
 
 
 def make_small(text, k):
-    """64 px and below: the line 76 final px instead of 60 (stroke-width on #body, so every line follows), no glow."""
+    """64 px and below: the line 76 final px instead of 60 (stroke-width on #body, so every line follows); the volume
+    stays."""
     root = ET.fromstring(strip_xml_prolog(text))
-    _remove(root, node(root, "glow"))
+    _drop_glow(root)
     body = node(root, "body")
     if body is not None:
         set_prop(body, "stroke-width", f"{SMALL_STROKE / k:.2f}")
     return serialize(prune_defs(root))
-
-
-def glow_source(text):
-    """For the glow layer: #accent-shape moved into <defs>, so only the <use id="glow"> clone paints it.
-    (CSS cannot hide the original alone: rules that match it also match its <use> clone.)"""
-    root = ET.fromstring(strip_xml_prolog(text))
-    accent = node(root, "accent-shape")
-    if accent is not None:
-        _remove(root, accent)
-        defs = root.find(q("defs"))
-        if defs is None:
-            defs = ET.Element(q("defs"))
-            root.insert(0, defs)
-        defs.append(accent)
-    return serialize(root)
 
 
 def with_scale(text, s):
@@ -749,11 +791,13 @@ def without_background(text):
     return serialize(root)
 
 
-def flat_mark(text, line):
-    """#subject alone, flat: no background, no glow; every line one solid `line` colour (the body gradient goes), the
-    accent its main tone (the last stop of its gradient), so the mark matches the UI's flat line icons."""
+def flat_mark(text, line, volume=MARK_VOLUME["mark"]):
+    """#subject alone, flat: no background; every line one solid `line` colour (the body gradient goes), the
+    accent its main tone (the last stop of its gradient), the volume the line colour at `volume`, so the mark matches
+    the UI's flat line icons and still reads as the icon's object."""
     root = ET.fromstring(strip_xml_prolog(without_background(text)))
-    _remove(root, node(root, "glow"))
+    _drop_glow(root)
+    _set_volume(root, line, volume)
     for layer, prop, colour in (("body", "stroke", lambda gid: line), ("accent-shape", "fill", None)):
         el = node(root, layer)
         for e in (el.iter() if el is not None else ()):
@@ -774,7 +818,7 @@ def make_marks(renderer, text, pad=MARK_PAD):
     """In-app brand art for rian-app-theme: the flat marks of MARK_LINE, cropped to what is drawn plus `pad` (the same
     box for both). Scaled only as a whole, so the line stays 60 / 1024 of the icon.
     Returns {suffix: (svg text, RGBA image)}."""
-    flats = {k: flat_mark(text, c) for k, c in MARK_LINE.items()}
+    flats = {k: flat_mark(text, c, MARK_VOLUME[k]) for k, c in MARK_LINE.items()}
     ims = {k: renderer.image(v, 1024, transparent=True) for k, v in flats.items()}
     alpha = np.asarray(ims["mark"])[:, :, 3]
     ys, xs = np.nonzero(alpha > 2)
@@ -835,10 +879,11 @@ def with_rounded_background(text, d=None):
 
 HIDE = "{display:none!important}"
 LAYER_CSS = {
-    "body": "#background,#rim,#glow,#accent-shape" + HIDE,
-    "accent": "#background,#rim,#glow,#body" + HIDE,
-    "glow": "#background,#rim,#body" + HIDE,     # applied to glow_source(): only the glow is left
-    "all": "#background,#rim" + HIDE,
+    "body": "#background,#rim,#glow,#volume,#accent-shape" + HIDE,
+    "accent": "#background,#rim,#glow,#volume,#body" + HIDE,
+    "volume": "#background,#rim,#glow,#body,#accent-shape" + HIDE,
+    "solid-volume": "#background,#rim,#glow,#body,#accent-shape" + HIDE + "#volume{fill-opacity:1!important}",
+    "lines": "#background,#rim,#glow,#volume" + HIDE,   # lines and accent: what the size checks measure
 }
 MEASURE_CSS = {                                 # extra layers for the checks
     "full": "",
@@ -856,7 +901,9 @@ STROKE_JS = """() => {
   for (const el of subject.querySelectorAll(GEO)) {
     if (el.closest(SKIP) || el.id === 'glow') continue;
     const cs = getComputedStyle(el);
-    const layer = body && body.contains(el) ? 'body' : accent && (accent === el || accent.contains(el)) ? 'accent' : '';
+    const volume = document.getElementById('volume');
+    const layer = body && body.contains(el) ? 'body' : accent && (accent === el || accent.contains(el)) ? 'accent'
+      : volume && (volume === el || volume.contains(el)) ? 'volume' : '';
     out.push({tag: el.tagName, id: el.id || '', layer: layer, stroke: cs.stroke, width: cs.strokeWidth,
               cap: cs.strokeLinecap, join: cs.strokeLinejoin, fill: cs.fill});
   }
@@ -902,15 +949,10 @@ class Renderer:
     def layers(self, svg_text, names):
         """Separately rasterised layers at 1024, RGBA arrays (transparent except "full" and "bg")."""
         out = {}
-        plain = [n for n in names if n != "glow"]
-        if plain:
-            self.load(svg_text, 1024)
-            for n in plain:
-                css = LAYER_CSS.get(n, MEASURE_CSS.get(n))
-                out[n] = np.asarray(self.shot(css, transparent=n not in OPAQUE).convert("RGBA"))
-        if "glow" in names:
-            self.load(glow_source(svg_text), 1024)
-            out["glow"] = np.asarray(self.shot(LAYER_CSS["glow"]).convert("RGBA"))
+        self.load(svg_text, 1024)
+        for n in names:
+            css = LAYER_CSS.get(n, MEASURE_CSS.get(n))
+            out[n] = np.asarray(self.shot(css, transparent=n not in OPAQUE).convert("RGBA"))
         return out
 
     def strokes(self, svg_text):
@@ -1355,6 +1397,7 @@ def small_signature(renderer, small_svg):
     merges two shapes; a hole that clogs disappears. A store variant's rim is left out."""
     root = ET.fromstring(strip_xml_prolog(small_svg))
     _remove(root, node(root, "rim"))
+    _remove(root, node(root, "volume"))   # the signature is about the lines and the accent
     im = renderer.image(serialize(root), 1024)
     bg_mid = (hex_rgb(LOOKS["default"]["bg"][0]) + hex_rgb(LOOKS["default"]["bg"][1])) / 2
     thr = (float(lab_L(bg_mid)) + 50) / 2
@@ -1434,7 +1477,10 @@ def measure(renderer, text, root, name, ref):
         probs.append(f"强调色带描边（<{acc_st[0]['tag']}>）：强调色是一块填色，不描边")
     stray = [x for x in st if not x["layer"]]
     if stray:
-        probs.append(f"#body、#accent-shape 之外有图形 <{stray[0]['tag']}>")
+        probs.append(f"#volume、#body、#accent-shape 之外有图形 <{stray[0]['tag']}>")
+    vol_st = [x for x in st if x["layer"] == "volume" and x["stroke"] != "none"]
+    if vol_st:
+        probs.append(f"体积层带描边（<{vol_st[0]['tag']}>）：#volume 只填色")
     val = (f"{eff:.1f} px（{sw:g} × {k:.3g}）" if eff is not None else "—") + f" · {len(lines)} 段线"
     C.append(check("stroke", "线宽", val + ("；" + "；".join(probs) if probs else " · 圆头圆角"),
                    f"{STROKE:.0f} ± {STROKE_TOL:.0f}，一种线宽，圆头圆角", ok(not probs)))
@@ -1499,13 +1545,21 @@ def measure(renderer, text, root, name, ref):
     else:
         parts.append("强调色 " + (note or f"fill 写 url(#accent)，不是 {info['accent_fill']}"))
         good = False
+    vol = info.get("volume") or {}
+    if vol.get("fill") is not None:
+        v_ok = vol["fill"] == VOLUME_FILL and abs((vol["opacity"] or 0) - VOLUME_OPACITY) <= VOLUME_TOL \
+            and not vol["problems"]
+        parts.append(f"体积层 {vol['fill']} {vol['opacity']:g}" + ("" if v_ok else
+                     f" 应为 fill {VOLUME_FILL}、fill-opacity {VOLUME_OPACITY:g}，平涂"
+                     + ("；" + "；".join(vol["problems"][:2]) if vol["problems"] else "")))
+        good = good and v_ok
     raw["accent_colour"] = acc_name
     C.append(check("palette", "颜色", " · ".join(parts), "默认外观 + 六色表", ok(good)))
     if variant:
         C.append(check("variant", "商店变体", f'data-variant="{variant}"：--store-ab 写出的 A/B 变体，不是母版',
                        "母版不写 data-variant；变体只进产品页优化，不出 --export", "INFO"))
 
-    L = renderer.layers(text, ["body", "accent", "full", "bg", "glow"])
+    L = renderer.layers(text, ["body", "accent", "volume", "full", "bg"])
     body_c = L["body"][..., 3].astype(np.float32) / 255
     acc_c = L["accent"][..., 3].astype(np.float32) / 255
     body, acc = body_c >= 0.5, acc_c >= 0.5
@@ -1577,6 +1631,31 @@ def measure(renderer, text, root, name, ref):
     else:
         C.append(check("accent_gap", "强调色到线", f"{gap_ab:.1f} px {at(at_ab)}", f"净空 ≥ {GAP_ACCENT:.0f}（一个线宽），不碰线",
                        ok(gap_ab >= GAP_ACCENT - GAP_TOL)))
+
+    # the volume: inside the silhouette, its edge hidden under the lines (it is the area the lines' centre line closes);
+    # the accent may lie on it
+    vol_m = L["volume"][..., 3] > VOLUME_ALPHA
+    if vol_m.any():
+        v_area = float(vol_m.sum())
+        spill = float((vol_m & ~dilate(hull_mask(sil), 2)).sum()) / v_area   # open drawings: the hull
+        edge = vol_m & ~disk_erode(vol_m, 1)
+        hidden = float((edge & dilate(union, 3)).sum()) / max(float(edge.sum()), 1.0)
+        cover = v_area / hull
+        raw.update(volume_spill=spill, volume_edge_hidden=hidden, volume_cover=cover)
+        good = spill <= VOLUME_SPILL and hidden >= VOLUME_EDGE
+        hint = []
+        if spill > VOLUME_SPILL:
+            hint.append(f"超出剪影 {spill * 100:.1f} %")
+        if hidden < VOLUME_EDGE:
+            hint.append("边没压在线下：#volume 用线的中线围成的形状（同一个 d、同一个圆）")
+        C.append(check("volume", "体积层", f"占凸包 {cover * 100:.0f} % · 边在线下 {hidden * 100:.0f} % · 溢出 {spill * 100:.1f} %"
+                       + ("；" + "；".join(hint) if hint else ""),
+                       f"边 ≥ {VOLUME_EDGE * 100:.0f} % 在线或强调色下，溢出 ≤ {VOLUME_SPILL * 100:.0f} %", ok(good)))
+    elif info.get("no_volume"):
+        C.append(check("volume", "体积层", 'data-volume="none"：物件没有「里面」，只有线和强调色',
+                       "物件里面一层半透明实形；没有「里面」时可以不画", "INFO"))
+    else:
+        C.append(check("volume", "体积层", "没有画出像素", "物件里面一层半透明实形", "FAIL"))
 
     # accent share
     share = 100.0 * acc.sum() / hull
@@ -1661,46 +1740,26 @@ def measure(renderer, text, root, name, ref):
     bg_l = Ll["bg"][..., :3][hm].mean(0)
     cbl, cal = contrast(Ll["full"][..., :3][core_b].mean(0), bg_l), contrast(Ll["full"][..., :3][core_a].mean(0), bg_l)
     raw.update(contrast_body=cb, contrast_accent=ca, contrast_body_light=cbl, contrast_accent_light=cal)
-    C.append(check("contrast_body", "线对底", f"{cb:.1f}:1 · 浅色外观 {cbl:.1f}:1（INFO）",
+    on_vol = ""
+    if vol_m.any():
+        # the lines against the base with the volume over it (its mean colour inside the volume)
+        vbg = (bgim[vol_m].astype(np.float32) * (1 - VOLUME_OPACITY) + 255 * VOLUME_OPACITY).mean(0)
+        cv = contrast(full[core_b].mean(0), vbg)
+        raw["contrast_body_volume"] = cv
+        on_vol = f" · 线对体积层 {cv:.1f}:1（INFO）"
+    C.append(check("contrast_body", "线对底", f"{cb:.1f}:1{on_vol} · 浅色外观 {cbl:.1f}:1（INFO）",
                    f"默认外观 ≥ {CONTRAST_BODY:.0f}:1", ok(cb >= CONTRAST_BODY)))
     C.append(check("contrast_accent", "强调色对底", f"{ca:.1f}:1 · 浅色外观 {cal:.1f}:1（INFO）",
                    f"默认外观 ≥ {CONTRAST_ACCENT:.0f}:1", ok(ca >= CONTRAST_ACCENT)))
 
-    # glow
-    g = info["glow"]
-    target = f"≤ 1 个，只在强调色上，≤ {GLOW_OPACITY_MAX:.2f}，σ ≤ {GLOW_SD_MAX:.0f} px"
-    glow_a = L["glow"][..., 3].astype(np.float32) / 255
-    raw["glow_peak_alpha"] = float(glow_a[~dilate(acc, 1)].max()) if g else 0.0
+    # no baked effects: the system adds shadow, specular highlight and refraction (Apple HIG, app icons)
     probs = []
+    if info["glow"] is not None:
+        probs.append("还有 #glow：删掉 #glow 和 #glow-blur")
     if info["other_filters"]:
-        probs.append("除 #glow 外还有滤镜 " + ", ".join(info["other_filters"][:3]))
-    if g is None:
-        C.append(check("glow", "辉光", "没有（可选）" + ("；" + "；".join(probs) if probs else ""), target,
-                       ok(not probs)))
-    else:
-        if g["tag"] != "use" or g["href"] != "accent-shape":
-            probs.append('要 <use href="#accent-shape">')
-        if not g["first"]:
-            probs.append("要是 #subject 的第一个子元素")
-        if g["filter"] != "glow-blur":
-            probs.append(f"filter 叫 #{g['filter']}，应为 #glow-blur")
-        sd = g["sd"] * k if g["sd"] is not None else None
-        if sd is None or g["opacity"] is None:
-            probs.append("#glow-blur 要有 feGaussianBlur 和 feFlood")
-        else:
-            if sd > GLOW_SD_MAX + 1e-6:
-                probs.append(f"σ {sd:.1f} px 过大")
-            if g["opacity"] > GLOW_OPACITY_MAX + 1e-6:
-                probs.append(f"不透明度 {g['opacity']:g} 过高")
-        if acc_name and g["color"] and g["color"] != PALETTE[acc_name][1]:
-            probs.append(f"颜色 {g['color']} 应为强调色的主 {PALETTE[acc_name][1]}")
-        if g["offset"]:
-            probs.append("不偏移")
-        raw.update(glow_opacity=g["opacity"], glow_sd=sd)
-        val = "1 个"
-        if sd is not None and g["opacity"] is not None:
-            val += f" · 不透明度 {g['opacity']:g} · σ {sd:.0f} px · {g['color']}"
-        C.append(check("glow", "辉光", val + ("；" + "；".join(probs) if probs else ""), target, ok(not probs)))
+        probs.append("滤镜 " + ", ".join(info["other_filters"][:3]))
+    C.append(check("glow", "辉光和滤镜", "没有" if not probs else "；".join(probs),
+                   "不画辉光、阴影、高光（iOS 26 由系统加）", ok(not probs)))
 
     # category mark (tools line, image sun, video play outline, AI band) and the reserved green
     C.append(category_check(info, union, body, acc, acc_c, lines_, hull, acc_name, raw))
@@ -2030,14 +2089,75 @@ def vgrad(top, bottom, size=1024):
     return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
 
 
-def tinted(mono, tint):
-    """iOS Tinted, approximated: a dark tinted background, the mono layer in the tint colour."""
+def _tint_bg(tint, light):
+    """Tinted base, approximated: dark (tint 16 % -> 7 %) or pale (tint 30 % -> 42 % over white)."""
     t = hex_rgb(tint).astype(np.float32)
     y = np.linspace(0, 1, 1024, dtype=np.float32)[:, None, None]
-    top, bot = t * 0.16 + 6, t * 0.07 + 4
-    bg = (top * (1 - y) + bot * y) * np.ones((1, 1024, 1), np.float32)
-    a = np.asarray(mono)[..., 3:4].astype(np.float32) / 255
-    return Image.fromarray(np.clip(bg * (1 - a) + t * a, 0, 255).astype(np.uint8), "RGB")
+    if light:
+        top, bot = 255 * 0.70 + t * 0.30, 255 * 0.58 + t * 0.42
+    else:
+        top, bot = t * 0.16 + 6, t * 0.07 + 4
+    arr = (top * (1 - y) + bot * y) * np.ones((1, 1024, 1), np.float32)
+    return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
+
+
+def _clear_bg(kind):
+    """Clear base, approximated: the blurred wallpaper under a light (dark wallpaper) or dark (light one) glass tint."""
+    g = wallpaper(kind).filter(ImageFilter.GaussianBlur(40)).convert("RGBA")
+    tint = Image.new("RGBA", g.size, (0, 0, 0, 46) if kind == "light" else (255, 255, 255, 22))
+    return Image.alpha_composite(g, tint).convert("RGB")
+
+
+def _recolour(layer, colour):
+    out = np.array(layer, copy=True)
+    out[..., :3] = hex_rgb(colour)
+    return out
+
+
+def _blur(a, r):
+    return np.asarray(Image.fromarray(np.clip(a * 255, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(r)),
+                      np.float32) / 255
+
+
+def liquid_glass(bg, groups, dark=False):
+    """iOS 26 Liquid Glass, approximated for review only: each foreground group (RGBA arrays, bottom to top) throws a
+    soft shadow on what is below it and gets a specular rim, bright along its top-left edges and fainter along the
+    bottom-right ones. Icon Composer's real rendering (refraction, translucency, the light moving with the device) is
+    richer; judge depth and legibility here, the final look in Icon Composer."""
+    out = np.asarray(bg.convert("RGB"), np.float32).copy()
+    for g in groups:
+        a = g[..., 3].astype(np.float32) / 255
+        if a.max() < 0.01:
+            continue
+        solid = np.clip(a / max(float(a.max()), 1e-3), 0, 1)        # the group's shape, whatever its opacity
+        sh = np.roll(_blur(solid, 16), 12, axis=0) * (0.34 if dark else 0.22) * float(a.max()) ** 0.5
+        out *= (1 - sh[..., None])
+        out = out * (1 - a[..., None]) + g[..., :3].astype(np.float32) * a[..., None]
+        hi = _blur(np.clip(solid - np.roll(np.roll(solid, 5, axis=0), 3, axis=1), 0, 1), 1.6)
+        lo = _blur(np.clip(solid - np.roll(np.roll(solid, -4, axis=0), -2, axis=1), 0, 1), 1.6)
+        lift = (hi * 0.55 + lo * 0.18)[..., None]
+        out = out * (1 - lift) + 255 * lift
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB")
+
+
+def appearances(renderer, text, looks):
+    """Apple's six iOS 26 appearances, each through liquid_glass(): default, dark, clear light and dark, tinted light
+    and dark. Groups: volume, lines, accent. Clear and tinted come from the mono look, as the system derives them."""
+    names = ["volume", "body", "accent"]
+    dflt = renderer.layers(text, names)
+    drk = renderer.layers(looks["dark"], names)
+    mono = renderer.layers(looks["mono"], names)
+    tint_dark = [_recolour(mono[n], TINT) for n in names]
+    deep = "#{:02X}{:02X}{:02X}".format(*[int(c * 0.62) for c in hex_rgb(TINT)])
+    tint_light = [_recolour(mono[n], deep) for n in names]
+    return [
+        ("默认", liquid_glass(vgrad(*LOOKS["default"]["bg"]), [dflt[n] for n in names], dark=True), "mid", None),
+        ("深色", liquid_glass(vgrad(*LOOKS["dark"]["bg"]), [drk[n] for n in names], dark=True), "dark", None),
+        ("Clear 浅色", liquid_glass(_clear_bg("light"), [mono[n] for n in names]), "wall-light", "light"),
+        ("Clear 深色", liquid_glass(_clear_bg("dark"), [mono[n] for n in names], dark=True), "wall-dark", "dark"),
+        ("Tinted 浅色", liquid_glass(_tint_bg(TINT, True), tint_light), "wall-light", "light"),
+        ("Tinted 深色", liquid_glass(_tint_bg(TINT, False), tint_dark, dark=True), "wall-dark", "dark"),
+    ]
 
 
 WALLS = {}
@@ -2059,17 +2179,6 @@ def wallpaper(kind, size=1024):
         d.ellipse((x - r, y - r, x + r, y + r), fill=c)
     WALLS[kind] = im.filter(ImageFilter.GaussianBlur(size * 0.09))
     return WALLS[kind]
-
-
-def clear_tile(mono, kind):
-    """iOS Clear, approximated: the blurred wallpaper under a glass tint, mono white at 90 %."""
-    g = wallpaper(kind).filter(ImageFilter.GaussianBlur(40)).convert("RGBA")
-    tint = Image.new("RGBA", g.size, (0, 0, 0, 46) if kind == "light" else (255, 255, 255, 22))
-    g = Image.alpha_composite(g, tint)
-    glyph = np.zeros((1024, 1024, 4), np.uint8)
-    glyph[..., :3] = 255
-    glyph[..., 3] = (np.asarray(mono)[..., 3].astype(np.float32) * 0.9).astype(np.uint8)
-    return Image.alpha_composite(g, Image.fromarray(glyph, "RGBA")).convert("RGB")
 
 
 def themed(mono_scaled, kind):
@@ -2096,6 +2205,7 @@ def icon_images(renderer, text, looks, a_s):
            "fg": renderer.image(with_scale(without_background(text), a_s), 1024, transparent=True),
            "mono_scaled": renderer.image(with_scale(looks["mono"], a_s), 1024, transparent=True)}
     ims["android"] = adaptive_visible(over(vgrad(*bg), ims["fg"]))
+    ims["glass"] = appearances(renderer, text, looks)
     return ims
 
 
@@ -2133,11 +2243,13 @@ SHEET = """<!doctype html><html><head><meta charset="utf-8"><style>
 </style></head><body><div class="sheet">
   <div class="top">
     <img class="sh" src="{hero}" width="240" height="240">
-    <div class="meta"><h1>{name}</h1><div class="label">默认外观 · 石墨 · iOS 遮罩</div>{stat}</div>
+    <div class="meta"><h1>{name}</h1><div class="label">默认外观 · 石墨 · iOS 遮罩（平面，指标按它量）</div>{stat}</div>
     <div class="vs"><div class="pair">{vs}</div><div class="label">和 Tide 同尺寸，比轻重</div></div>
   </div>
   <div class="strip">{sizes}</div>
-  <div class="h">外观（Tinted、Clear 由 mono 近似）</div>
+  <div class="h">iOS 26 · Apple 的六种外观（Liquid Glass 是近似：每组加了边缘高光和投影，Clear、Tinted 由 mono 推出；真机效果以 Icon Composer 预览为准）</div>
+  <div class="row">{glass}</div>
+  <div class="h">平面版（iOS 26 以下、App Store 截图、网页和营销用的浅色版，没有玻璃）</div>
   <div class="row">{looks}</div>
   <div class="h">Android（前景叠背景渐变取 72 dp 可见区；主题图标：monochrome 层按浅色、深色主题的 Material You 色调上色（色相取自壁纸），近似，上架前在真机启动器上看）</div>
   <div class="row">{android}</div>
@@ -2181,11 +2293,13 @@ def build_sheet(renderer, result, ims, tide_im, path):
     sizes = "".join(cell(tile(ims["small" if s <= 64 else "master"], s), s / 2, f"{s}" + (" small" if s <= 64 else ""))
                     for s in (180, 120, 80, 60, 40, 29))
     T = 220                       # tile px in the grid (110 CSS px)
-    looks = [box(cell(tile(ims["light"], T), T / 2, "浅色"), "mid"),
-             box(cell(tile(ims["dark"], T), T / 2, "深色 · iOS Dark"), "dark")]
-    looks += [box(cell(tile(tinted(ims["mono"], c), T), T / 2, lab), "dark") for lab, c in TINTS]
-    looks += [box(cell(tile(clear_tile(ims["mono"], kind), T), T / 2, lab), f"wall-{kind}", wallpaper(kind))
-              for kind, lab in (("light", "Clear · 浅壁纸"), ("dark", "Clear · 深壁纸"))]
+    glass = [box(cell(tile(im, T), T / 2, lab), cls, wallpaper(wall) if wall else None)
+             for lab, im, cls, wall in ims["glass"]]
+    looks = [box(cell(tile(ims["master"], T), T / 2, "默认（平面）"), "mid"),
+             box(cell(tile(ims["light"], T), T / 2, "浅色"), "mid"),
+             box(cell(tile(ims["dark"], T), T / 2, "深色"), "dark"),
+             box(cell(over(Image.new("RGB", (1024, 1024), (60, 64, 72)), ims["mono"]).resize((T, T), Image.LANCZOS),
+                      T / 2, "mono（Tinted、Clear 的来源）"), "lite")]
     android = [box(cell(tile(ims["android"], T, "circle"), T / 2, "圆形遮罩"), "lite"),
                box(cell(tile(ims["android"], T, "squircle"), T / 2, "方圆遮罩"), "lite"),
                box(cell(tile(adaptive_visible(themed(ims["mono_scaled"], "light")), T, "circle"), T / 2,
@@ -2193,10 +2307,9 @@ def build_sheet(renderer, result, ims, tide_im, path):
                box(cell(tile(adaptive_visible(themed(ims["mono_scaled"], "dark")), T, "circle"), T / 2,
                         "主题图标 · 深色主题"), "wall-dark", wallpaper("dark")),
                box(cell(tile(ims["android"], 96, "circle"), 48, "圆形 48"), "lite"),
-               box(cell(over(Image.new("RGB", (1024, 1024), (60, 64, 72)), ims["mono"]).resize((T, T), Image.LANCZOS),
-                        T / 2, "mono 层"), "lite")]
+               box(cell(tile(ims["android"], 96, "squircle"), 48, "方圆 48"), "lite")]
     html = SHEET.format(hero=png_uri(tile(ims["master"], 480)), name=result["name"], stat=stat, vs=vs,
-                        sizes=sizes, looks="".join(looks), android="".join(android))
+                        sizes=sizes, glass="".join(glass), looks="".join(looks), android="".join(android))
     renderer.sheet(html, path)
 
 
@@ -2360,23 +2473,30 @@ def layer_gradient_svg(gid, g, M):
 
 IC_README = """Icon Composer 分层（{title}）
 
+Apple 的做法（HIG · App icons）：一个背景加最多四组前景，层是方形、不带遮罩，系统加高光、折射、阴影。
+这里是三组前景，从下到上：
+
 文件
-  {f1}   组 1：线稿，整张 1024 画布{n1}
-  {f2}   组 2：强调色块，整张 1024 画布{n2}
+  {f1}   组 1：体积层（物件里面的实形），整张 1024 画布，不透明白色{n1}
+  {f2}   组 2：线稿{n2}
+  {f3}   组 3：强调色块{n3}
 
 在 Icon Composer 里手动设
   Background     Fill 用渐变。Default：#26282B → #191C1F；Dark：#191C1F → #0E1115
-  组 1（线稿）   Specular Automatic；Shadow Neutral
-  组 2（强调色） Specular Automatic；Shadow Chromatic（代替平面版里的辉光，以实际版本的选项为准）
-  Mono           线稿 White；强调色 50 % 灰
+  组 1（体积层） Opacity 14 %（Dark 10 %）；Liquid Glass 开；Specular Automatic；Shadow 关
+  组 2（线稿）   Liquid Glass 开；Specular Automatic；Shadow Neutral
+  组 3（强调色） Liquid Glass 开；Specular Automatic；Shadow Chromatic
+  Mono           体积层 White 30 %；线稿 White；强调色 50 % 灰
+  Clear、Tinted  由系统从 Mono 推出，在 Icon Composer 的外观预览里六种都看一遍
+                 （默认、深色、Clear 浅色、Clear 深色、Tinted 浅色、Tinted 深色）
 
-层文件里只有线稿和强调色：没有辉光、遮罩、背景、圆角、阴影和半透明。底只在 Background 里设，
-深色外观换 Background 的渐变，层不变。
+层文件里没有辉光、遮罩、背景、圆角、阴影：这些都交给系统。底只在 Background 里设，
+深色外观换 Background 的渐变和体积层的透明度，层不变。
 
 不用 Icon Composer、走 asset catalog（AppIcon，单尺寸 1024）时用上一级目录的三张
-  Any            ios-1024.png          不透明，带石墨底
-  Dark           ios-1024-dark.png     透明底，系统自己垫深色底；线稿用深色外观的渐变，保留辉光
-  Tinted         ios-1024-tinted.png   灰度，不透明黑底：线稿白，强调色 50 % 灰，系统按用户选的色调上色
+  Any            ios-1024.png          不透明，带石墨底和体积层
+  Dark           ios-1024-dark.png     透明底，系统自己垫深色底；线稿用深色外观的渐变
+  Tinted         ios-1024-tinted.png   灰度，不透明黑底：线稿白，强调色 50 % 灰，体积层 30 % 灰
 """
 
 IC_LAUNCHER = """<?xml version="1.0" encoding="utf-8"?>
@@ -2430,11 +2550,27 @@ def legacy_icon(adaptive, px, shape):
 def export_icon_composer(renderer, text, root, info, title, out):
     out.mkdir(parents=True, exist_ok=True)
     files = []
-    for ident, gid, num_, css, name in (("body", "body", 1, "body", "body"), ("accent-shape", "accent", 2, "accent",
-                                                                            "accent")):
+    for stale in ("1_body", "2_accent"):       # names before the volume group
+        for ext in (".svg", ".png"):
+            if (out / (stale + ext)).exists():
+                (out / (stale + ext)).unlink()
+    for ident, gid, num_, css, name in (("volume", "volume", 1, "solid-volume", "volume"),
+                                        ("body", "body", 2, "body", "body"),
+                                        ("accent-shape", "accent", 3, "accent", "accent")):
+        if gid == "volume" and node(root, "volume") is None:
+            for stale in (out / "1_volume.svg", out / "1_volume.png"):
+                if stale.exists():
+                    stale.unlink()
+            files.append(("（没有 1_volume）", '：data-volume="none"，这一组不出，组 2、3 照旧'))
+            continue
         paths = bake_layer(root, ident, info)
-        g = info["body_grad"] if gid == "body" else info["accent_grad"]
+        g = {"body": info["body_grad"], "accent": info["accent_grad"]}.get(gid,
+                                                                          {"units": "userSpaceOnUse"})
         M = info["body_matrix"] if gid == "body" else info["accent_matrix"]
+        if gid == "volume":
+            P_ = parents(root)
+            vol_el = node(root, "volume")
+            M = info["matrix"] @ chain_matrix(vol_el, vol_el, P_) if vol_el is not None else info["matrix"]
         for stale in (out / f"{num_}_{name}.svg", out / f"{num_}_{name}.png"):
             if stale.exists():
                 stale.unlink()
@@ -2444,17 +2580,22 @@ def export_icon_composer(renderer, text, root, info, title, out):
         if paths and g is not None and g["units"] == "userSpaceOnUse":
             body = "\n".join(f'    <path d="{d}"' + (f' fill-rule="{r}"' if r else "") + "/>" for d, r in paths)
             paint = (f'fill="none" stroke="url(#{gid})" stroke-width="{STROKE:g}" stroke-linecap="round" '
-                     'stroke-linejoin="round"' if gid == "body" else f'fill="url(#{gid})"')
+                     'stroke-linejoin="round"' if gid == "body" else
+                     f'fill="{VOLUME_FILL}"' if gid == "volume" else f'fill="url(#{gid})"')
+            defs = "" if gid == "volume" else f"  <defs>{layer_gradient_svg(gid, g, M)}</defs>\n"
             svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">\n'
                    f"  <!-- {title}: Icon Composer group {num_}, the {name}. Final pixels, transform baked in. -->\n"
-                   f"  <defs>{layer_gradient_svg(gid, g, M)}</defs>\n"
+                   + defs +
                    f'  <g {paint}>\n{body}\n  </g>\n</svg>\n')
             (out / f"{num_}_{name}.svg").write_text(svg, encoding="utf-8")
-            files.append((f"{num_}_{name}.svg 和 .png", "，SVG 的 transform 已烘焙进坐标，保留渐变和 60 px 圆头线"))
+            files.append((f"{num_}_{name}.svg 和 .png", {"volume": "；透明度在 Icon Composer 里设",
+                                                       "body": "，transform 已烘焙进坐标，保留渐变和 60 px 圆头线",
+                                                       "accent": "，transform 已烘焙进坐标，保留渐变"}[gid]))
         else:
             files.append((f"{num_}_{name}.png", "（用了遮罩或无法写成纯路径，只出 PNG 层）"))
     (out / "README.txt").write_text(IC_README.format(title=title, f1=files[0][0], n1=files[0][1],
-                                                     f2=files[1][0], n2=files[1][1]), encoding="utf-8")
+                                                     f2=files[1][0], n2=files[1][1], f3=files[2][0], n3=files[2][1]),
+                                    encoding="utf-8")
     return [f"icon-composer/{f}" for f, _ in files] + ["icon-composer/README.txt"]
 
 

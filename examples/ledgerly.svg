@@ -19,11 +19,6 @@
       <stop offset="0" stop-color="#6FD3A6"/>
       <stop offset="1" stop-color="#23A36B"/>
     </linearGradient>
-    <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
-      <feFlood flood-color="#23A36B" flood-opacity="0.16"/>
-      <feComposite in2="b" operator="in"/>
-    </filter>
   </defs>
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
   <!-- transform: k = 1, then (−5, −5): silhouette centroid on the centre.
@@ -31,7 +26,9 @@
        the pie's radii, so 97 − 30 = 67 clear of their edge (≥ 60). Slice R 262 against the pie's 250.
        render.py: 1 line, accent 14.1 % of the hull, silhouette 0.98 × Tide. data-category finance: green. -->
   <g id="subject" data-shape="circle" data-category="finance" transform="translate(512 512) scale(1) translate(-512 -512) translate(-5 -5)">
-    <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
+    <!-- volume: the pie's inside: the 288° sector the line draws, filled; the pulled-out slice stays outside. Flat white at .14 (Apple HIG: filled, overlapping layers at different
+         opacities; the system adds the light). No glow: iOS 26 adds shadow and specular highlights itself -->
+    <path id="volume" fill="#FFFFFF" fill-opacity="0.14" d="M 500.0 540.0 L 737.8 462.7 A 250 250 0 1 1 500.0 290.0 Z"/>
     <!-- the line drawing: centre lines only, stroke 60, round caps and joins, no fill -->
     <!-- pie: centre (500, 540), r 250, open from −90° to −18° -->
     <g id="body" fill="none" stroke="url(#body-fill)" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
