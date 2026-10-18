@@ -1,63 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
     Ledgerly, a bookkeeping app: log every expense and see at month end where the money went.
-    The month's spending as a pie chart; one 72° slice is pulled out to the upper right and filled green:
-    "this is where the money went". 2 pieces: the 288° pie and the slice.
-    72°, not 90°: the accent share drops from 22 % to 17.5 % (level with Tide and Halo), and the mark moves away
-    from SF Symbols' chart.pie.fill, whose pulled-out piece is the upper right quarter.
+    The month's spending as a pie chart drawn in one line (a 288° arc and two radii); the missing 72° slice is
+    pulled out to the upper right and filled green: "this is where the money went".
     Drawn at final size: k = 1, every coordinate is a 1024-canvas pixel before translate.
     Rules and numbers: references/style.md. Layers, attributes and variants: references/construction.md.
   -->
   <defs>
-    <!-- bg: graphite, fixed (#26282B → #191C1F) -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#26282B"/>
       <stop offset="1" stop-color="#191C1F"/>
     </linearGradient>
-    <!-- body: fixed #F8F9FB → #C6C8CB. Span 600 centred on the pie: y 524 − 280 = 244 to 804, centre 524,
-         so y1 224, y2 824 -->
-    <linearGradient id="body-fill" x1="0" y1="224" x2="0" y2="824" gradientUnits="userSpaceOnUse">
+    <linearGradient id="body-fill" x1="0" y1="240" x2="0" y2="840" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#F8F9FB"/>
       <stop offset="1" stop-color="#C6C8CB"/>
     </linearGradient>
-    <!-- accent: green (finance), light #6FD3A6 → main #23A36B.
-         Span 480 centred on the slice: y 194.3 (top of its rim fillet) to 461.4 (bottom of its apex fillet),
-         centre 327.8, so y1 87.8, y2 567.8 -->
-    <linearGradient id="accent" x1="0" y1="87.8" x2="0" y2="567.8" gradientUnits="userSpaceOnUse">
+    <linearGradient id="accent" x1="0" y1="32" x2="0" y2="512" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#6FD3A6"/>
       <stop offset="1" stop-color="#23A36B"/>
     </linearGradient>
-    <!-- glow-blur: the accent's main colour #23A36B at .16, blur 24, no offset -->
     <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
       <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
       <feFlood flood-color="#23A36B" flood-opacity="0.16"/>
       <feComposite in2="b" operator="in"/>
     </filter>
   </defs>
-
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
-
-  <!-- transform: k = 1, then translate (−6, 6), which puts the filled silhouette's centroid on (512, 512):
-       the pie centre lands on (494, 530); the outer box sits up and right of centre because the slice sticks out.
-       Circle keyline 580: the pie is 2 × 280 = 560 across and the slice reaches out past it. Outer box x 214..824
-       (pie's left edge to the slice's right corner), y 200..810 (slice top to pie bottom): 610 × 610.
-       render.py: silhouette 0.96 × Tide, ink 1.17 × Tide (a solid pie), cut 47.6 (along the cut p50 48 / p90 52,
-       a parallel cut), accent 17.5 % of the hull, r_max 336 (Android ×0.72 and PWA ×1.016, both capped). -->
-  <g id="subject" data-shape="circle" data-cut="48" data-category="finance" transform="translate(512 512) scale(1) translate(-512 -512) translate(-6 6)">
+  <!-- transform: k = 1, then (−5, −5): silhouette centroid on the centre.
+       The slice is pulled out 165 along −54° (its bisector): its straight edges then run 165 × sin 36° = 97 from
+       the pie's radii, so 97 − 30 = 67 clear of their edge (≥ 60). Slice R 262 against the pie's 250.
+       render.py: 1 line, accent 14.1 % of the hull, silhouette 0.98 × Tide. data-category finance: green. -->
+  <g id="subject" data-shape="circle" data-category="finance" transform="translate(512 512) scale(1) translate(-512 -512) translate(-5 -5)">
     <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
-    <g id="body" fill="url(#body-fill)">
-      <!-- pie: centre (500, 524), r 280, with the −81° → −9° sector taken out (72°, bisector −45°), 288° left.
-           The notch's straight edges are that sector's radii (python3 scripts/shapes.py sector 500 524 280 -81 -9 24
-           gives the same edge lines); the two rim corners are rounded 24.
-           The notch's inner corner is a reverse arc r 72 centred at (586.6, 437.4), the centre of the moved
-           slice's apex fillet (r 24): 72 = 24 + 48, so the cut keeps its 48 around the corner too
-           (with r 24 there the gap would bulge to about 68). -->
-      <path d="M 597.9 508.5 L 751.7 484.1 A 24 24 0 0 1 779.4 506.3 A 280 280 0 1 1 517.7 244.6 A 24 24 0 0 1 539.9 272.3 L 515.5 426.1 A 72 72 0 0 0 597.9 508.5 Z"/>
+    <!-- the line drawing: centre lines only, stroke 60, round caps and joins, no fill -->
+    <!-- pie: centre (500, 540), r 250, open from −90° to −18° -->
+    <g id="body" fill="none" stroke="url(#body-fill)" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 500.0 540.0 L 737.8 462.7 A 250 250 0 1 1 500.0 290.0 Z"/>
     </g>
-    <!-- accent shape: the same 72° sector, r 280, all three corners rounded 24, moved out along its bisector
-         (−45°) by 48 / sin 36° = 81.7, that is (+57.7, −57.7): each straight edge then runs exactly 48 from the
-         notch edge it faces. Centre (557.74, 466.26).
-         python3 scripts/shapes.py sector 557.74 466.26 280 -81 -9 24 -->
-    <path id="accent-shape" fill="url(#accent)" d="M 562.9 433.6 L 597.6 214.5 A 24 24 0 0 1 627.3 195.0 A 280 280 0 0 1 829.0 396.7 A 24 24 0 0 1 809.5 426.4 L 590.4 461.1 A 24 24 0 0 1 562.9 433.6 Z"/>
+    <!-- accent shape: python3 scripts/shapes.py sector 597 373.5 262 -90 -18 24 -->
+    <path id="accent-shape" fill="url(#accent)" d="M 597.0 373.5 L 597.0 169.7 A 24 24 0 0 1 623.4 145.8 A 262 262 0 0 1 836.7 300.8 A 24 24 0 0 1 822.2 333.3 L 628.4 396.3 A 24 24 0 0 1 597.0 373.5 Z"/>
   </g>
 </svg>

@@ -1,13 +1,13 @@
 # 参考与致谢
 
-石墨风格的规则是 Rian 自己的，依据下面这些一手来源。所有 L 值和 hex（CIE LCh，D65，色相 265）、关键线收小 3 %、切口 48、最薄处 72 和各项检查阈值是在这些来源上推导出来的，不是原文数字。
+石墨线稿风格的规则是 Rian 自己的，依据下面这些一手来源。所有 L 值和 hex（CIE LCh，D65，色相 265）、线宽 60、净空 60 和各项检查阈值是在这些来源上推导出来的，不是原文数字。
 
 ## 一手来源
 
 | 来源 | 用到了什么 |
 |---|---|
 | [Linear · Brand](https://linear.app/brand) | 标志本身：一个圆被一条 45° 的弦切开，左下三条带；深色底、单色、克制的用法 |
-| [simple-icons · linear.svg](https://github.com/simple-icons/simple-icons/blob/develop/icons/linear.svg) | Linear 标志的矢量（24 × 24 viewBox）：切口是等宽的平行负形，带宽等于间隙，切口约为直径的 7.4 %。这里的 48（关键线圆直径的 8.3 %）由它放宽而来 |
+| [Lucide · Icon design guide](https://lucide.dev/guide/design/icon-design-guide) | 24 格、2 单位圆头圆角的线，元素之间至少隔 2 单位：图标的线宽 60（2 单位按主体约 640 px 放大）、净空 60 和圆头圆角由它而来，`rian-app-theme` 的界面图标也是 Lucide |
 | [Linear · How we redesigned the Linear UI](https://linear.app/now/how-we-redesigned-the-linear-ui) | 在 LCH 里从少数几个输入生成整套中性色：石墨底的色相和明度阶梯照这个思路推导，和 `rian-app-theme` 的界面底同色相 |
 | [Linear · Behind the latest design refresh](https://linear.app/now/behind-the-latest-design-refresh) | 去掉多余的线和装饰、只靠明度分层的克制；图标不画投影、不加装饰也出于同样的取舍 |
 | [Apple HIG · App icons](https://developer.apple.com/design/human-interface-guidelines/app-icons) | 1024 全出血母版、系统加遮罩；避免极细线宽和尖角；分层图标与 Liquid Glass（反射、折射、阴影、高光由系统加）；Default / Dark / Tinted / Clear 外观，至少一个元素是白色或接近白色 |

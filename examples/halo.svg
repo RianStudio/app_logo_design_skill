@@ -1,72 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
     Halo, a weather app: today's forecast at a glance. Partly sunny: a yellow sun behind the upper right of a
-    white cloud. The cloud is the body, the sun the accent; 2 pieces.
-    The cut between them is a free cut (the objects' geometry does not dictate it), so it is a straight 45° chord
-    (top left to bottom right) that turns the sun into a circular segment. It does not follow the cloud's outline:
-    an offset of the cloud is an organic curve, not the straight and radial cuts of Tide and Ledgerly.
-    The faint glow around the sun is the "halo" of the name.
-    Drawn in source units with k = 1.15: the cut is 48 / 1.15 = 41.7 here, the glow blur 24 / 1.15 = 20.87.
+    cloud. The cloud is one closed line (Lucide's cloud, scaled 28 px per unit), the sun the filled accent.
+    The sun is a disc r 130 with the cloud's two bumps taken out, each grown by 30 + 60 (half the line plus one
+    line width), so it stays one line width clear of the cloud along its whole edge: a crescent, not a chord.
+    The faint glow around the sun is the "halo" of the name. Drawn at final size: k = 1.
     Rules and numbers: references/style.md. Layers, attributes and variants: references/construction.md.
   -->
   <defs>
-    <!-- bg: graphite, fixed (#26282B → #191C1F) -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#26282B"/>
       <stop offset="1" stop-color="#191C1F"/>
     </linearGradient>
-    <!-- body: fixed #F8F9FB → #C6C8CB. Span 600 / 1.15 = 521.7 centred on the cloud: top of the top circle
-         y 532 − 168 = 364 to the base 700, centre 532, so y1 271.1, y2 792.9 -->
-    <linearGradient id="body-fill" x1="0" y1="271.1" x2="0" y2="792.9" gradientUnits="userSpaceOnUse">
+    <linearGradient id="body-fill" x1="0" y1="260" x2="0" y2="860" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#F8F9FB"/>
       <stop offset="1" stop-color="#C6C8CB"/>
     </linearGradient>
-    <!-- accent: yellow (the sun's own colour), light #FFD978 → main #F2AE2E.
-         Span 480 / 1.15 = 417.4 centred on the sun segment: top 372 − 156 = 216 to the chord's lower end 478.2,
-         centre 347.1, so y1 138.4, y2 555.8 -->
-    <linearGradient id="accent" x1="0" y1="138.4" x2="0" y2="555.8" gradientUnits="userSpaceOnUse">
+    <linearGradient id="accent" x1="0" y1="113" x2="0" y2="593" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFD978"/>
       <stop offset="1" stop-color="#F2AE2E"/>
     </linearGradient>
-    <!-- glow-blur: the accent's main colour #F2AE2E at .16, blur 20.87 (24 final px), no offset -->
     <filter id="glow-blur" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="20.87" result="b"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="24" result="b"/>
       <feFlood flood-color="#F2AE2E" flood-opacity="0.16"/>
       <feComposite in2="b" operator="in"/>
     </filter>
   </defs>
-
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
-
-  <!-- transform: k = 1.15, then translate (−50, 4.5): final = 1.15 × (source + (−50, 4.5) − 512) + 512.
-       data-shape open: a composite shape (cloud plus sun). render.py judges its size by the convex hull
-       (0.90 to 1.15 × Tide's hull) and reports the outer box and the silhouette ratio as INFO only: the free cut
-       leaves a wedge the radius-30 closing cannot shut, so the silhouette reads small (0.86 × Tide).
-       Outer box x 137..841, y 176..734 (cloud's left edge to the sun's right edge, sun top to the base):
-       704 × 558, long side 704 ≤ 720. The silhouette centroid is at (518, 512) and the box centre at x 489;
-       for open shapes render.py centres the midpoint of the two across, (503, 512), 8.6 off (≤ 12), margins
-       137 / 183: centring the box would shove the heavy cloud left, centring the centroid alone the light sun.
-       render.py: hull 0.92 × Tide, silhouette 0.86 (INFO), ink 1.11 × Tide, cut 48.2 at the narrowest point,
-       accent 17.5 % of the hull, r_max 396. Along the cut the gap opens from 48 to about 95 (cut_spread
-       p50 71 / p90 85, INFO): a straight chord against a round cloud is a wedge, the known price of a free cut. -->
-  <g id="subject" data-shape="open" data-cut="48" transform="translate(512 512) scale(1.15) translate(-512 -512) translate(-50 4.5)">
+  <!-- transform: k = 1, then (−9.6, −33.1) so the silhouette centroid sits on the centre (render.py prints it).
+       data-shape open: a composite shape (cloud plus sun); render.py judges its size by the convex hull.
+       render.py: 1 line, accent 11.2 % of the hull, about 60 clear of the cloud, hull 0.96 × Tide. -->
+  <g id="subject" data-shape="open" transform="translate(512 512) scale(1) translate(-512 -512) translate(-9.6 -33.1)">
     <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
-    <g id="body" fill="url(#body-fill)">
-      <!-- cloud: ONE closed path on a flat base y 700. Three circles: left r 112 at (348, 588), top r 168 at
-           (532, 532), right r 128 at (660, 572). The side circles sit on the base (cy + r = 700), so the bottom
-           corners are their own round ends; the flat part of the base runs x 348..660, the cloud x 236..788.
-           Each valley is a concave arc r 56 tangent to the two circles it joins (r 56 > the 41.7 cut, so the
-           corner stays round), centres (337.8, 420.3) and (708.9, 394.6); tangent points (341.2, 476.2),
-           (386.4, 448.2) on the left and (664.7, 429.0), (694.0, 448.6) on the right. Z closes along the base. -->
-      <path d="M 348.0 700.0 A 112 112 0 0 1 341.2 476.2 A 56 56 0 0 0 386.4 448.2 A 168 168 0 0 1 664.7 429.0 A 56 56 0 0 0 694.0 448.6 A 128 128 0 0 1 660.0 700.0 Z"/>
+    <!-- the line drawing: centre lines only, stroke 60, round caps and joins, no fill -->
+    <!-- cloud: base y 756 from x 428 to 666; big bump circle (428, 560) r 196, small bump (666, 630) r 126 -->
+    <g id="body" fill="none" stroke="url(#body-fill)" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 666 756 H 428 A 196 196 0 1 1 615.9 504 H 666 A 126 126 0 1 1 666 756 Z"/>
     </g>
-    <!-- accent shape: the sun, r 156 at (692, 372), cut by a 45° chord into the segment on its upper right.
-         Chord normal n = (0.707, −0.707). The cloud's convex hull reaches furthest along n at the right circle:
-         n·(660, 572) + 128 = 190.2; the chord sits 41.7 (48 final px) beyond it, at 232.0, and the sun's centre
-         is at n·(692, 372) = 226.3, so the chord runs 5.7 from the centre. The gap is exactly 48 final px where
-         the chord passes the right circle (it touches the grown hull at (780.0, 452.0)) and opens up away from it.
-         The chord meets the sun's outline at 88° (≥ 45°), so the segment has no thin wedge.
-         python3 scripts/shapes.py segment 692 372 156 -45 5.7 -->
-    <path id="accent-shape" fill="url(#accent)" d="M 585.8 257.7 A 156 156 0 0 1 806.3 478.2 Z"/>
+    <!-- accent shape: the sun. python3 scripts/shapes.py minus (circle 690 380 r 130) (circle 428 560 r 286),
+         then minus (circle 666 630 r 216): 286 = 196 + 90, 216 = 126 + 90 -->
+    <path id="accent-shape" fill="url(#accent)" d="M 576.9 315.8 A 130 130 0 0 1 723.2 254.3 A 130 130 0 0 1 820.0 380.0 A 130 130 0 0 1 795.0 456.7 A 216 216 0 0 0 674.0 414.1 A 286 286 0 0 0 576.9 315.8 Z"/>
   </g>
 </svg>

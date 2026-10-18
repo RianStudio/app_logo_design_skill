@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    Rian app icon template (graphite style). Copy this file and change only the parts marked TODO.
-    Example: Tide, a focus timer: a stopwatch whose coral ring segment is 25 of 60 minutes (examples/tide.svg).
-    The style: 2 to 4 SOLID pieces (3 or 4 as a rule) on a graphite gradient, neighbours separated by 48 px
-    negative-space cuts, exactly one accent piece, no strokes, no letters, no shadows. Tools, image, video and
-    AI apps also carry their category mark (references/style.md, 类别记号).
+    Rian app icon template (graphite line style). Copy this file and change only the parts marked TODO.
+    Example: Tide, a focus timer: a stopwatch drawn in one line whose coral sector is 25 of 60 minutes
+    (examples/tide.svg).
+    The style: 1 to 4 connected lines, all 60 px wide with round caps and joins (the same line as the UI's
+    Lucide icons), on a graphite gradient; exactly one accent, a FILLED shape; every gap between two lines,
+    and between a line and the accent, at least one line width (60). No fills in the body, no letters, no
+    shadows. Tools, image, video and AI apps also carry their category mark (references/style.md, 类别记号).
     Every number lives in references/style.md. Layers, attributes, geometry recipes and variants:
     references/construction.md. Check with python3 scripts/render.py icon.svg -o renders plus the variants flag
     (one metrics line per rule, PASS / FAIL / INFO). Never put two hyphens in a row inside a comment:
@@ -17,21 +19,21 @@
       <stop offset="0" stop-color="#26282B"/>
       <stop offset="1" stop-color="#191C1F"/>
     </linearGradient>
-    <!-- TODO body gradient: colours fixed (#F8F9FB → #C6C8CB, a top light), only y1 and y2 change.
-         Span 600 px after scaling = 600 ÷ k in source units, centred on the vertical range of ALL body pieces.
-         Here k = 1: crown top y 114 to ring bottom 826, centre 470, so y1 170, y2 770.
-         When it is off, render.py's 主体渐变 line prints the y1 and y2 to write.
+    <!-- TODO line gradient: colours fixed (#F8F9FB → #C6C8CB, a top light), only y1 and y2 change.
+         Span 600 px after scaling = 600 ÷ k in source units, centred on the vertical range of ALL lines,
+         line width included. Here k = 1: crown top y 136 (166 − 30) to ring bottom 830, centre 483, so y1 183,
+         y2 783. When it is off, render.py's 线渐变 line prints the y1 and y2 to write.
          The id stays body-fill (body is the group's id; a duplicate id FAILs). Two opaque stops, nothing between. -->
-    <linearGradient id="body-fill" x1="0" y1="170" x2="0" y2="770" gradientUnits="userSpaceOnUse">
+    <linearGradient id="body-fill" x1="0" y1="183" x2="0" y2="783" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#F8F9FB"/>
       <stop offset="1" stop-color="#C6C8CB"/>
     </linearGradient>
     <!-- TODO accent gradient: ONE colour from the palette in style.md, light → main; with data-category it is
          that category's colour (tools blue, image yellow, video coral, AI purple, health and finance green).
          Span 480 ÷ k, centred on the accent shape's vertical range.
-         Here: coral #FF9C86 → #EC5B45; the segment runs y 247..774 (centre 510.5), so y1 270.5, y2 750.5.
+         Here: coral #FF9C86 → #EC5B45; the sector runs y 394..676 (centre 535), so y1 295, y2 775.
          Two opaque stops, exactly the palette pair: a third colour or a highlight band FAILs. -->
-    <linearGradient id="accent" x1="0" y1="270.5" x2="0" y2="750.5" gradientUnits="userSpaceOnUse">
+    <linearGradient id="accent" x1="0" y1="295" x2="0" y2="775" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FF9C86"/>
       <stop offset="1" stop-color="#EC5B45"/>
     </linearGradient>
@@ -43,73 +45,51 @@
       <feFlood flood-color="#EC5B45" flood-opacity="0.16"/>
       <feComposite in2="b" operator="in"/>
     </filter>
-    <!-- TODO cut mask (optional drafting aid; Tide does not use it, its cuts are baked into the paths):
-         white keeps, black cuts. To use it, add mask="url(#cut)" to #body or #accent-shape (never #subject)
-         and put lines into #cuts, both ends past the outline, e.g. from scripts/shapes.py cutline 512 536 -90 182 316:
-           <line x1="512" y1="354" x2="512" y2="220"/>
-         For a cut around an accent that sits on the body, put a copy of the accent's path here (outside #cuts)
-         with fill and stroke #000 and stroke-width 96 ÷ k. stroke-width of #cuts = 48 ÷ k.
-         Before delivery bake the cuts into the paths (a mask turns the Icon Composer layer into a PNG), then
-         delete this mask. A bubble or rounded rectangle on the body: scripts/shapes.py minus "BODY" "GROWN",
-         where GROWN is the accent from bubble or rrect with the grow flag 48 (see construction.md). -->
-    <mask id="cut" maskUnits="userSpaceOnUse" x="-512" y="-512" width="2048" height="2048">
-      <rect x="-512" y="-512" width="2048" height="2048" fill="#fff"/>
-      <g id="cuts" stroke="#000" stroke-width="48" stroke-linecap="butt" fill="none"/>
-    </mask>
   </defs>
 
   <!-- background: this one rect, 0 0 1024 1024, nothing inside it; no other graphics beside it and #subject -->
   <rect id="background" width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- TODO data-shape: circle | square | tall | wide, or open for composite shapes (cloud plus sun).
-       It picks the size check: filled silhouette 0.90 to 1.10 × Tide's, or for open the convex hull
-       0.90 to 1.15 × Tide's hull. Keylines to start from: circle 580, square 520 × 520, tall 464 × 580,
-       wide 580 × 464; open is sized by its hull (about 300k px², an outer box near 690 × 580); long side ≤ 720.
-       data-cut stays 48.
+  <!-- TODO data-shape: circle | square | tall | wide for a closed line drawing, or open for a drawing with
+       gaps or a composite (a frame broken round a person, a cloud plus sun). It picks the size check: filled
+       silhouette 0.90 to 1.10 × Tide's, or for open the convex hull 0.90 to 1.15 × Tide's hull. Keylines to
+       start from, measured on the lines' outer edge: circle 600, square 540 × 540, tall 480 × 600,
+       wide 600 × 480; open is sized by its hull (about 290k px²); long side ≤ 720.
        TODO data-category: tools | image | video | ai | health | finance; leave it out for an app outside these
-       (Tide, a focus timer, has none). It fixes the accent colour and the mark: tools one horizontal 48 cut
-       through the whole silhouette (centre line at 35 to 75 % of its height), image a whole round sun (r ≥ 100)
-       in the top left corner, video a play triangle knocked out of a piece (scripts/shapes.py play, H ≥ 200 ÷ k),
-       AI a 45° band running "/" across the lower right corner (scripts/shapes.py aiband, data-accent="band" on
-       the accent, 10 to 18 %, never on a circle). Green only for health and finance, the band only for AI.
+       (Tide, a focus timer, has none). It fixes the accent colour and the mark: tools one horizontal straight
+       line across the whole drawing (centre at 35 to 75 % of its height), image a whole round sun (r ≥ 72) in
+       the top left corner, video a play triangle drawn in line on its own (scripts/shapes.py play, H ≥ 240 ÷ k),
+       AI a 45° chamfer in the outline's lower right corner with a band running "/" beside it (scripts/shapes.py
+       aiband, data-accent="band" on the accent, never on a circle). Green only for health and finance, the band
+       only for AI.
        TODO transform: translate(512 512) scale(k) translate(-512 -512) translate(tx ty). Draw in final pixels
-       with k = 1. When the size line FAILs it prints the k to use; then redo the cut and corner paths with
-       shapes.py and its k flag. translate puts the filled silhouette's centroid within 12 of (512, 512) (open:
-       across, the midpoint of the centroid and the outer box's centre; a thin top protrusion under 80 wide:
-       the body's own centre on (512, 530 ± 6)); when it FAILs the centroid line prints the translate to write.
-       Everything in source units is final ÷ k.
-       Here: k = 1, up 4; ring 580 across, outer box 580 × 712, centroid (512, 512). -->
-  <g id="subject" data-shape="circle" data-cut="48" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 -4)">
+       with k = 1. When the size line FAILs it prints the k to use; then stroke-width becomes 60 ÷ k and the
+       corners and accent are redone with shapes.py and its k flag. translate puts the filled silhouette's
+       centroid within 12 of (512, 512); when it FAILs the centroid line prints the translate to write.
+       Here: k = 1, up 20; ring 560 across, outer box 560 × 694. -->
+  <g id="subject" data-shape="circle" transform="translate(512 512) scale(1) translate(-512 -512) translate(0 -20)">
     <!-- glow: keep as it is (first child, the accent's blurred copy), or delete it with the filter -->
     <use id="glow" href="#accent-shape" filter="url(#glow-blur)"/>
-    <!-- TODO body: every body piece inside this one group, no fill, opacity or stroke of their own.
-         Rules: 2 to 4 pieces in all (accent included), 3 or 4 as a rule, one metaphor; a fifth piece only with
-         data-pieces-why="…" on #subject saying why; neighbouring pieces exactly 48 apart at their narrowest
-         point (pieces you do not want to touch at least 96 apart); every cut runs through, both ends outside the
-         outline; free cuts 45° (top left to bottom right; the tools cut is horizontal, the AI band runs "/");
-         thinnest part ≥ 72 (rings ≥ 84); corners: rounded rectangles rx ≥ 20 % of the short side, sector
-         corners 24, polygon corners ≥ 24, concave corners r ≥ 24; the body truly knocked out where the accent is.
-         Paths from scripts/shapes.py (ring, segment, sector, rrect, poly, bubble, play, aiband, minus); circle,
-         ellipse, rect and polygon bake too. Mark on single pieces:
-           class="detail"     dropped at 64 px and below; only a fragment under 2 % of the hull
-                              (on a bigger piece it FAILs the piece count) -->
-    <g id="body" fill="url(#body-fill)">
-      <!-- dial: disc r 158 at the ring centre (512, 536); 206 − 158 = 48 to the ring (concentric cut) -->
-      <circle cx="512" cy="536" r="158"/>
-      <!-- ring segment 60° → 270°, outer r 290, inner r 206 (84 thick). Both ends are straight lines parallel to
-           the seam radius, 24 into the segment, so the seams are 48 wide radial cuts with no mask.
-           python3 scripts/shapes.py ring 512 536 290 206 60 270, gap flag 48 -->
-      <path d="M 635.7 798.3 A 290 290 0 1 1 488.0 247.0 L 488.0 331.4 A 206 206 0 1 0 593.5 725.2 Z"/>
-      <!-- crown: capsule 152 × 84, rx 42, y 114..198; the ring top is y 246, 48 below -->
-      <rect x="436" y="114" width="152" height="84" rx="42"/>
+    <!-- TODO lines: the centre line of every stroke inside this one group, which carries the stroke: no fill,
+         stroke, stroke-width or opacity on the elements themselves. stroke-width = 60 ÷ k.
+         Rules: 1 to 4 connected lines, one metaphor; two separate lines at least 60 apart edge to edge (their
+         centre lines 120); no gap narrower than a line inside one line either (corners at least 45°, holes at
+         least 60 across); a line that ends near another stops 90 from its centre line, or ends ON it (a joint).
+         Corners: rounded rectangles r ≥ 56, polygon corners ≥ 24. Centre lines from scripts/shapes.py (arc, rrect,
+         bubble, poly with the open flag for a polyline, play); circle, rect, line and polyline bake too. -->
+    <g id="body" fill="none" stroke="url(#body-fill)" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
+      <!-- ring: centre line r 250 round (512, 550), so the stroke runs from r 220 to r 280 -->
+      <circle cx="512" cy="550" r="250"/>
+      <!-- crown 120 wide on a stem that ends on the ring's centre line (y 300): one connected line -->
+      <path d="M 452 166 H 572 M 512 166 V 300"/>
     </g>
-    <!-- TODO accent shape: ONE element (path, or g of paths), fill url(#accent), drawn after #body.
-         Best the most meaningful part of the object (the progress, the sun, the pulled-out slice); 48 from the body
-         at the nearest point, never touching or overlapping it; 10 to 25 % of the silhouette's convex hull (the AI
-         band: data-accent="band", 8 to 18 %; the smaller of a pair of like objects, such as two swap arrows:
-         data-accent="pair", up to 33 %). No opacity of its own.
-         Here: 25 of 60 minutes = 150°, from 12 o'clock (−90°) clockwise to 60°, the same ring and seams.
-         python3 scripts/shapes.py ring 512 536 290 206 -90 60, gap flag 48 -->
-    <path id="accent-shape" fill="url(#accent)" d="M 536.0 247.0 A 290 290 0 0 1 677.3 774.3 L 635.1 701.2 A 206 206 0 0 0 536.0 331.4 Z"/>
+    <!-- TODO accent shape: ONE filled element (path, circle, or g of paths), fill url(#accent), no stroke,
+         drawn after #body. Best the most meaningful part of the object (the progress, the sun, the pulled-out
+         slice); at least 60 from every line, never touching it; 6 to 20 % of the silhouette's convex hull (the
+         AI band: data-accent="band", 6 to 14 %). No opacity of its own.
+         Here: 25 of 60 minutes = 150°, from 12 o'clock (−90°) clockwise to 60°, R 158, corners 24;
+         the ring's inner edge is r 220, 62 away.
+         python3 scripts/shapes.py sector 512 550 158 -90 60 24 -->
+    <path id="accent-shape" fill="url(#accent)" d="M 512.0 543.6 L 512.0 418.2 A 24 24 0 0 1 540.3 394.6 A 158 158 0 0 1 614.2 670.5 A 24 24 0 0 1 577.9 664.2 L 515.2 555.6 A 24 24 0 0 1 512.0 543.6 Z"/>
   </g>
 </svg>

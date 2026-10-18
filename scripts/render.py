@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Render and check a Rian app icon SVG (graphite style).
+Render and check a Rian app icon SVG (graphite line style).
 
   python3 scripts/render.py ICON.svg [more.svg ...] [-o DIR] [--variants] [--export] [--store-ab] [--json]
                            [--tide FILE]
@@ -16,7 +16,7 @@ and prints a metrics report, one line per check with value, target and PASS / FA
 Exit code 0 even when a check fails (1 only when an SVG cannot be read).
 
   --variants  also writes <name>-light.svg/.png, <name>-dark.svg/.png, <name>-mono.svg/.png (transparent)
-              and <name>-small.svg (64 px and below: erode 8, no class="detail", no glow), and
+              and <name>-small.svg (64 px and below: the line 76 instead of 60, no glow), and
               <name>-mark.svg/.png: #subject alone in the default look (glow kept), transparent, cropped to the
               subject, for in-app brand art on the graphite brand panel (rian-app-theme preview.py --mark)
   --export    also writes DIR/export/ (DIR/export/<name>/ when several SVGs are given):
@@ -29,8 +29,8 @@ Exit code 0 even when a check fails (1 only when an SVG cannot be read).
               android/drawable/ic_launcher_background.xml,
               android/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher_foreground.png + _monochrome.png,
               plus legacy 48 dp ic_launcher.png + ic_launcher_round.png for API 25 and below,
-              icon-composer/1_body.svg, 2_accent.svg (1_body.png / 2_accent.png when a layer uses a mask
-              and cannot be baked to plain paths), icon-composer/README.txt
+              icon-composer/1_body.svg (the strokes, transform baked in) + 1_body.png, 2_accent.svg + 2_accent.png
+              (only the PNG when a layer uses a mask and cannot be baked to plain paths), icon-composer/README.txt
               Android layers are scaled by min(290 / r_max, 0.72), the PWA maskable icon by
               min(409.6 / r_max, 409.6 / Tide's r_max), so compact icons are not blown up past Tide.
   --store-ab  also writes DIR/store-ab/ (DIR/store-ab/<name>/ when several SVGs are given): the App Store
@@ -46,14 +46,13 @@ separately in headless Chromium (Playwright) and measured with numpy. Install on
   pip install playwright pillow numpy && playwright install chromium
 If a Chromium build already exists on the machine, set CHROMIUM_PATH to its executable.
 
-SVG conventions read here (brief B10, references/construction.md):
-  defs: #bg, #body-fill, #accent linearGradients (userSpaceOnUse); optional #glow-blur filter and #cut mask
+SVG conventions read here (references/construction.md):
+  defs: #bg, #body-fill, #accent linearGradients (userSpaceOnUse); optional #glow-blur filter
   #background (full-bleed rect), #subject (transform, data-shape = circle | square | tall | wide | open,
-  data-cut="48", data-category = tools | image | video | ai | health | finance, data-pieces-why for a fifth
-  piece), #glow (optional first child: <use href="#accent-shape" filter="url(#glow-blur)"/>),
-  #body (<g fill="url(#body-fill)"> with every body piece), #accent-shape (one element, fill url(#accent);
-  data-accent="band" for the AI band, data-accent="pair" for the smaller of two like objects);
-  class="detail" on single pieces; in the #cut mask <g id="cuts" stroke-width="48 / k">.
+  data-category = tools | image | video | ai | health | finance), #glow (optional first child:
+  <use href="#accent-shape" filter="url(#glow-blur)"/>), #body (<g fill="none" stroke="url(#body-fill)"
+  stroke-width="60 / k" stroke-linecap="round" stroke-linejoin="round"> with every line), #accent-shape (one
+  filled element, fill url(#accent), no stroke; data-accent="band" for the AI band).
   Store A/B variants written by --store-ab carry data-variant = lighter | rim | tint on the root (rim adds
   <path id="rim"> between #background and #subject).
 """
@@ -85,65 +84,61 @@ TIDE_SVG = SKILL_DIR / "examples" / "tide.svg"
 
 # ---------------------------------------------------------------- house rules (references/style.md, brief B)
 
-CUT = 48.0                    # cut width between neighbouring pieces, final px
-CUT_TOL = 2.0
-CUT_ATTR_TOL = 1.0            # #cuts stroke-width x k
-ADJACENT = 96                 # pieces closer than this share a cut
-THIN_R = 34                   # octagon opening radius: removes everything thinner than about 68
-THIN_KEEP = 0.80              # each piece keeps this share of its area after the opening
-THIN_REACH = 2 * THIN_R       # a part the opening removes may reach at most this far from what it keeps
-                              # (a 45 deg corner reaches about 55, a 30 x 100 stick 79)
-CLOSE_R = 30                  # closing radius that shuts the cuts for the silhouette
-SLOT_AREA = 1500              # px²: a single piece's closing adds more than this -> a cut that stops inside it
+STROKE = 60.0                 # the line, final px: Lucide's 2-unit stroke on a 24 grid scaled to the subject
+STROKE_TOL = 1.0              # (about 30 px a unit) is 60; it is 1.7 px at 29 px and 2.3 px at 40 px
+SMALL_STROKE = 76.0           # small version (64 px and below): 2.2 px at 29 px
+GAP_LINE = 60.0               # clear gap between two separate lines: one line width
+GAP_TOL = 1.0
+PINCH_R = 30                  # closing radius: shuts every gap narrower than GAP_LINE
+PINCH_AREA = 3000             # px²: a closed-up corridor this big is a gap that clogs (a 45 deg join adds ~2200)
+GAP_ACCENT = 60.0             # clear gap from the filled accent to any line: one line width as well (at 40
+                              # the small version, lines 76, clogs it at 40 px)
 OVERLAP_MAX = 0.002           # body & accent pixels / accent pixels
-PIECES = (2, 4)               # connected pieces without class="detail" (3 or 4 as a rule)
-PIECES_MAX = 5                # a fifth piece only with a reason in data-pieces-why
+PARTS_MAX = 4                 # separate lines (connected strokes) in the body
 MIN_PIECE = 50                # px²: smaller specks are antialiasing noise
-DETAIL_SHARE = 2.0            # pieces under this % of the hull are marked class="detail"
+CLOSE_R = 30                  # closing radius that shuts the gaps for the silhouette
 LONG_SIDE_MAX = 720
 SOLID_RATIO = (0.90, 1.10)    # filled silhouette area / Tide's
 OPEN_RATIO = (0.90, 1.15)     # convex hull area / Tide's hull
-ACCENT_SHARE = (10.0, 25.0)   # accent / silhouette convex hull, %
-ACCENT_SHARE_BAND = (10.0, 18.0)  # the AI band across a corner
-ACCENT_SHARE_PAIR = (10.0, 33.0)  # data-accent="pair": the smaller (or equal) of two like objects
+ACCENT_SHARE = (6.0, 20.0)    # filled accent / silhouette convex hull, % (an image sun r 74 is about 6 %)
+ACCENT_SHARE_BAND = (6.0, 14.0)   # the AI band across a corner
 GRAD_SPAN = 480               # accent gradient span, final px, centred on the accent shape
-BODY_SPAN = 600               # body gradient span, final px, centred on the body
+BODY_SPAN = 600               # body gradient span, final px, centred on the lines
 GRAD_TOL = 8
 CENTROID_MAX = 12             # filled-silhouette centroid to (512, 512)
 BODY_CENTRE = (512, 530)      # with a top protrusion: the body's own centre
 BODY_TOL = 6
 PROTRUSION_W = 80             # parts thinner than this (an opening of radius 40) count as protrusions
-CONTRAST_BODY = 7.0           # body over background, default look
+CONTRAST_BODY = 7.0           # lines over background, default look
 CONTRAST_ACCENT = 3.0         # accent over background, default look
 GLOW_OPACITY_MAX = 0.16
 GLOW_SD_MAX = 28.0            # stdDeviation x k
-CUT_DL_MAX = 8.0              # L* of a cut's centre line minus the background's
 BAND_ANGLE = 135.0            # the AI band's long axis, y down: bottom left to top right ("/")
 BAND_ANGLE_TOL = 1.5
-BAND_WIDTH = 96.0
+BAND_WIDTH = 80.0
 BAND_WIDTH_TOL = 3.0
 # category marks (references/style.md, 类别记号): data-category -> (name, accent colour)
 CATEGORIES = {"tools": ("工具", "蓝"), "image": ("图片", "黄"), "video": ("视频", "珊瑚"), "ai": ("AI", "紫"),
               "health": ("健康", "绿"), "finance": ("财务", "绿")}
 RESERVED = "绿"               # only health and finance
-TOOLS_CUT_AT = (0.35, 0.75)   # the tools cut's centre line, share of the silhouette's height from the top
-TOOLS_FACING = 0.25           # both edges along the tools cut run straight for this share of the width
-SUN_CORNER = 0.40             # the image sun's centre within this share of the box from the top left
+TOOLS_SPAN = 0.95             # the tools line runs across this share of the drawing's width (or more)
+TOOLS_AT = (0.35, 0.75)       # its centre line, share of the drawing's height from the top
+SUN_CORNER = 0.42             # the image sun's centre within this share of the box from the top left (inside a
+                              # framed photo it sits a line and a gap in from the frame)
 SUN_ROUND = 0.92              # area / (pi R²), R = farthest edge from the centre
-SUN_R_MIN = 100.0             # r 88 already falls under the 10 % accent floor on a Tide-sized hull
-PLAY_H_MIN = 150              # the video mark's hole, measured height (shapes.py play H × k = 200 --r 32 measures 152)
+SUN_R_MIN = 72.0              # 2 px across at 29 px
+PLAY_H_MIN = 110              # the video mark's hole, measured height (shapes.py play H 240 measures about 120)
 AI_CORNER = (0.65, 0.50)      # the AI band's centre in the box: mean of x and y share >= .65, each >= .50
-SMALL_ERODE = 8.0             # small version: erode on #subject, final px (cuts 48 -> 64)
-SMALL_CHECK = 40              # piece count must hold at this size (FAIL); 29 and 16 px are INFO
+SMALL_CHECK = 40              # parts and holes must hold at this size (FAIL); 29 and 16 px are INFO
 SMALL_INFO = 29
 SMALL_FAVICON = 16            # favicon-16: only the silhouette has to read
 ANDROID_SAFE_R = 313.0        # 66 dp safe circle of a 108 dp layer on the 1024 canvas
 ANDROID_R = 290.0             # target r_max: 23 px (~2.4 dp) inside the safe circle
-ANDROID_CAP = 0.72            # Tide's factor (290 / 403): compact icons are not blown up past it
+ANDROID_CAP = 0.72            # Tide's factor (290 / 401): compact icons are not blown up past it
 PWA_R = 409.6                 # maskable: centre 80 % circle; capped at Tide's factor like Android
-KEYLINES = {"circle": "⌀ 580", "square": "520 × 520", "tall": "464 × 580", "wide": "580 × 464",
+KEYLINES = {"circle": "⌀ 600", "square": "540 × 540", "tall": "480 × 600", "wide": "600 × 480",
             "open": "+10% 以内"}
-KEYLINE_WH = {"circle": (580, 580), "square": (520, 520), "tall": (464, 580), "wide": (580, 464)}
+KEYLINE_WH = {"circle": (600, 600), "square": (540, 540), "tall": (480, 600), "wide": (600, 480)}
 KEYLINE_NAME = {"square": "方形", "tall": "竖矩形", "wide": "横矩形"}
 OPEN_EXTRA = 1.10             # open shapes may be 10 % larger than the keyline of their overall form
 SHAPES = ("circle", "square", "tall", "wide", "open")
@@ -182,8 +177,8 @@ STORE_BG = {"dark": "#000000", "light": "#FFFFFF"}
 TONAL_CHROMA = {"accent1": 36.0, "neutral1": 4.0, "neutral2": 8.0}
 THEMED_TONES = {"light": (("accent1", 90), ("neutral2", 30)), "dark": (("neutral1", 20), ("accent1", 90))}
 
-# Tide reference used only when the Tide SVG cannot be measured (new Tide: silhouette, hull, r_max, ink).
-TIDE_FALLBACK = {"silhouette": 278700.0, "hull": 298700.0, "r_max": 403.0, "ink": 212300.0}
+# Tide reference used only when the Tide SVG cannot be measured (line Tide: silhouette, hull, r_max, ink).
+TIDE_FALLBACK = {"silhouette": 261400.0, "hull": 286500.0, "r_max": 401.0, "ink": 141000.0}
 
 NS = "http://www.w3.org/2000/svg"
 XLINK = "http://www.w3.org/1999/xlink"
@@ -519,11 +514,14 @@ def static_info(root):
                               + (f'（主体渐变的 id 是 {BODY_GRAD}，<g id="body"> 才叫 body）' if "body" in dup else ""))
     if body is not None and local(body) != "g":
         info["errors"].append("#body 要是 <g>")
-    for old in ("line", "backing"):
-        if node(root, old) is not None:
-            info["errors"].append(f"旧风格的 #{old}：按石墨风格重画")
-    if any(e.get("data-part") == "split" for e in root.iter()):
-        info["errors"].append('data-part="split" 不再使用（切口宽已覆盖）')
+    for old in ("line", "backing", "cut", "cuts"):
+        if node(root, old) is not None or defn(root, old) is not None:
+            info["errors"].append(f"旧风格的 #{old}：按线稿风格重画（线都在 #body 里）")
+    if subject is not None and (subject.get("data-cut") or subject.get("data-pieces-why")):
+        info["errors"].append("data-cut、data-pieces-why 是旧的实形风格：线稿风格没有切口和块数，删掉")
+    if any(e.get("data-part") for e in root.iter()) or any("detail" in classes(e) or "on-accent" in classes(e)
+                                                           for e in root.iter()):
+        info["errors"].append('data-part、class="detail"、class="on-accent" 不再使用')
     if any(local(e) in ("text", "image") for e in rendered(root)):
         info["errors"].append("不用 <text> 和位图")
     if root.get("width") or root.get("height") or \
@@ -539,17 +537,15 @@ def static_info(root):
     info["matrix"] = M
     info["k"] = float(math.sqrt(abs(np.linalg.det(M[:2, :2]))))
     info["shape"] = subject.get("data-shape") if subject is not None else None
-    info["data_cut"] = subject.get("data-cut") if subject is not None else None
     info["category"] = subject.get("data-category") if subject is not None else None
-    info["pieces_why"] = (subject.get("data-pieces-why") or "").strip() if subject is not None else ""
     info["accent_kind"] = accent.get("data-accent") if accent is not None else None
     info["accent_band"] = info["accent_kind"] == "band"
     info["variant"] = root.get("data-variant")
     if info["category"] is not None and info["category"] not in CATEGORIES:
         info["errors"].append(f'data-category="{info["category"]}" 不认识：tools | image | video | ai | health | '
                               "finance，不属于这几类就不写")
-    if info["accent_kind"] not in (None, "band", "pair"):
-        info["errors"].append('data-accent 只能是 band（AI 斜带）或 pair（一对物体里较小的那个）')
+    if info["accent_kind"] not in (None, "band"):
+        info["errors"].append('data-accent 只能是 band（AI 斜带）')
     if info["variant"] not in (None,) + STORE_AB:
         info["errors"].append(f'data-variant="{info["variant"]}" 不认识：只有 render.py --store-ab 写的 '
                               "lighter | rim | tint")
@@ -575,17 +571,40 @@ def static_info(root):
         if background is not None else grad_info(grad(root, "bg"))
     info["bg_fill"] = get_prop(background, "fill") if background is not None else None
     info["body_fill"] = get_prop(body, "fill") if body is not None else None
+    info["body_stroke"] = get_prop(body, "stroke") if body is not None else None
     info["accent_fill"] = get_prop(accent, "fill") if accent is not None else None
-    info["body_grad"] = grad_info(grad(root, url_id(info["body_fill"]) or BODY_GRAD))
+    info["body_grad"] = grad_info(grad(root, url_id(info["body_stroke"]) or BODY_GRAD))
     info["accent_grad"] = grad_info(grad(root, url_id(info["accent_fill"]) or "accent"))
-    # pieces paint with the group's gradient only: no fill of their own, nothing see-through
+    sw = num(get_prop(body, "stroke-width")) if body is not None else None
+    info["stroke_attr"] = sw
+    info["linecap"] = get_prop(body, "stroke-linecap") if body is not None else None
+    info["linejoin"] = get_prop(body, "stroke-linejoin") if body is not None else None
+    # lines paint with the group's stroke only, the accent with its fill only: nothing of their own, nothing
+    # see-through, no second line width
     own = []
-    for group, allowed in ((body, f"url(#{BODY_GRAD})"), (accent, "url(#accent)")):
-        if group is None:
-            continue
-        for e in rendered(group):
+    if body is not None:
+        if (info["body_fill"] or "").strip().lower() != "none":
+            own.append(f'#body fill={info["body_fill"]}（要 none：线稿不填色）')
+        for e in rendered(body):
+            if e is body:
+                continue
             v = get_prop(e, "fill")
-            if e is not group and v is not None and v.strip().lower() not in ("inherit", allowed.lower()):
+            if v is not None and v.strip().lower() not in ("inherit", "none"):
+                own.append(f"<{local(e)}> fill={v}")
+            v = get_prop(e, "stroke")
+            if v is not None and v.strip().lower() not in ("inherit", f"url(#{BODY_GRAD})"):
+                own.append(f"<{local(e)}> stroke={v}")
+            w = num(get_prop(e, "stroke-width"))
+            if w is not None and (sw is None or abs(w - sw) > 1e-6):
+                own.append(f"<{local(e)}> stroke-width={w:g}")
+            for a in ("opacity", "stroke-opacity", "fill-opacity"):
+                o = num(get_prop(e, a))
+                if o is not None and o < 1:
+                    own.append(f"<{local(e)}> {a}={o:g}")
+    if accent is not None:
+        for e in rendered(accent):
+            v = get_prop(e, "fill")
+            if e is not accent and v is not None and v.strip().lower() not in ("inherit", "url(#accent)"):
                 own.append(f"<{local(e)}> fill={v}")
             for a in ("opacity", "fill-opacity"):
                 o = num(get_prop(e, a))
@@ -615,26 +634,8 @@ def static_info(root):
     info["other_filters"] = [f"<{local(e)}{' id=' + e.get('id') if e.get('id') else ''}>"
                              for e in sub_nodes if get_prop(e, "filter") and e is not glow]
 
-    # cut lines in a mask
-    cuts = defn(root, "cuts")
-    info["cuts"] = None
-    if cuts is not None:
-        sw = num(get_prop(cuts, "stroke-width"))
-        over = []
-        for e in cuts.iter():
-            if e is cuts:
-                continue
-            w = num(get_prop(e, "stroke-width"))
-            if w is not None and (sw is None or abs(w - sw) > 1e-6):
-                over.append(f"<{local(e)}> {w:g}")
-        info["cuts"] = {"stroke_width": sw, "overrides": over}
-
     info["masked"] = {name: any(get_prop(e, "mask") or get_prop(e, "clip-path") for e in el.iter())
                       for name, el in (("body", body), ("accent", accent)) if el is not None}
-    if any(e.get("data-part") == "band" for e in sub_nodes):
-        info["errors"].append('data-part="band" 不再使用：斜带只给 AI，只有一条，就是强调色本身'
-                              '（#accent-shape 写 data-accent="band"）')
-    info["details"] = [e for e in sub_nodes if "detail" in classes(e)]
     return info
 
 
@@ -669,7 +670,7 @@ def _look(text, look, glow):
     _remove(root, node(root, "rim"))
     _set_stops(root, _bg_gradient_id(root), LOOKS[look]["bg"])
     body = node(root, "body")
-    _set_stops(root, (url_id(get_prop(body, "fill")) if body is not None else None) or BODY_GRAD, LOOKS[look]["body"])
+    _set_stops(root, (url_id(get_prop(body, "stroke")) if body is not None else None) or BODY_GRAD, LOOKS[look]["body"])
     if not glow:
         _remove(root, node(root, "glow"))
     return serialize(prune_defs(root))
@@ -693,7 +694,7 @@ def make_mono(text):
     _remove(root, node(root, "rim"))
     _remove(root, node(root, "glow"))
     body, accent = node(root, "body"), node(root, "accent-shape")
-    _set_stops(root, (url_id(get_prop(body, "fill")) if body is not None else None) or BODY_GRAD,
+    _set_stops(root, (url_id(get_prop(body, "stroke")) if body is not None else None) or BODY_GRAD,
                ("#FFFFFF", "#FFFFFF"))
     _set_stops(root, (url_id(get_prop(accent, "fill")) if accent is not None else None) or "accent",
                ("#FFFFFF", "#FFFFFF"), MONO_ACCENT_OPACITY)
@@ -701,21 +702,12 @@ def make_mono(text):
 
 
 def make_small(text, k):
-    """64 px and below: feMorphology erode 8 final px on #subject (cuts 48 -> 64; on #subject, not on #body,
-    because a filter runs before the mask that draws the cuts), drop class="detail", no glow."""
+    """64 px and below: the line 76 final px instead of 60 (stroke-width on #body, so every line follows), no glow."""
     root = ET.fromstring(strip_xml_prolog(text))
-    for el in [e for e in root.iter() if "detail" in classes(e)]:
-        _remove(root, el)
     _remove(root, node(root, "glow"))
-    subject = node(root, "subject")
-    if subject is not None:
-        defs = root.find(q("defs"))
-        if defs is None:
-            defs = ET.Element(q("defs"))
-            root.insert(0, defs)
-        f = ET.SubElement(defs, q("filter"), {"id": "small-erode"})
-        ET.SubElement(f, q("feMorphology"), {"operator": "erode", "radius": f"{SMALL_ERODE / k:.2f}"})
-        subject.set("filter", "url(#small-erode)")
+    body = node(root, "body")
+    if body is not None:
+        set_prop(body, "stroke-width", f"{SMALL_STROKE / k:.2f}")
     return serialize(prune_defs(root))
 
 
@@ -753,7 +745,7 @@ def without_background(text):
 
 def make_mark(renderer, text, pad=MARK_PAD):
     """In-app brand art for rian-app-theme: #subject alone in the default look, glow kept, no background, cropped to
-    what is drawn (glow included) plus `pad`. Scaled only as a whole, so the cuts stay 48 / 1024 of the icon.
+    what is drawn (glow included) plus `pad`. Scaled only as a whole, so the line stays 60 / 1024 of the icon.
     Returns (svg text, RGBA image)."""
     flat = without_background(text)
     im = renderer.image(flat, 1024, transparent=True)
@@ -819,38 +811,24 @@ LAYER_CSS = {
     "all": "#background,#rim" + HIDE,
 }
 MEASURE_CSS = {                                 # extra layers for the checks
-    "core": "#background,#rim,#glow,.detail" + HIDE,
     "full": "",
     "bg": "#subject" + HIDE,
-    "detail": "#background,#rim,#glow" + HIDE + "#subject{visibility:hidden!important}"
-              ".detail,.detail *{visibility:visible!important}",
 }
 OPAQUE = {"full", "bg"}
 
 STROKE_JS = """() => {
   const subject = document.getElementById('subject');
   if (!subject) return [];
+  const body = document.getElementById('body'), accent = document.getElementById('accent-shape');
   const GEO = 'path,circle,rect,ellipse,line,polyline,polygon,text,use';
   const SKIP = 'defs,mask,clipPath,pattern,marker,symbol';
-  const out = [], seen = new Set();
-  const visit = (el, via) => {
-    if (seen.has(el)) return;
-    seen.add(el);
-    const cs = getComputedStyle(el);
-    if (cs.stroke && cs.stroke !== 'none')
-      out.push({tag: el.tagName, id: el.id || '', stroke: cs.stroke, width: cs.strokeWidth, via: via});
-  };
+  const out = [];
   for (const el of subject.querySelectorAll(GEO)) {
-    if (el.closest(SKIP)) continue;
-    visit(el, '');
-    if (el.tagName === 'use') {
-      const ref = el.getAttribute('href') || el.getAttribute('xlink:href');
-      const target = ref && ref.startsWith('#') ? document.getElementById(ref.slice(1)) : null;
-      if (target && target.closest('defs')) {
-        visit(target, 'use');
-        for (const t of target.querySelectorAll(GEO)) visit(t, 'use');
-      }
-    }
+    if (el.closest(SKIP) || el.id === 'glow') continue;
+    const cs = getComputedStyle(el);
+    const layer = body && body.contains(el) ? 'body' : accent && (accent === el || accent.contains(el)) ? 'accent' : '';
+    out.push({tag: el.tagName, id: el.id || '', layer: layer, stroke: cs.stroke, width: cs.strokeWidth,
+              cap: cs.strokeLinecap, join: cs.strokeLinejoin, fill: cs.fill});
   }
   return out;
 }"""
@@ -906,7 +884,7 @@ class Renderer:
         return out
 
     def strokes(self, svg_text):
-        """Computed stroke of every shape in #subject outside masks (inherited and CSS strokes included)."""
+        """Computed stroke, caps, joins and fill of every shape in #subject outside masks, and its layer."""
         self.load(svg_text, 1024)
         return self.page.evaluate(STROKE_JS)
 
@@ -1247,7 +1225,7 @@ def themed_colors(kind):
 # ---------------------------------------------------------------- measuring one icon
 
 def silhouette(union):
-    """Cuts closed with a radius-30 disk, then holes filled."""
+    """Gaps narrower than a line width closed with a radius-30 disk, then holes filled."""
     return fill_holes(disk_close(union, CLOSE_R) | union)
 
 
@@ -1263,8 +1241,8 @@ def tide_reference(renderer, path, cache={}):
         try:
             text, root = load_svg(path)
             info = static_info(root)
-            if info["fatal"] or node(root, "line") is not None:
-                why = "不是石墨风格（缺 #body / #accent-shape）"
+            if info["fatal"] or info["errors"] or not info.get("stroke_attr"):
+                why = "不是石墨线稿风格（缺 #body / #accent-shape，或 #body 没有描边）"
                 text = None
             else:
                 L = renderer.layers(text, ["body", "accent"])
@@ -1341,18 +1319,27 @@ def gradient_check(key, label_, g, M, mask, span, name):
                                                                     f"{name}_gradient_offset": dc}
 
 
-def small_counts(renderer, small_svg):
-    """Pieces of the small version at 40, 29 and 16 px, split by a lightness threshold between the graphite
-    background and the pieces (L* 13 and >= 50). A store variant's rim is left out: it is not a piece."""
+def small_signature(renderer, small_svg):
+    """Separate shapes and enclosed holes of the small version at 1024 and at 40, 29 and 16 px, split by a lightness
+    threshold between the graphite background (L* 13) and the lines and accent (L* 50 and up). A gap that clogs
+    merges two shapes; a hole that clogs disappears. A store variant's rim is left out."""
     root = ET.fromstring(strip_xml_prolog(small_svg))
     _remove(root, node(root, "rim"))
     im = renderer.image(serialize(root), 1024)
     bg_mid = (hex_rgb(LOOKS["default"]["bg"][0]) + hex_rgb(LOOKS["default"]["bg"][1])) / 2
-    thr = (float(lab_L(bg_mid)) + 60) / 2
+    thr = (float(lab_L(bg_mid)) + 50) / 2
     out = {}
-    for s in (SMALL_CHECK, SMALL_INFO, SMALL_FAVICON):
-        L_ = lab_L(np.asarray(im.resize((s, s), Image.LANCZOS)))
-        out[s] = label(L_ > thr)[1]
+    for s in (1024, SMALL_CHECK, SMALL_INFO, SMALL_FAVICON):
+        L_ = lab_L(np.asarray(im if s == 1024 else im.resize((s, s), Image.LANCZOS)))
+        ink = L_ > thr
+        least = (1024 / SMALL_CHECK) ** 2 if s == 1024 else 1
+        lab, n = label(ink)
+        sizes = np.bincount(lab.ravel(), minlength=n + 1)
+        shapes = int(sum(1 for i in range(1, n + 1) if sizes[i] >= least))
+        holes = fill_holes(ink) & ~ink
+        hl, hn = label(holes)
+        hs = np.bincount(hl.ravel(), minlength=hn + 1)
+        out[s] = (shapes, int(sum(1 for i in range(1, hn + 1) if hs[i] >= least)))
     return out
 
 
@@ -1373,73 +1360,65 @@ def move_hint(transform, k, dx, dy):
 def scale_hint(k, ratio, target=1.0):
     """What k brings an area ratio to the target (areas scale with k²)."""
     k2 = k * math.sqrt(target / ratio)
-    return (f" → k 改为 {k2:.3g}（切口、圆角用 shapes.py --k {k2:.3g} 重出；translate 跟着重调）")
-
-
-def thin_reach(cp, opened):
-    """How far the parts an opening removed reach from what it kept: (distance, point in cp's frame).
-    A corner the opening trims reaches a little; a stick or a thin wedge reaches far."""
-    removed = cp & ~opened
-    if not removed.any():
-        return 0.0, None
-    if not opened.any():
-        return math.inf, centre_of(removed)
-    ys, xs = np.nonzero(opened & dilate(~opened, 1))
-    K = np.stack([xs + 0.5, ys + 0.5], 1)
-    best = (0.0, None)
-    for c in components(removed, MIN_PIECE):
-        ys, xs = np.nonzero(c)
-        P = np.stack([xs + 0.5, ys + 0.5], 1)
-        if len(P) > 6000:
-            P = P[:: len(P) // 6000 + 1]
-        d, _ = nearest(P, K)
-        i = int(d.argmax())
-        if d[i] > best[0]:
-            best = (float(d[i]), (float(P[i][0]), float(P[i][1])))
-    return best
-
-
-def facing_widths(P, Q, d, idx):
-    """Gap widths along a cut: distances from P's edge points to Q (d, idx from nearest(P, Q)), kept where
-    the two edges face each other (the nearest point on Q sees P about as far away). Leaves out the outline
-    at the cut's mouths, so a parallel cut reads 48 all along and a wedge shows how far it opens."""
-    near = d < ADJACENT
-    if not near.any():
-        return np.zeros(0)
-    back, _ = nearest(Q[idx[near]], P)
-    return d[near][back >= 0.8 * d[near]]
+    return (f" → k 改为 {k2:.3g}（stroke-width 改为 {STROKE / k2:.1f}，圆角和强调色用 shapes.py --k {k2:.3g} 重出；"
+            "translate 跟着重调）")
 
 
 def measure(renderer, text, root, name, ref):
     info = static_info(root)
     k = info["k"]
     C = []
-    raw = {"k": k, "data_shape": info["shape"], "data_cut": info["data_cut"]}
+    raw = {"k": k, "data_shape": info["shape"]}
     if info["errors"]:
-        C.append(check("structure", "结构", "；".join(info["errors"]), "B10 的 id、图层和顺序", "FAIL"))
+        C.append(check("structure", "结构", "；".join(info["errors"]), "construction.md 的 id、图层和顺序", "FAIL"))
     if info["fatal"]:
         return {"name": name, "checks": C, "raw": raw, "info": info}
 
-    # no stroke anywhere in #subject (masks excluded)
+    # the line: one width (60 final px) on #body, round caps and joins, nothing filled in the body, no stroke on
+    # the accent (computed styles, so inherited and CSS strokes count)
     st = renderer.strokes(text)
-    raw["strokes"] = len(st)
-    if st:
-        desc = ", ".join(f"<{s['tag']}{' #' + s['id'] if s['id'] else ''}>{' (经 use)' if s['via'] else ''} "
-                         f"stroke {s['stroke']} {s['width']}" for s in st[:3])
-        C.append(check("no_stroke", "无描边", f"{len(st)} 处描边：{desc}", "#subject 里没有 stroke", "FAIL"))
-    else:
-        C.append(check("no_stroke", "无描边", "没有描边", "#subject 里没有 stroke", "PASS"))
+    probs = []
+    sw = info["stroke_attr"]
+    eff = sw * k if sw is not None else None
+    raw["stroke_effective"] = eff
+    if eff is None:
+        probs.append("#body 没写 stroke-width")
+    elif abs(eff - STROKE) > STROKE_TOL:
+        probs.append(f"线宽 {eff:.1f} px，stroke-width 要写 {STROKE / k:.2f}（{STROKE:.0f} ÷ k）")
+    lines = [x for x in st if x["layer"] == "body"]
+    widths = sorted({x["width"] for x in lines})
+    if len(widths) > 1:
+        probs.append("线宽不统一：" + "、".join(widths[:3]))
+    for key_, want, label_ in (("cap", "round", "端头"), ("join", "round", "拐角")):
+        bad = [x for x in lines if x[key_] != want and x["stroke"] != "none"]
+        if bad:
+            probs.append(f"{label_}要 round：<{bad[0]['tag']}> 是 {bad[0][key_]}")
+    nostroke = [x for x in lines if x["stroke"] == "none"]
+    if nostroke:
+        probs.append(f"#body 里有 {len(nostroke)} 处没有描边（<{nostroke[0]['tag']}>）")
+    filled = [x for x in lines if x["fill"] != "none"]
+    if filled:
+        probs.append(f"#body 里有填色（<{filled[0]['tag']}> fill {filled[0]['fill']}）：线稿不填色，填色只给强调色")
+    acc_st = [x for x in st if x["layer"] == "accent" and x["stroke"] != "none"]
+    if acc_st:
+        probs.append(f"强调色带描边（<{acc_st[0]['tag']}>）：强调色是一块填色，不描边")
+    stray = [x for x in st if not x["layer"]]
+    if stray:
+        probs.append(f"#body、#accent-shape 之外有图形 <{stray[0]['tag']}>")
+    val = (f"{eff:.1f} px（{sw:g} × {k:.3g}）" if eff is not None else "—") + f" · {len(lines)} 段线"
+    C.append(check("stroke", "线宽", val + ("；" + "；".join(probs) if probs else " · 圆头圆角"),
+                   f"{STROKE:.0f} ± {STROKE_TOL:.0f}，一种线宽，圆头圆角", ok(not probs)))
 
     # palette: every stop of the three gradients is one of the allowed pair (no third colour, no light band,
-    # no see-through stop), pieces paint only with their group's gradient
+    # no see-through stop); the lines paint only with the body gradient, the accent only with its own
     def stop_note(g, pair):
         """'' when the gradient's stops are the pair (first and last) and nothing else, else what is wrong."""
         if not g:
             return "缺渐变"
-        st = g["stops"]
-        if len(st) < 2 or (st[0], st[-1]) != tuple(pair):
-            return "→".join(st[:1] + st[-1:]) or "没有 stop"
-        extra = [c for c in st[1:-1] if c not in pair]
+        st_ = g["stops"]
+        if len(st_) < 2 or (st_[0], st_[-1]) != tuple(pair):
+            return "→".join(st_[:1] + st_[-1:]) or "没有 stop"
+        extra = [c for c in st_[1:-1] if c not in pair]
         if extra:
             return f"中间多了 {', '.join(extra[:2])}（只能有这两个色值：第二个颜色、亮带都不行）"
         if any(o < 1 for o in g.get("opacities", [])):
@@ -1473,16 +1452,16 @@ def measure(renderer, text, root, name, ref):
         good = good and not note
     bds = info["body_grad"]
     note = stop_note(bds, LOOKS["default"]["body"])
-    if not note and url_id(info["body_fill"]) == BODY_GRAD:
-        parts.append(f"主体 {LOOKS['default']['body'][0]}→{LOOKS['default']['body'][1]}")
+    if not note and url_id(info["body_stroke"]) == BODY_GRAD:
+        parts.append(f"线 {LOOKS['default']['body'][0]}→{LOOKS['default']['body'][1]}")
     else:
         if note:
-            parts.append(f"主体 {note} 应为 {LOOKS['default']['body'][0]}→{LOOKS['default']['body'][1]}")
+            parts.append(f"线 {note} 应为 {LOOKS['default']['body'][0]}→{LOOKS['default']['body'][1]}")
         else:
-            parts.append(f"主体 fill 是 {info['body_fill']}，要写 url(#{BODY_GRAD})")
+            parts.append(f"#body 的 stroke 是 {info['body_stroke']}，要写 url(#{BODY_GRAD})")
         good = False
     if info["piece_fills"]:
-        parts.append("单块自带 fill 或透明度：" + ", ".join(info["piece_fills"][:3]))
+        parts.append("单个元素自带颜色、线宽或透明度：" + ", ".join(info["piece_fills"][:3]))
         good = False
     note = stop_note(acs, PALETTE[acc_name]) if acc_name else ("→".join(acc_ends) or "缺渐变") + " 不在色板"
     if not note and url_id(info["accent_fill"]) == "accent":
@@ -1491,222 +1470,91 @@ def measure(renderer, text, root, name, ref):
         parts.append("强调色 " + (note or f"fill 写 url(#accent)，不是 {info['accent_fill']}"))
         good = False
     raw["accent_colour"] = acc_name
-    C.append(check("palette", "颜色", " · ".join(parts), "B4 默认外观 + 六色表", ok(good)))
+    C.append(check("palette", "颜色", " · ".join(parts), "默认外观 + 六色表", ok(good)))
     if variant:
         C.append(check("variant", "商店变体", f'data-variant="{variant}"：--store-ab 写出的 A/B 变体，不是母版',
                        "母版不写 data-variant；变体只进产品页优化，不出 --export", "INFO"))
 
-    names = ["body", "accent", "core", "full", "bg", "glow"]
-    if info["details"]:
-        names += ["detail"]
-    L = renderer.layers(text, names)
+    L = renderer.layers(text, ["body", "accent", "full", "bg", "glow"])
     body_c = L["body"][..., 3].astype(np.float32) / 255
     acc_c = L["accent"][..., 3].astype(np.float32) / 255
     body, acc = body_c >= 0.5, acc_c >= 0.5
     union = body | acc
-    cov = np.maximum(body_c, acc_c)
     if not union.any() or not acc.any() or not body.any():
-        what = "没有画出任何像素" if not union.any() else ("强调色没有像素" if not acc.any() else "主体没有像素")
+        what = "没有画出任何像素" if not union.any() else ("强调色没有像素" if not acc.any() else "线稿没有像素")
         C.append(check("subject", "主体", what, "—", "FAIL"))
         return {"name": name, "checks": C, "raw": raw, "info": info}
 
     sil = silhouette(union)
     hull = float(hull_area(sil))
     sil_area = float(sil.sum())
-    pieces = components(union)
-    core = components(L["core"][..., 3] >= 128)
+    lines_ = components(body)
     acc_pieces = components(acc)
-    centres = [centre_of(p) for p in pieces]
-    none = np.zeros_like(union)
-    det_mask = L["detail"][..., 3] >= 128 if "detail" in L else none
-    is_detail = [bool((p & det_mask).sum() > 0.5 * p.sum()) for p in pieces]
-    raw.update(pieces=len(pieces), pieces_core=len(core), accent_pieces=len(acc_pieces))
+    raw.update(parts=len(lines_), accent_pieces=len(acc_pieces))
 
-    # pieces: 2 to 4 (3 or 4 as a rule), a fifth only with a reason in data-pieces-why;
-    # class="detail" only on fragments under 2 % of the hull
-    lo_p, hi_p = PIECES
-    tiny = [p for p in core if 100.0 * p.sum() / hull < DETAIL_SHARE]
-    val = f"{len(core)} 块"
-    if len(pieces) > len(core):
-        val += f"（另有 {len(pieces) - len(core)} 块 detail）"
-    why = info["pieces_why"]
-    good = lo_p <= len(core) <= hi_p or (len(core) == PIECES_MAX and bool(why))
-    if len(core) == PIECES_MAX:
-        val += (f" · 第 5 块的理由：{why}" if why else
-                " · 5 块要在 #subject 上写 data-pieces-why 说明为什么非要第 5 块，否则删到 4 块（29 px 下会糊）")
-    if tiny:
-        val += f" · {100.0 * tiny[0].sum() / hull:.1f} % 凸包的碎块 {at(centre_of(tiny[0]))} 要标 class=\"detail\""
-        good = False
-    for c in components(det_mask):
-        share = 100.0 * c.sum() / hull
-        if share >= DETAIL_SHARE:
-            val += (f" · detail 块占 {share:.1f} % 凸包 {at(centre_of(c))}：detail 只能给 < {DETAIL_SHARE:.0f} % 凸包"
-                    "的碎块（64 px 及以下它会消失）")
-            good = False
-            break
-    C.append(check("pieces", "块数", val, f"{lo_p}–{hi_p}，一般 3–4；5 块要写 data-pieces-why（不算 detail）",
-                   ok(good)))
+    # parts: separate lines (each a connected stroke) and the one accent
+    C.append(check("parts", "线条段数", f"{len(lines_)} 段相连的线", f"1–{PARTS_MAX}（一个隐喻，29 px 下不碎）",
+                   ok(1 <= len(lines_) <= PARTS_MAX)))
     C.append(check("accent_count", "强调色块数", f"{len(acc_pieces)} 块", "1（只有一处）", ok(len(acc_pieces) == 1)))
 
-    # cut width between neighbouring pieces (the narrowest point of each pair)
-    pts = [edge_points(np.where(dilate(p, 2), cov, 0)) for p in pieces]
-    boxes = [bbox(p) for p in pieces]
-    pairs = []
-    for i in range(len(pieces)):
-        for j in range(i + 1, len(pieces)):
-            a, b = boxes[i], boxes[j]
-            if max(a[0] - b[2], b[0] - a[2], a[1] - b[3], b[1] - a[3]) >= ADJACENT:
-                continue
+    # clear gap between separate lines: at least one line width
+    pts = [edge_points(np.where(dilate(p, 2), body_c, 0)) for p in lines_]
+    gaps = []
+    for i in range(len(lines_)):
+        for j in range(i + 1, len(lines_)):
             d, idx = nearest(pts[i], pts[j])
-            if not len(d):
-                continue
-            t = int(d.argmin())
-            if d[t] < ADJACENT:
+            if len(d):
+                t = int(d.argmin())
                 pa, pb = pts[i][t], pts[j][idx[t]]
-                d2, idx2 = nearest(pts[j], pts[i])
-                w = np.concatenate([facing_widths(pts[i], pts[j], d, idx), facing_widths(pts[j], pts[i], d2, idx2)])
-                pairs.append({"i": i, "j": j, "gap": float(d[t]), "at": [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2],
-                              "p50": float(np.percentile(w, 50)) if len(w) else float(d[t]),
-                              "p90": float(np.percentile(w, 90)) if len(w) else float(d[t])})
-    raw["cuts"] = [round(p["gap"], 1) for p in pairs]
-    notes, good = [], True
-    if pairs:
-        gaps = [p["gap"] for p in pairs]
-        val = f"{min(gaps):.1f}–{max(gaps):.1f} px · {len(pairs)} 对相邻"
-        worst = max(pairs, key=lambda p: abs(p["gap"] - CUT))
-        if abs(worst["gap"] - CUT) > CUT_TOL:
-            notes.append(f"最差 {worst['gap']:.1f} {at(worst['at'])}")
-            good = False
+                gaps.append((float(d[t]), ((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2)))
+    if gaps:
+        g, where = min(gaps)
+        raw["line_gap"] = g
+        C.append(check("line_gap", "线间净空", f"最近 {g:.1f} px {at(where)} · {len(gaps)} 对",
+                       f"≥ {GAP_LINE:.0f}（一个线宽）", ok(g >= GAP_LINE - GAP_TOL)))
     else:
-        val = "没有相邻的块（间距都 ≥ 96）"
-        good = False
-    # accent to body, on the separately rendered layers: an accent that touches the body merges with it into
-    # one piece, so the pairs above never see that cut
+        C.append(check("line_gap", "线间净空", "只有一段相连的线", f"≥ {GAP_LINE:.0f}（一个线宽）", "PASS"))
+
+    # pinch: inside one line drawing, gaps narrower than a line width (a tight acute join, two strokes running
+    # close side by side, a hole too small) close up with a radius-30 disk; a corridor bigger than 3000 px² clogs
+    cp, (ox, oy) = crop(body, PINCH_R + 4)
+    added = disk_close(cp, PINCH_R) & ~cp
+    worst = None
+    for a_ in components(added, 1):
+        area = float(a_.sum())
+        if area > PINCH_AREA and (worst is None or area > worst[0]):
+            cx, cy = centre_of(a_)
+            worst = (area, (cx + ox, cy + oy))
+    if worst:
+        raw["pinch"] = worst[0]
+        C.append(check("pinch", "线间夹缝", f"窄于 {GAP_LINE:.0f} 的夹缝 {at(worst[1])}（{worst[0] / 1000:.1f}k px²）："
+                       "拉开两条线、把锐角拐角放宽到 ≥ 45°，或把小孔放大", f"夹缝 ≤ {PINCH_AREA / 1000:.0f}k px²", "FAIL"))
+    else:
+        C.append(check("pinch", "线间夹缝", "没有会糊住的夹缝", f"夹缝 ≤ {PINCH_AREA / 1000:.0f}k px²", "PASS"))
+
+    # the accent keeps clear of every line
+    inter = int((body & acc).sum())
     ea, eb = edge_points(acc_c), edge_points(body_c)
     d_ab, i_ab = nearest(ea, eb)
     t = int(d_ab.argmin())
     gap_ab = float(d_ab[t])
     pa, pb = ea[t], eb[i_ab[t]]
     at_ab = ((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2)
-    raw["accent_gap"] = gap_ab
-    merged = [p for p in pieces if (p & body).sum() > MIN_PIECE and (p & acc).sum() > MIN_PIECE]
-    if merged:
-        notes.append(f"强调色和主体粘成一块 {at(at_ab)}：中间要隔一道 {CUT:.0f} 的切口，不贴边")
-        good = False
-    elif abs(gap_ab - CUT) > CUT_TOL:
-        notes.append(f"强调色到主体最近 {gap_ab:.1f} {at(at_ab)}："
-                     + (("贴边了" if gap_ab < 4 else "切口不到 48") if gap_ab < CUT
-                        else "要隔正好 48 的切口（离得更远就不是一道切口）"))
-        good = False
+    raw.update(accent_gap=gap_ab, overlap_px=inter)
+    if inter > OVERLAP_MAX * acc.sum():
+        C.append(check("accent_gap", "强调色到线", f"压在线上 {at(at_ab)}（交集 {inter} px²）",
+                       f"净空 ≥ {GAP_ACCENT:.0f}（一个线宽），不碰线", "FAIL"))
     else:
-        notes.append(f"强调色↔主体 {gap_ab:.1f}")
-    dc = num(info["data_cut"])
-    if dc is None:
-        notes.append("缺 data-cut")
-        good = False
-    elif abs(dc - CUT) > 1e-6:
-        notes.append(f"data-cut {info['data_cut']} 应为 {CUT:.0f}")
-        good = False
-    else:
-        notes.append(f"data-cut {dc:g}")
-    if info["cuts"] is not None:
-        sw = info["cuts"]["stroke_width"]
-        if sw is None:
-            notes.append("#cuts 没写 stroke-width")
-            good = False
-        else:
-            eff = sw * k
-            raw["cuts_stroke_effective"] = eff
-            notes.append(f"#cuts {eff:.1f} px ({sw:g} × {k:.3g})")
-            if abs(eff - CUT) > CUT_ATTR_TOL:
-                notes[-1] += f" 应为 {CUT:.0f} ± {CUT_ATTR_TOL:.0f}（stroke-width {CUT / k:.2f}）"
-                good = False
-        if info["cuts"]["overrides"]:
-            notes.append("#cuts 里单独的线宽 " + ", ".join(info["cuts"]["overrides"][:3]))
-            good = False
-    C.append(check("cut", "切口宽", val + " · " + " · ".join(notes), f"相邻每对最窄处 {CUT:.0f} ± {CUT_TOL:.0f}",
-                   ok(good), pairs=pairs))
-    # how the gap runs along each cut: cut only judges the narrowest point; a wedge opens up away from it
-    if pairs:
-        wide = max(pairs, key=lambda p: p["p50"])
-        raw["cut_spread"] = [[round(p["p50"], 1), round(p["p90"], 1)] for p in pairs]
-        C.append(check("cut_spread", "切口沿边宽",
-                       f"最宽一对 p50 {wide['p50']:.0f} / p90 {wide['p90']:.0f} {at(wide['at'])} · {len(pairs)} 对",
-                       "参考：平行切口约 48 / 52", "INFO"))
+        C.append(check("accent_gap", "强调色到线", f"{gap_ab:.1f} px {at(at_ab)}", f"净空 ≥ {GAP_ACCENT:.0f}（一个线宽），不碰线",
+                       ok(gap_ab >= GAP_ACCENT - GAP_TOL)))
 
-    # cuts go all the way through: closing one piece on its own must not fill a slot inside it
-    worst = None
-    for p, c0 in zip(pieces, centres):
-        cp, (ox, oy) = crop(p, CLOSE_R + 4)
-        added = disk_close(cp, CLOSE_R) & ~cp
-        for a in components(added, 1):
-            area = float(a.sum())
-            if area > SLOT_AREA and (worst is None or area > worst[0]):
-                cx, cy = centre_of(a)
-                outside = dilate(a, 1) & ~a & ~cp
-                mouths = len(components(outside, 1))
-                worst = (area, (cx + ox, cy + oy), mouths)
-    if worst:
-        kind = "缺口没把形体分成两块" if worst[2] >= 2 else "切口没切透，留下悬空的槽"
-        C.append(check("cut_through", "切口贯穿", f"{kind} {at(worst[1])}（{worst[0] / 1000:.1f}k px²）",
-                       "每道切口把形体切成两块", "FAIL"))
-    else:
-        C.append(check("cut_through", "切口贯穿", "没有悬空的槽", "每道切口把形体切成两块", "PASS"))
-
-    # thinnest part: an octagon opening of radius 34 keeps most of every piece, and what it removes stays
-    # close to what it keeps (a trimmed corner, not a stick or a thin wedge). detail pieces are dropped at
-    # 64 px and below, so they are not judged.
-    keeps, reach = [], (0.0, None)
-    for p, c0, det in zip(pieces, centres, is_detail):
-        if det:
-            continue
-        cp, (ox, oy) = crop(p, THIN_R + 2)
-        opened = octagon_morph(octagon_morph(cp, THIN_R, False, True), THIN_R, True, True) & cp
-        keeps.append((float(opened.sum() / cp.sum()), c0))
-        r_, pt = thin_reach(cp, opened)
-        if r_ > reach[0]:
-            reach = (r_, (pt[0] + ox, pt[1] + oy))
-    raw["open34_keep"] = [round(100 * v, 1) for v, _ in keeps]
-    raw["open34_reach"] = round(reach[0], 1) if math.isfinite(reach[0]) else None
-    if keeps:
-        k_min, c_min = min(keeps, key=lambda v: v[0])
-        good = k_min >= THIN_KEEP and reach[0] <= THIN_REACH
-        val = f"开运算 r {THIN_R} 后最少保留 {100 * k_min:.1f} % {at(c_min)}"
-        if reach[1] is not None:
-            val += f" · 去掉的部分最远 {reach[0]:.0f} px {at(reach[1])}"
-            if reach[0] > THIN_REACH:
-                val += "：这里有细杆或细楔，最薄不到 72"
-        if any(is_detail):
-            val += f" · {sum(is_detail)} 块 detail 不查"
-        C.append(check("thin", "实形最薄处", val, f"每块 ≥ {THIN_KEEP:.0%}，凸出 ≤ {THIN_REACH}（≈ 最薄 72）", ok(good)))
-    else:
-        C.append(check("thin", "实形最薄处", "只有 detail 块", "—", "FAIL"))
-
-    # no overlap
-    inter = int((body & acc).sum())
-    ratio = inter / acc.sum()
-    raw["overlap_px"] = inter
-    C.append(check("overlap", "不重叠", f"交集 {inter} px²（强调色的 {100 * ratio:.2f} %）",
-                   f"≤ {100 * OVERLAP_MAX:.1f} %", ok(ratio <= OVERLAP_MAX)))
-
-    # accent share; a pair's accent is the smaller (or equal) object: at most the hull of the largest body piece
+    # accent share
     share = 100.0 * acc.sum() / hull
     kind = info["accent_kind"]
-    lo, hi = {"band": ACCENT_SHARE_BAND, "pair": ACCENT_SHARE_PAIR}.get(kind, ACCENT_SHARE)
+    lo, hi = ACCENT_SHARE_BAND if kind == "band" else ACCENT_SHARE
     raw["accent_share"] = share
-    val = f"{share:.1f} % 强调色 / 凸包" + {"band": "（AI 斜带）", "pair": "（一对物体）"}.get(kind, "")
-    good = lo <= round(share, 1) <= hi
-    if kind == "pair":
-        cap = max((hull_area(p) for p in components(body)), default=0.0)
-        ratio = float(acc.sum()) / cap if cap else math.inf
-        raw["pair_ratio"] = ratio
-        val += f" · 强调色 / 最大一块主体的凸包 {ratio:.2f}"
-        if ratio > 1.0:
-            val += "：pair 的强调色要是一对里较小（或一样大）的那个"
-            good = False
-    elif hi < share <= ACCENT_SHARE_PAIR[1] and not kind:
-        val += '（一对同类物体里较小的那个当强调色时写 data-accent="pair"，上限 33 %）'
-    C.append(check("accent", "强调色占比", val, f"{lo:.0f}–{hi:.0f} %", ok(good)))
+    C.append(check("accent", "强调色占比", f"{share:.1f} % 强调色 / 凸包" + ("（AI 斜带）" if kind == "band" else ""),
+                   f"{lo:.0f}–{hi:.0f} %", ok(lo <= round(share, 1) <= hi)))
 
     # size
     x0, y0, x1, y1 = bbox(union)
@@ -1720,7 +1568,7 @@ def measure(renderer, text, root, name, ref):
         val, target = keyline_note(shape, w, h, body_part)
         C.append(check("shape", "形状", val, target, "INFO"))
     elif shape is None:
-        C.append(check("shape", "形状", "没写 data-shape，按实心算", "circle|square|tall|wide|open", "INFO"))
+        C.append(check("shape", "形状", "没写 data-shape，按封闭形算", "circle|square|tall|wide|open", "INFO"))
     else:
         C.append(check("shape", "形状", f'data-shape="{shape}" 不认识', "circle|square|tall|wide|open", "FAIL"))
     is_open = shape == "open"
@@ -1734,9 +1582,8 @@ def measure(renderer, text, root, name, ref):
                    ok(s_ok) if not is_open else "INFO"))
     C.append(check("hull", "凸包面积", f"{hr:.2f} × Tide ({hull / 1000:.0f}k px²)"
                    + ("" if not is_open or h_ok else scale_hint(k, hr)),
-                   f"{OPEN_RATIO[0]:.2f}–{OPEN_RATIO[1]:.2f}" if is_open else "实心形状只看剪影",
+                   f"{OPEN_RATIO[0]:.2f}–{OPEN_RATIO[1]:.2f}" if is_open else "参考：线稿看剪影",
                    ok(h_ok) if is_open else "INFO"))
-    # ink: the painted area, which is what reads as weight side by side (the size checks fill the cuts in)
     ink = float(union.sum())
     raw["ink"] = ink
     if ref.get("ink"):
@@ -1757,7 +1604,7 @@ def measure(renderer, text, root, name, ref):
                        + ("" if good else move_hint(transform, k, BODY_CENTRE[0] - bx, BODY_CENTRE[1] - by)),
                        f"({BODY_CENTRE[0]}, {BODY_CENTRE[1]}) ± {BODY_TOL}", ok(good)))
     elif is_open:
-        # a diagonal composite (cloud and sun, two bubbles) centred on its centroid alone drifts towards its
+        # a diagonal composite (cloud and sun, frame and person) centred on its centroid alone drifts towards its
         # light corner: across, take the midpoint of the centroid and the outer box's centre
         bcx = (x0 + x1) / 2
         mx = (cx + bcx) / 2
@@ -1774,16 +1621,17 @@ def measure(renderer, text, root, name, ref):
                        + ("" if good else move_hint(transform, k, 512 - cx, 512 - cy)),
                        f"≤ {CENTROID_MAX}", ok(good)))
 
-    # contrast against the background (mean colours, background sampled inside the convex hull)
+    # contrast against the background (mean colours of fully covered pixels, background inside the convex hull)
     full, bgim = L["full"][..., :3], L["bg"][..., :3]
+    core_b, core_a = body_c >= 0.95, acc_c >= 0.95
     hm = hull_mask(sil)
     bg_mean = bgim[hm].mean(0)
-    cb, ca = contrast(full[body].mean(0), bg_mean), contrast(full[acc].mean(0), bg_mean)
+    cb, ca = contrast(full[core_b].mean(0), bg_mean), contrast(full[core_a].mean(0), bg_mean)
     Ll = renderer.layers(make_light(text), ["full", "bg"])
     bg_l = Ll["bg"][..., :3][hm].mean(0)
-    cbl, cal = contrast(Ll["full"][..., :3][body].mean(0), bg_l), contrast(Ll["full"][..., :3][acc].mean(0), bg_l)
+    cbl, cal = contrast(Ll["full"][..., :3][core_b].mean(0), bg_l), contrast(Ll["full"][..., :3][core_a].mean(0), bg_l)
     raw.update(contrast_body=cb, contrast_accent=ca, contrast_body_light=cbl, contrast_accent_light=cal)
-    C.append(check("contrast_body", "主体对底", f"{cb:.1f}:1 · 浅色外观 {cbl:.1f}:1（INFO）",
+    C.append(check("contrast_body", "线对底", f"{cb:.1f}:1 · 浅色外观 {cbl:.1f}:1（INFO）",
                    f"默认外观 ≥ {CONTRAST_BODY:.0f}:1", ok(cb >= CONTRAST_BODY)))
     C.append(check("contrast_accent", "强调色对底", f"{ca:.1f}:1 · 浅色外观 {cal:.1f}:1（INFO）",
                    f"默认外观 ≥ {CONTRAST_ACCENT:.0f}:1", ok(ca >= CONTRAST_ACCENT)))
@@ -1824,44 +1672,27 @@ def measure(renderer, text, root, name, ref):
             val += f" · 不透明度 {g['opacity']:g} · σ {sd:.0f} px · {g['color']}"
         C.append(check("glow", "辉光", val + ("；" + "；".join(probs) if probs else ""), target, ok(not probs)))
 
-    # cut clarity: the centre line of every cut stays close to the background
-    mid = np.zeros_like(union)
-    r_out, r_in = int(round(CUT / 2 + 2)), int(round(CUT / 2 - 6))
-    grown = {}
-    for p in pairs:
-        for i in (p["i"], p["j"]):
-            if i not in grown:
-                grown[i] = disk_dilate(pieces[i], r_out)
-        mid |= grown[p["i"]] & grown[p["j"]]
-    if pairs:
-        mid &= ~disk_dilate(union, r_in)
-    if mid.any():
-        dl = np.abs(lab_L(full[mid]) - lab_L(bgim[mid]))
-        dmax = float(dl.max())
-        raw["cut_dL"] = dmax
-        C.append(check("cut_clarity", "切口清晰度", f"切口中线 ΔL 最多 {dmax:.1f}（{int(mid.sum())} px）",
-                       f"≤ {CUT_DL_MAX:.0f}", ok(dmax <= CUT_DL_MAX)))
-    else:
-        C.append(check("cut_clarity", "切口清晰度", "没有 48 宽的切口可量", f"≤ {CUT_DL_MAX:.0f}", "INFO"))
-
-    # category mark (tools cut, image sun, video play hole, AI band) and the reserved green
-    C.append(category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, raw))
+    # category mark (tools line, image sun, video play outline, AI band) and the reserved green
+    C.append(category_check(info, union, body, acc, acc_c, lines_, hull, acc_name, raw))
     # the tile's edge in the App Store (dark and light), with the A/B variants for comparison
     C.append(store_edge_check(full, acc_name, raw))
     # Android themed icon: the base and the accent are gone, the shape has to carry it
     C.append(themed_check(raw))
 
-    # small sizes: same pieces at 40 px as at 1024 (without details)
-    n_small = small_counts(renderer, make_small(text, k))
-    raw["small_pieces"] = n_small
-    C.append(check("small", "小尺寸", f"small 版 {SMALL_CHECK} px {n_small[SMALL_CHECK]} 块 · 1024 px {len(core)} 块",
-                   "块数一样（切口没糊）", ok(n_small[SMALL_CHECK] == len(core))))
-    C.append(check("small_29", "小尺寸 29", f"small 版 {SMALL_INFO} px {n_small[SMALL_INFO]} 块", "参考", "INFO"))
-    C.append(check("small_16", "小尺寸 16", f"small 版 {SMALL_FAVICON} px {n_small[SMALL_FAVICON]} 块（favicon-16）",
+    # small sizes: the small version's shapes and holes at 40 px are the ones it has at 1024 (no gap clogged)
+    sig = small_signature(renderer, make_small(text, k))
+    raw["small"] = {str(s_): list(v) for s_, v in sig.items()}
+
+    def sig_text(v):
+        return f"{v[0]} 形 {v[1]} 孔"
+    C.append(check("small", "小尺寸", f"small 版 {SMALL_CHECK} px {sig_text(sig[SMALL_CHECK])} · 1024 px {sig_text(sig[1024])}",
+                   "一样（线间没有糊住，孔还在）", ok(sig[SMALL_CHECK] == sig[1024])))
+    C.append(check("small_29", "小尺寸 29", f"small 版 {SMALL_INFO} px {sig_text(sig[SMALL_INFO])}", "参考", "INFO"))
+    C.append(check("small_16", "小尺寸 16", f"small 版 {SMALL_FAVICON} px {sig_text(sig[SMALL_FAVICON])}（favicon-16）",
                    "参考：16 px 只要剪影认得出", "INFO"))
 
     # gradients
-    c_, extra = gradient_check("body_gradient", "主体渐变", info["body_grad"], info["body_matrix"], body,
+    c_, extra = gradient_check("body_gradient", "线渐变", info["body_grad"], info["body_matrix"], body,
                                BODY_SPAN, "body")
     C.append(c_)
     raw.update(extra)
@@ -1875,45 +1706,46 @@ def measure(renderer, text, root, name, ref):
     r_max = float(np.sqrt((xs + 0.5 - 512) ** 2 + (ys + 0.5 - 512) ** 2).max())
     t_r = ref.get("r_max")
     pwa_cap = PWA_R / (t_r or TIDE_FALLBACK["r_max"])
-    a_s, p_s = min(ANDROID_R / r_max, ANDROID_CAP), min(PWA_R / r_max, pwa_cap)
+    a_cap = ANDROID_R / (t_r or TIDE_FALLBACK["r_max"])
+    a_s, p_s = min(ANDROID_R / r_max, a_cap), min(PWA_R / r_max, pwa_cap)
     raw.update(r_max=r_max, android_scale=a_s, pwa_scale=p_s)
     tide_note = f" · Tide r_max {t_r:.0f}" if t_r else ""
     C.append(check("android", "安卓安全圆",
                    f"r_max {r_max:.0f}（安全圆 {ANDROID_SAFE_R:.0f}）→ ×{a_s:.3f}"
-                   + (f"（封顶 {ANDROID_CAP}）" if a_s == ANDROID_CAP else "") + tide_note,
-                   f"min({ANDROID_R:.0f} / r_max, {ANDROID_CAP})，导出自动缩放", "INFO"))
+                   + (f"（封顶 Tide 的 ×{a_cap:.3f}）" if ANDROID_R / r_max > a_cap + 1e-6 else "") + tide_note,
+                   "min(290 / r_max, Tide 的系数)，导出自动缩放", "INFO"))
     C.append(check("pwa", "PWA 遮罩圆", f"r_max {r_max:.0f} {'>' if r_max > PWA_R else '≤'} 409.6 → ×{p_s:.3f}"
                    + (f"（封顶 Tide 的 ×{pwa_cap:.3f}）" if PWA_R / r_max > pwa_cap + 1e-6 else ""),
                    "min(409.6 / r_max, Tide 的系数)，导出自动缩放", "INFO"))
     return {"name": name, "checks": C, "raw": raw, "info": info}
 
 
-def tools_cut(union):
-    """The tools mark: the horizontal run of empty rows nearest 48 high that splits the silhouette into an upper
-    and a lower part. -> (height, top, bottom, centre as a share of the height, facing share, number of runs)
-    or None."""
+def tools_line(union):
+    """The tools mark: rows where one unbroken run of ink spans TOOLS_SPAN of the drawing's width or more, grouped
+    into bands. -> (bands as (top, bottom)), box) """
     x0, y0, x1, y1 = bbox(union)
-    empty = (~union[y0:y1, x0:x1].any(1)).astype(np.int8)
-    d = np.diff(np.concatenate([[0], empty, [0]]))
-    runs = list(zip(np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]))
-    best = None
-    for s, e in runs:
-        ya, yb = y0 + int(s), y0 + int(e)
-        facing = float((union[ya - 1, x0:x1] & union[yb, x0:x1]).sum()) / (x1 - x0)
-        cand = (yb - ya, ya, yb, ((ya + yb) / 2 - y0) / (y1 - y0), facing, len(runs))
-        if best is None or abs(cand[0] - CUT) < abs(best[0] - CUT):
-            best = cand
-    return best
+    W = x1 - x0
+    sub = union[y0:y1, x0:x1].astype(np.int8)
+    pad = np.zeros((sub.shape[0], sub.shape[1] + 2), np.int8)
+    pad[:, 1:-1] = sub
+    d = np.diff(pad, axis=1)
+    longest = np.zeros(sub.shape[0])
+    for r in range(sub.shape[0]):
+        s_, e_ = np.nonzero(d[r] == 1)[0], np.nonzero(d[r] == -1)[0]
+        if len(s_):
+            longest[r] = (e_ - s_).max()
+    rows = longest >= TOOLS_SPAN * W
+    dd = np.diff(np.concatenate([[0], rows.astype(np.int8), [0]]))
+    bands = [(y0 + int(a), y0 + int(b)) for a, b in zip(np.nonzero(dd == 1)[0], np.nonzero(dd == -1)[0])]
+    return bands
 
 
-def play_hole(pieces, is_detail, hull):
-    """The video mark: the tallest hole in a piece that is a triangle pointing right.
+def play_hole(lines_, hull):
+    """The video mark: the tallest hole in a line drawing that is a triangle pointing right.
     -> (height, centre, width) or None."""
     found = None
-    for p, det in zip(pieces, is_detail):
-        if det:
-            continue
-        for c in components(fill_holes(p) & ~p, max(MIN_PIECE, int(0.005 * hull))):
+    for p in lines_:
+        for c in components(fill_holes(p) & ~p, max(MIN_PIECE, int(0.004 * hull))):
             bx0, by0, bx1, by1 = bbox(c)
             bw, bh = bx1 - bx0, by1 - by0
             area = float(c.sum())
@@ -1936,12 +1768,12 @@ def min_width(points):
     return float(ext[i]), float(np.degrees(t[i])), float(ext[j])
 
 
-CATEGORY_TARGET = {"tools": "一道贯穿剪影的水平切口（48，中线在高度 35–75 %）",
-                   "image": "左上角一个正圆太阳（强调色）", "video": "一个镂空的播放三角（尖朝右）",
-                   "ai": "右下角一条「/」向 45° 斜带（宽 96，强调色）", "health": "强调色绿", "finance": "强调色绿"}
+CATEGORY_TARGET = {"tools": "一条横贯整幅线稿的水平直线（中线在高度 35–75 %）",
+                   "image": "左上角一个实心正圆太阳（强调色）", "video": "一个描边的播放三角（尖朝右，中间是空的）",
+                   "ai": "右下角一条「/」向 45° 斜带（宽 80，强调色）", "health": "强调色绿", "finance": "强调色绿"}
 
 
-def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, raw):
+def category_check(info, union, body, acc, acc_c, lines_, hull, acc_name, raw):
     """data-category: the accent colour of the category and its mark; green only for health and finance;
     the band only for AI."""
     cat, kind = info["category"], info["accent_kind"]
@@ -1966,21 +1798,18 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
     if kind == "band" and cat != "ai":
         probs.append("斜带只给 AI 类")
     if cat == "tools":
-        cut = tools_cut(union)
-        if cut is None:
-            probs.append("没有一道水平切口把整个剪影切成上下两部分")
+        bands = [b for b in tools_line(union) if b[1] - b[0] >= STROKE / 2]
+        if not bands:
+            probs.append(f"没有一条横贯整幅线稿（≥ {TOOLS_SPAN:.0%} 宽）的水平直线")
         else:
-            gap, ya, yb, frac, facing, runs = cut
-            raw["tools_cut"] = {"y": [ya, yb], "at": round(frac, 3), "facing": round(facing, 3), "runs": runs}
-            notes.append(f"水平切口 y {ya}–{yb}（{gap} px，中线在高度 {frac:.0%}，两边直边对齐 {facing:.0%}）")
-            if abs(gap - CUT) > 3:
-                probs.append("没有一道 48 的水平切口贯穿整个剪影" if gap > ADJACENT else f"水平切口 {gap} px，要 48")
-            if not TOOLS_CUT_AT[0] <= frac <= TOOLS_CUT_AT[1]:
-                probs.append(f"水平切口的中线要在剪影高度的 {TOOLS_CUT_AT[0]:.0%}–{TOOLS_CUT_AT[1]:.0%}")
-            if facing < TOOLS_FACING:
-                probs.append(f"切口上下两边要是水平直边（对齐的长度不到宽度的 {TOOLS_FACING:.0%}）")
-            if runs > 1:
-                probs.append(f"只要一道水平切口，分成上下两部分；这里横着断开了 {runs} 处（卡片中间夹一条色条不算）")
+            ya, yb = bands[0]
+            frac = ((ya + yb) / 2 - y0) / H
+            raw["tools_line"] = {"y": [ya, yb], "at": round(frac, 3), "lines": len(bands)}
+            notes.append(f"水平直线 y {ya}–{yb}（中线在高度 {frac:.0%}）")
+            if not TOOLS_AT[0] <= frac <= TOOLS_AT[1]:
+                probs.append(f"水平直线的中线要在线稿高度的 {TOOLS_AT[0]:.0%}–{TOOLS_AT[1]:.0%}")
+            if len(bands) > 1:
+                probs.append(f"只要一条横贯的直线；这里有 {len(bands)} 条（两条平行横线读成菜单、等号）")
     elif cat == "image":
         cx, cy = centre_of(acc)
         e = edge_points(acc_c)
@@ -1990,20 +1819,20 @@ def category_check(info, union, acc, acc_c, pieces, is_detail, hull, acc_name, r
         raw["sun"] = {"r": round(R, 1), "roundness": round(round_, 3), "at": [round(fx, 3), round(fy, 3)]}
         notes.append(f"太阳 r {R:.0f} · 圆度 {round_:.2f} · 圆心在外框 ({fx:.0%}, {fy:.0%})")
         if round_ < SUN_ROUND:
-            probs.append("强调色要是一个完整的正圆（太阳），不切、不缺")
+            probs.append("强调色要是一个完整的实心正圆（太阳），不切、不缺")
         if R < SUN_R_MIN:
             probs.append(f"太阳半径要 ≥ {SUN_R_MIN:.0f}")
         if fx > SUN_CORNER or fy > SUN_CORNER:
             probs.append(f"太阳要在左上角（圆心在外框左上 {SUN_CORNER:.0%} × {SUN_CORNER:.0%} 以内）")
     elif cat == "video":
-        hole = play_hole(pieces, is_detail, hull)
+        hole = play_hole(lines_, hull)
         if hole is None:
-            probs.append("没找到镂空的播放三角：在一块实形里挖一个尖朝右的三角（shapes.py play，再 minus）")
+            probs.append("没找到描边的播放三角：用 shapes.py play 画一个尖朝右的三角线框，不和别的线相连")
         else:
             raw["play_hole"] = {"height": hole[0], "at": [round(v, 1) for v in hole[1]]}
-            notes.append(f"镂空三角 高 {hole[0]} px {at(hole[1])}")
+            notes.append(f"三角线框里的孔 高 {hole[0]} px {at(hole[1])}")
             if hole[0] < PLAY_H_MIN:
-                probs.append(f"三角实测要高 ≥ {PLAY_H_MIN}（shapes.py play 的 H ≥ 200 ÷ k，--r 32）")
+                probs.append(f"三角的孔实测要高 ≥ {PLAY_H_MIN}（shapes.py play 的 H ≥ 240 ÷ k）")
     elif cat == "ai":
         if kind != "band":
             probs.append('AI 斜带就是强调色：#accent-shape 写 data-accent="band"')
@@ -2097,7 +1926,7 @@ def report(result, path, ref):
     title = f"{result['name']}  ({path})"
     lines.append("─" * 4 + " " + title + " " + "─" * max(4, 96 - dwidth(title)))
     lines.append(f"  k {raw.get('k', 0):.3g} · data-shape {raw.get('data_shape') or '—'} · "
-                 f"data-cut {raw.get('data_cut') or '—'} · Tide 参考: 剪影 {ref['silhouette'] / 1000:.0f}k px², "
+                 f"线宽 {raw.get('stroke_effective') or 0:.0f} px · Tide 参考: 剪影 {ref['silhouette'] / 1000:.0f}k px², "
                  f"凸包 {ref['hull'] / 1000:.0f}k px²" + (" (内置)" if ref.get("source") == "built-in" else ""))
     lines.append("  " + "  ".join(pad(h, widths[i]) if i < 3 else h for i, h in enumerate(head)))
     for r in rows:
@@ -2309,9 +2138,10 @@ def build_sheet(renderer, result, ims, tide_im, path):
     stat_lines = [(f"{CATEGORIES[cat][0]}类 · {CATEGORIES[cat][1]}" if cat in CATEGORIES else "不属于四类")
                   + f' · 剪影 {raw.get("silhouette_ratio", 0):.2f}× Tide · 凸包 {raw.get("hull_ratio", 0):.2f}×',
                   f'强调色 {raw.get("accent_share", 0):.1f} % · 长边 {raw.get("long_side", 0)} px · '
-                  f'{raw.get("pieces_core", 0)} 块',
-                  "切口 " + ("–".join(f"{v:.1f}" for v in (min(raw["cuts"]), max(raw["cuts"])))
-                            if raw.get("cuts") else "—") + f' · 主体对底 {raw.get("contrast_body", 0):.1f}:1',
+                  f'{raw.get("parts", 0)} 段线',
+                  f'线宽 {raw.get("stroke_effective") or 0:.0f} px · 线间 '
+                  + (f'{raw["line_gap"]:.0f} px' if raw.get("line_gap") is not None else "—")
+                  + f' · 线对底 {raw.get("contrast_body", 0):.1f}:1',
                   f'r_max {raw.get("r_max", 0):.0f} · Android ×{raw.get("android_scale", 1):.3f}',
                   f'<span class="bad">FAIL: {", ".join(fails)}</span>' if fails else "全部通过"]
     stat = '<div class="stat">' + "".join(f"<div>{x}</div>" for x in stat_lines) + "</div>"
@@ -2421,11 +2251,13 @@ def transform_path(d, M):
 
 
 def shape_path(el):
-    """Path data for a basic shape element, None when it has no fill area."""
+    """Path data for a basic shape element (open for <line> and <polyline>), None when it draws nothing."""
     t = local(el)
     g = lambda a, dflt=0.0: num(el.get(a), dflt)
     if t == "path":
         return el.get("d")
+    if t == "line":
+        return f"M {g('x1')} {g('y1')} L {g('x2')} {g('y2')}"
     if t in ("circle", "ellipse"):
         cx, cy = g("cx"), g("cy")
         rx, ry = (g("r"), g("r")) if t == "circle" else (g("rx"), g("ry"))
@@ -2444,9 +2276,9 @@ def shape_path(el):
                 f"V {y + ry} A {rx} {ry} 0 0 1 {x + rx} {y} Z")
     if t in ("polygon", "polyline"):
         v = [float(x) for x in re.split(r"[\s,]+", (el.get("points") or "").strip()) if x]
-        if len(v) < 6:
+        if len(v) < 4:
             return None
-        return "M " + " L ".join(f"{v[i]} {v[i + 1]}" for i in range(0, len(v) - 1, 2)) + " Z"
+        return "M " + " L ".join(f"{v[i]} {v[i + 1]}" for i in range(0, len(v) - 1, 2)) + (" Z" if t == "polygon" else "")
     return None
 
 
@@ -2469,8 +2301,6 @@ def bake_layer(root, ident, info):
         if t in ("use", "image", "text", "foreignObject"):
             return None
         if t not in GEOMETRY:
-            continue
-        if t == "line":
             continue
         M = M0 @ chain_matrix(e, el, P) if el is not subject else M0
         a, b, c, d = M[0, 0], M[1, 0], M[0, 1], M[1, 1]
@@ -2501,27 +2331,27 @@ def layer_gradient_svg(gid, g, M):
 IC_README = """Icon Composer 分层（{title}）
 
 文件
-  {f1}   组 1：主体，整张 1024 画布{n1}
+  {f1}   组 1：线稿，整张 1024 画布{n1}
   {f2}   组 2：强调色块，整张 1024 画布{n2}
 
 在 Icon Composer 里手动设
   Background     Fill 用渐变。Default：#26282B → #191C1F；Dark：#191C1F → #0E1115
-  组 1（主体）   Specular Automatic；Shadow Neutral
+  组 1（线稿）   Specular Automatic；Shadow Neutral
   组 2（强调色） Specular Automatic；Shadow Chromatic（代替平面版里的辉光，以实际版本的选项为准）
-  Mono           主体 White；强调色 50 % 灰
+  Mono           线稿 White；强调色 50 % 灰
 
-层文件里只有主体和强调色：没有辉光、遮罩、背景、圆角、阴影和半透明。底只在 Background 里设，
+层文件里只有线稿和强调色：没有辉光、遮罩、背景、圆角、阴影和半透明。底只在 Background 里设，
 深色外观换 Background 的渐变，层不变。
 
 不用 Icon Composer、走 asset catalog（AppIcon，单尺寸 1024）时用上一级目录的三张
   Any            ios-1024.png          不透明，带石墨底
-  Dark           ios-1024-dark.png     透明底，系统自己垫深色底；主体用深色外观的渐变，保留辉光
-  Tinted         ios-1024-tinted.png   灰度，不透明黑底：主体白，强调色 50 % 灰，系统按用户选的色调上色
+  Dark           ios-1024-dark.png     透明底，系统自己垫深色底；线稿用深色外观的渐变，保留辉光
+  Tinted         ios-1024-tinted.png   灰度，不透明黑底：线稿白，强调色 50 % 灰，系统按用户选的色调上色
 """
 
 IC_LAUNCHER = """<?xml version="1.0" encoding="utf-8"?>
 <!-- {title}: adaptive icon, three layers (API 26 and up). Foreground and monochrome are scaled by {a_s:.3f}
-     (r_max {r_max:.0f}; min(290 / r_max, 0.72)): inside the 66 dp safe circle, same relative size as on iOS.
+     (r_max {r_max:.0f}; min(290 / r_max, Tide's factor)): inside the 66 dp safe circle, same relative size as on iOS.
      Below API 26 the launcher uses mipmap-*/ic_launcher.png and ic_launcher_round.png next to this folder.
      Manifest: android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -2578,18 +2408,21 @@ def export_icon_composer(renderer, text, root, info, title, out):
         for stale in (out / f"{num_}_{name}.svg", out / f"{num_}_{name}.png"):
             if stale.exists():
                 stale.unlink()
+        # the PNG layer is always written (Icon Composer takes either); the SVG one when it bakes to plain paths
+        L = renderer.layers(text, [css])[css]
+        Image.fromarray(L, "RGBA").save(out / f"{num_}_{name}.png")
         if paths and g is not None and g["units"] == "userSpaceOnUse":
             body = "\n".join(f'    <path d="{d}"' + (f' fill-rule="{r}"' if r else "") + "/>" for d, r in paths)
+            paint = (f'fill="none" stroke="url(#{gid})" stroke-width="{STROKE:g}" stroke-linecap="round" '
+                     'stroke-linejoin="round"' if gid == "body" else f'fill="url(#{gid})"')
             svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">\n'
                    f"  <!-- {title}: Icon Composer group {num_}, the {name}. Final pixels, transform baked in. -->\n"
                    f"  <defs>{layer_gradient_svg(gid, g, M)}</defs>\n"
-                   f'  <g fill="url(#{gid})">\n{body}\n  </g>\n</svg>\n')
+                   f'  <g {paint}>\n{body}\n  </g>\n</svg>\n')
             (out / f"{num_}_{name}.svg").write_text(svg, encoding="utf-8")
-            files.append((f"{num_}_{name}.svg", "，transform 已烘焙进坐标，保留渐变"))
+            files.append((f"{num_}_{name}.svg 和 .png", "，SVG 的 transform 已烘焙进坐标，保留渐变和 60 px 圆头线"))
         else:
-            L = renderer.layers(text, [css])[css]
-            Image.fromarray(L, "RGBA").save(out / f"{num_}_{name}.png")
-            files.append((f"{num_}_{name}.png", "（用了遮罩或无法写成纯路径，改出 PNG 层）"))
+            files.append((f"{num_}_{name}.png", "（用了遮罩或无法写成纯路径，只出 PNG 层）"))
     (out / "README.txt").write_text(IC_README.format(title=title, f1=files[0][0], n1=files[0][1],
                                                      f2=files[1][0], n2=files[1][1]), encoding="utf-8")
     return [f"icon-composer/{f}" for f, _ in files] + ["icon-composer/README.txt"]

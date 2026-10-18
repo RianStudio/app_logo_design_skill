@@ -1,65 +1,62 @@
 #!/usr/bin/env python3
-"""Path helpers for the solid pieces of a graphite icon. Every shape is a filled outline (the style has no
-strokes); angles are degrees clockwise from 3 o'clock (SVG y-down), all numbers are source units.
-Needs Python 3.9 or later, nothing else.
+"""Path helpers for a Rian line icon. The body is a line drawing: these commands print the CENTRE LINE of each
+stroke (render it with the body's stroke, 60 final px, round caps and joins). The one accent is a filled shape:
+sector, segment, ring, capsule, aiband and minus print filled outlines for it. Angles are degrees clockwise from
+3 o'clock (SVG y-down), all numbers are source units. Needs Python 3.9 or later, nothing else.
+
+Centre lines (body):
+
+    python3 scripts/shapes.py arc CX CY R A0 A1
+an open circular arc from A0 clockwise to A1 (a dial, a loop, a hand's sweep).
+
+    python3 scripts/shapes.py rrect X Y W H R
+rounded rectangle at (X, Y), W x H, corner radius R (R = H / 2 or W / 2 gives a capsule). Cards, screens,
+pages, frames. As a filled accent the same command works with --grow.
+
+    python3 scripts/shapes.py bubble X Y W H R TAIL [left|right] [--angle 55] [--tip-r 24] [--concave 56]
+speech bubble: a W x H rounded rectangle at (X, Y), corner radius R (at most H / 2), whose left (or right) side
+runs on straight down to a tail tip TAIL below the bottom edge; the tip is rounded by TIP_R and meets the bottom
+edge with a concave arc of radius CONCAVE.
+
+    python3 scripts/shapes.py poly "X1,Y1 X2,Y2 X3,Y3 ..." [--r 24 | --radii R1,R2,...] [--open] [--grow 0]
+polygon through the corner points, each corner rounded by its radius (0 = sharp; the round join still rounds
+the stroke's outside). --open draws a polyline instead: the first and last points are the line's ends (round
+caps) and only the inner corners are rounded. Arrows, chevrons, staircases, mountain ridges, chamfered cards.
+
+    python3 scripts/shapes.py play CX CY H [--r 24]
+the video mark's centre line: an equilateral play triangle pointing right, its upright side H long, its
+centroid at (CX, CY), corners rounded by R. Stroked, its hole is the mark: H ≥ 240 ÷ k, so the hole still shows
+at 40 px (it measures about H / 1.7).
+
+Filled shapes (the accent):
+
+    python3 scripts/shapes.py capsule X1 Y1 X2 Y2 W
+a stadium W wide whose round ends are centred on (X1, Y1) and (X2, Y2): a beam, a bar, a band.
+
+    python3 scripts/shapes.py aiband X1 Y1 X2 Y2 [--stroke 60] [--gap 60] [--width 80] [--inset 0]
+the AI mark. (X1, Y1) -> (X2, Y2) is the outline's 45 deg chamfer across its lower right corner (its centre
+line, running "/": from the lower left point to the upper right one). Prints the band: a capsule WIDTH wide on
+the outer side of the chamfer, its edge GAP clear of the line's edge (STROKE / 2 + GAP + WIDTH / 2 from the
+centre line), as long as the chamfer less INSET at each end.
 
     python3 scripts/shapes.py sector CX CY R A0 A1 FILLET
 pie slice centred at (CX, CY), radius R, from A0 to A1, all three corners rounded by FILLET.
 
-    python3 scripts/shapes.py ring CX CY R_OUT R_IN A0 A1 [--gap 48] [--fillet 0]
-ring segment from A0 to A1 (clockwise). With --gap G each end is a straight line parallel to the seam radius,
-G / 2 into the segment, so two segments that share a seam sit exactly G apart (a radial cut baked into the
-paths, no mask). --fillet rounds the four corners.
+    python3 scripts/shapes.py ring CX CY R_OUT R_IN A0 A1 [--fillet 0]
+filled ring segment from A0 to A1 (clockwise), corners rounded by FILLET: a progress arc, a loop arrow's body.
 
     python3 scripts/shapes.py segment CX CY R A D [--fillet 0]
-circular segment: the part of the disc on the side of direction A beyond a chord at distance D from the
-centre (negative D keeps more than half). For a free 45 deg cut use A = -45 (keep the upper right part,
-the chord runs top left to bottom right) or A = 135.
-
-    python3 scripts/shapes.py rrect X Y W H R [--grow 0]
-rounded rectangle at (X, Y), W x H, corner radius R (R = H / 2 or W / 2 gives a capsule, R = 0 sharp corners).
---grow G offsets it outwards by G (W and H + 2G, corners R + G): the knock-out for a G-wide cut around it.
-
-    python3 scripts/shapes.py bubble X Y W H R TAIL [left|right] [--angle 55] [--tip-r 24] [--concave 56] [--grow 0]
-speech bubble: a W x H rounded rectangle at (X, Y), corner radius R (at most H / 2; R = H / 2 is a capsule
-bubble), whose left (or right) side runs on straight down to a tail tip TAIL below the bottom edge. The tail's
-slanted edge makes ANGLE with the side, its tip is rounded by TIP_R and it meets the bottom edge with a concave
-arc of radius CONCAVE. --grow G offsets the whole outline outwards by G (corners R + G, tip TIP_R + G, concave
-arc CONCAVE - G): the knock-out for a G-wide cut around a front bubble (feed it to minus).
-
-    python3 scripts/shapes.py poly "X1,Y1 X2,Y2 X3,Y3 ..." [--r 24 | --radii R1,R2,...] [--grow 0]
-polygon through the corner points (either winding), each corner rounded by its radius (default 24, the house
-minimum; 0 = sharp; a concave corner gets a reverse arc of that radius). --grow G offsets the outline outwards by G (convex corners R + G,
-concave corners R - G, sharp once that reaches 0): the knock-out for a G-wide cut around it. Arrows,
-chevrons, chamfered cards and other straight-edged pieces.
-
-    python3 scripts/shapes.py play CX CY H [--r 32] [--grow 0]
-the video mark: an equilateral play triangle pointing right, its upright side H long, its centroid at
-(CX, CY), corners rounded by R (at least 30, so the measuring close keeps the hole's corners). H is source
-units like the coordinates: H ≥ 200 ÷ k, so the hole measures at least 150 final px. Knock it out of a piece
-with minus (two loops: fill-rule="evenodd").
-
-    python3 scripts/shapes.py aiband "PATH" [--chamfer 48] [--width 96] [--gap 48]
-the AI mark: the outline's lower right corner taken off along a 45 deg line running "/" (bottom left to top
-right). The band is WIDTH wide, its outer edge CHAMFER inside the outline's farthest point towards the lower
-right; the rest of the outline stops GAP before the band. Prints the body path and the band path (the
-accent, data-accent="band"). The band's ends follow the outline, so keep CHAMFER large enough that both ends
-land on straight edges (a corner of radius R needs at least 0.3 R).
-
-    python3 scripts/shapes.py cutline CX CY A R0 R1
-a <line> along direction A from radius R0 to radius R1 around (CX, CY), for the <g id="cuts"> group of a
-#cut mask (that group sets stroke-width 48 / k, butt caps). Let both ends run past the outline.
+circular segment: the part of the disc on the side of direction A beyond a chord at distance D from the centre
+(a sun behind a cloud: A = -45 keeps the upper right part, the chord runs top left to bottom right).
 
     python3 scripts/shapes.py minus "PATH_A" "PATH_B"
-outline A with outline B taken out, as one path of lines and arcs: the body with the accent's 48 grown
-knock-out baked in (no mask, so the Icon Composer layer stays plain paths). PATH_B is usually the output of
-bubble or rrect with --grow 48. Both may use M L H V A Z (absolute or relative, circular arcs only); keep their
-edges from running along each other. Several loops in the result are printed with a fill-rule="evenodd" note.
+filled outline A with outline B taken out, as one path of lines and arcs: an accent kept clear of a line it
+would touch (B = that line's shape grown by STROKE / 2 + 60, e.g. rrect --grow). Both may use M L H V A Z
+(circular arcs only); keep their edges from running along each other.
 
 --k K (any command): the drawing's scale k (the #subject transform). Every number that is a house rule in
-final pixels is divided by k: --gap, --fillet, FILLET, --grow, --tip-r, --concave, poly's --r and --radii,
-play's --r, and aiband's --chamfer, --width and --gap. Coordinates, radii of circles and play's H stay
-source units. Example: k = 1.15, ring ... --gap 48 --k 1.15 writes a 41.7 cut that renders 48 wide.
+final pixels is divided by k: --r, --radii, --grow, --tip-r, --concave, FILLET, --fillet, capsule's W, and
+aiband's --stroke, --gap, --width and --inset. Coordinates, radii of circles and play's H stay source units.
 """
 import argparse
 import math
@@ -306,45 +303,65 @@ def play(cx, cy, h, r=32.0, grow=0.0):
     return poly([(xb, cy - h / 2), (xb + alt, cy), (xb, cy + h / 2)], [r, r, r], grow)
 
 
-def _half_plane(n, dist, beyond):
-    """A big quadrilateral covering n . p >= dist (beyond) or n . p <= dist, for minus."""
-    far = 8000.0
-    t = (-n[1], n[0])
-    s = 1 if beyond else -1
-    c = (n[0] * dist, n[1] * dist)
-    pts = [(c[0] + far * t[0], c[1] + far * t[1]), (c[0] - far * t[0], c[1] - far * t[1]),
-           (c[0] - far * t[0] + s * far * n[0], c[1] - far * t[1] + s * far * n[1]),
-           (c[0] + far * t[0] + s * far * n[0], c[1] + far * t[1] + s * far * n[1])]
-    return "M " + " L ".join(f"{x:.4f} {y:.4f}" for x, y in pts) + " Z"
+def arc(cx, cy, r, a0, a1):
+    """Open centre-line arc from a0 clockwise to a1."""
+    if a1 <= a0:
+        a1 += 360
+    if a1 - a0 >= 360:
+        raise ValueError("an arc spans less than 360 deg: draw a full circle as <circle>")
+    p, q = (cx + r * unit(a0)[0], cy + r * unit(a0)[1]), (cx + r * unit(a1)[0], cy + r * unit(a1)[1])
+    return f"M {f(p)} A {r:g} {r:g} 0 {1 if a1 - a0 > 180 else 0} 1 {f(q)}"
 
 
-def aiband(path, chamfer=48.0, width=96.0, gap=48.0):
-    """The AI mark on an outline: (body path, body loops, band path, farthest reach, band's inner and outer
-    distance along the lower right diagonal)."""
-    n = (math.sqrt(0.5), math.sqrt(0.5))       # towards the lower right; the band runs "/" across it
-    reach = max(n[0] * p[0] + n[1] * p[1] for loop in parse_path(path) for p in _polyline_fine(loop))
-    outer = reach - chamfer
-    inner = outer - width
-    body, loops = minus(path, _half_plane(n, inner - gap, True))
-    band, band_loops = minus(path, _half_plane(n, outer, True))
-    band, band_loops = minus(band, _half_plane(n, inner, False))
-    if band_loops != 1:
-        raise ValueError("the band falls apart: move it (CHAMFER) or check the outline")
-    return body, loops, band, reach, inner, outer
+def polyline(pts, radii):
+    """Open centre line through pts, inner corners filleted with their radius (the ends get round caps)."""
+    if len(pts) < 2:
+        raise ValueError("a polyline needs at least two points")
+    if len(radii) != len(pts):
+        raise ValueError(f"{len(pts)} points but {len(radii)} radii (the two ends' radii are ignored)")
+    d = [f"M {f(pts[0])}"]
+    for i in range(1, len(pts) - 1):
+        p, v, q = pts[i - 1], pts[i], pts[i + 1]
+        u1 = (p[0] - v[0], p[1] - v[1])
+        u2 = (q[0] - v[0], q[1] - v[1])
+        l1, l2 = math.hypot(*u1), math.hypot(*u2)
+        turn = _turn(p, v, q)
+        r = radii[i]
+        if r <= 0 or abs(turn) < 1e-9 * l1 * l2:
+            d.append(f"L {f(v)}")
+            continue
+        u1, u2 = (u1[0] / l1, u1[1] / l1), (u2[0] / l2, u2[1] / l2)
+        half = math.acos(max(-1.0, min(1.0, u1[0] * u2[0] + u1[1] * u2[1]))) / 2
+        t = r / math.tan(half)
+        if t > l1 + 1e-6 or t > l2 + 1e-6:
+            raise ValueError(f"corner {i + 1}: radius {r:g} too large for its edges")
+        a, b = (v[0] + u1[0] * t, v[1] + u1[1] * t), (v[0] + u2[0] * t, v[1] + u2[1] * t)
+        d.append(f"L {f(a)} A {r:g} {r:g} 0 0 {1 if turn > 0 else 0} {f(b)}")
+    d.append(f"L {f(pts[-1])}")
+    return " ".join(d)
 
 
-def _polyline_fine(loop):
-    pts = []
-    for s in loop:
-        n = 1 if s["arc"] is None else max(8, int(abs(s["arc"][3]) / math.radians(0.25)) + 1)
-        pts += [_point(s, k / n) for k in range(n + 1)]
-    return pts
+def capsule(x1, y1, x2, y2, w):
+    """Filled stadium w wide between the centres of its two round ends."""
+    L = math.hypot(x2 - x1, y2 - y1)
+    if L < 1e-9:
+        return f"M {x1 - w / 2:.1f} {y1:.1f} A {w / 2:g} {w / 2:g} 0 1 0 {x1 + w / 2:.1f} {y1:.1f} A {w / 2:g} {w / 2:g} 0 1 0 {x1 - w / 2:.1f} {y1:.1f} Z"
+    return chain([(x1, y1, w / 2), (x2, y2, w / 2)])
 
 
-def cutline(cx, cy, a, r0, r1):
-    u = unit(a)
-    p, q = (cx + r0 * u[0], cy + r0 * u[1]), (cx + r1 * u[0], cy + r1 * u[1])
-    return f'<line x1="{p[0]:.1f}" y1="{p[1]:.1f}" x2="{q[0]:.1f}" y2="{q[1]:.1f}"/>'
+def aiband(x1, y1, x2, y2, stroke=60.0, gap=60.0, width=80.0, inset=0.0):
+    """The AI band beside a 45 deg "/" chamfer (x1, y1) lower left -> (x2, y2) upper right, on its lower right."""
+    dx, dy = x2 - x1, y2 - y1
+    if dx <= 0 or dy >= 0 or abs(abs(dx) - abs(dy)) > 1e-6 * max(abs(dx), 1):
+        raise ValueError('the chamfer runs "/" at 45 deg: from the lower left point (X1, Y1) to the upper right one '
+                         '(X2, Y2), with X2 - X1 = Y1 - Y2')
+    L = math.hypot(dx, dy)
+    u = (dx / L, dy / L)
+    n = (math.sqrt(0.5), math.sqrt(0.5))       # towards the lower right
+    off = stroke / 2 + gap + width / 2
+    a = (x1 + n[0] * off + u[0] * inset, y1 + n[1] * off + u[1] * inset)
+    b = (x2 + n[0] * off - u[0] * inset, y2 + n[1] * off - u[1] * inset)
+    return capsule(a[0], a[1], b[0], b[1], width), a, b
 
 
 # ---------------------------------------------------------------- outline boolean: A minus B (lines and arcs)
@@ -662,21 +679,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     kp = argparse.ArgumentParser(add_help=False)
     kp.add_argument("--k", type=float, default=1.0,
-                    help="the #subject scale: rule numbers in final px (gap, fillet, grow, tip-r, concave, corner "
-                         "radii, chamfer, band width) are divided by it")
+                    help="the #subject scale: rule numbers in final px (corner radii, grow, fillets, capsule width, "
+                         "aiband stroke, gap, width and inset) are divided by it")
     sub = ap.add_subparsers(dest="cmd")
-    p = sub.add_parser("sector", parents=[kp])
-    for a in ("cx", "cy", "r", "a0", "a1", "fillet"):
+    p = sub.add_parser("arc", parents=[kp])
+    for a in ("cx", "cy", "r", "a0", "a1"):
         p.add_argument(a, type=float)
-    p = sub.add_parser("ring", parents=[kp])
-    for a in ("cx", "cy", "r_out", "r_in", "a0", "a1"):
-        p.add_argument(a, type=float)
-    p.add_argument("--gap", type=float, default=0.0)
-    p.add_argument("--fillet", type=float, default=0.0)
-    p = sub.add_parser("segment", parents=[kp])
-    for a in ("cx", "cy", "r", "a", "d"):
-        p.add_argument(a, type=float)
-    p.add_argument("--fillet", type=float, default=0.0)
     p = sub.add_parser("rrect", parents=[kp])
     for a in ("x", "y", "w", "h", "r"):
         p.add_argument(a, type=float)
@@ -694,20 +702,34 @@ def main():
     g = p.add_mutually_exclusive_group()
     g.add_argument("--r", type=float, default=24.0, help="one radius for every corner (0 = sharp)")
     g.add_argument("--radii", metavar="R1,R2,...", help="one radius per corner, in order")
+    p.add_argument("--open", action="store_true", help="a polyline: no closing edge, the ends get round caps")
     p.add_argument("--grow", type=float, default=0.0)
     p = sub.add_parser("play", parents=[kp])
     for a in ("cx", "cy", "h"):
         p.add_argument(a, type=float)
-    p.add_argument("--r", type=float, default=32.0)
+    p.add_argument("--r", type=float, default=24.0)
     p.add_argument("--grow", type=float, default=0.0)
-    p = sub.add_parser("aiband", parents=[kp])
-    p.add_argument("path", metavar="PATH")
-    p.add_argument("--chamfer", type=float, default=48.0)
-    p.add_argument("--width", type=float, default=96.0)
-    p.add_argument("--gap", type=float, default=48.0)
-    p = sub.add_parser("cutline", parents=[kp])
-    for a in ("cx", "cy", "a", "r0", "r1"):
+    p = sub.add_parser("capsule", parents=[kp])
+    for a in ("x1", "y1", "x2", "y2", "w"):
         p.add_argument(a, type=float)
+    p = sub.add_parser("aiband", parents=[kp])
+    for a in ("x1", "y1", "x2", "y2"):
+        p.add_argument(a, type=float)
+    p.add_argument("--stroke", type=float, default=60.0)
+    p.add_argument("--gap", type=float, default=60.0)
+    p.add_argument("--width", type=float, default=80.0)
+    p.add_argument("--inset", type=float, default=0.0)
+    p = sub.add_parser("sector", parents=[kp])
+    for a in ("cx", "cy", "r", "a0", "a1", "fillet"):
+        p.add_argument(a, type=float)
+    p = sub.add_parser("ring", parents=[kp])
+    for a in ("cx", "cy", "r_out", "r_in", "a0", "a1"):
+        p.add_argument(a, type=float)
+    p.add_argument("--fillet", type=float, default=0.0)
+    p = sub.add_parser("segment", parents=[kp])
+    for a in ("cx", "cy", "r", "a", "d"):
+        p.add_argument(a, type=float)
+    p.add_argument("--fillet", type=float, default=0.0)
     p = sub.add_parser("minus", parents=[kp])
     p.add_argument("path_a", metavar="PATH_A")
     p.add_argument("path_b", metavar="PATH_B")
@@ -716,12 +738,8 @@ def main():
         sys.exit("--k must be positive")
     px = (lambda v: v / args.k) if args.cmd else (lambda v: v)   # final-pixel rule numbers -> source units
     try:
-        if args.cmd == "sector":
-            print(rounded_sector(args.cx, args.cy, args.r, args.a0, args.a1, px(args.fillet)))
-        elif args.cmd == "ring":
-            print(ring(args.cx, args.cy, args.r_out, args.r_in, args.a0, args.a1, px(args.gap), px(args.fillet)))
-        elif args.cmd == "segment":
-            print(segment(args.cx, args.cy, args.r, args.a, args.d, px(args.fillet)))
+        if args.cmd == "arc":
+            print(arc(args.cx, args.cy, args.r, args.a0, args.a1))
         elif args.cmd == "rrect":
             print(rrect(args.x, args.y, args.w, args.h, args.r, px(args.grow)))
         elif args.cmd == "bubble":
@@ -732,20 +750,26 @@ def main():
             if any(len(p) != 2 for p in pts):
                 sys.exit('POINTS are "X1,Y1 X2,Y2 ...": a comma inside each pair, spaces between pairs')
             radii = [float(v) for v in args.radii.split(",")] if args.radii else [args.r] * len(pts)
-            print(poly(pts, [px(r) for r in radii], px(args.grow)))
+            if args.open:
+                print(polyline(pts, [px(r) for r in radii]))
+            else:
+                print(poly(pts, [px(r) for r in radii], px(args.grow)))
         elif args.cmd == "play":
             print(play(args.cx, args.cy, args.h, px(args.r), px(args.grow)))
+        elif args.cmd == "capsule":
+            print(capsule(args.x1, args.y1, args.x2, args.y2, px(args.w)))
         elif args.cmd == "aiband":
-            body, loops, band, reach, inner, outer = aiband(args.path, px(args.chamfer), px(args.width),
-                                                            px(args.gap))
-            print(f"<!-- body: the outline up to {inner - px(args.gap):.1f} along the lower right diagonal"
-                  + (f'; {loops} loops: give it fill-rule="evenodd"' if loops > 1 else "") + " -->")
-            print(body)
-            print(f"<!-- band (accent, data-accent=\"band\"): {inner:.1f} to {outer:.1f} along the diagonal, "
-                  f"{px(args.width):g} wide; the outline reaches {reach:.1f}, so {px(args.chamfer):g} is cut off -->")
+            band, a, b = aiband(args.x1, args.y1, args.x2, args.y2, px(args.stroke), px(args.gap), px(args.width),
+                                px(args.inset))
+            print(f"<!-- band (accent, data-accent=\"band\"): {px(args.width):g} wide, end centres ({f(a)}) and ({f(b)}), "
+                  f"its edge {px(args.gap):g} clear of the chamfer's line -->")
             print(band)
-        elif args.cmd == "cutline":
-            print(cutline(args.cx, args.cy, args.a, args.r0, args.r1))
+        elif args.cmd == "sector":
+            print(rounded_sector(args.cx, args.cy, args.r, args.a0, args.a1, px(args.fillet)))
+        elif args.cmd == "ring":
+            print(ring(args.cx, args.cy, args.r_out, args.r_in, args.a0, args.a1, 0.0, px(args.fillet)))
+        elif args.cmd == "segment":
+            print(segment(args.cx, args.cy, args.r, args.a, args.d, px(args.fillet)))
         elif args.cmd == "minus":
             d, n = minus(args.path_a, args.path_b)
             if n > 1:

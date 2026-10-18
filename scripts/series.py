@@ -14,18 +14,17 @@ by score, and accent crowding.
   --json           also writes DIR/series.json
 
 Pair score, 0–1:
-  0.3 × 外形    filled silhouettes (cuts closed, holes filled), each scaled to the same box: IoU, times the
-                ratio of the two aspect ratios
-  0.3 × 布局    the small version's glyph on a 12 × 12 grid of its own box (where masses and cuts sit): soft IoU
+  0.3 × 外形    filled silhouettes (gaps narrower than a line closed, holes filled), each scaled to the same
+                box: IoU, times the ratio of the two aspect ratios
+  0.3 × 布局    the small version's glyph on a 12 × 12 grid of its own box (where the lines and the accent
+                sit): soft IoU
   0.4 × 强调色  the accents on the canvas at 40 px, blurred σ 3: soft IoU times hue closeness (1 − Δh / 60°)
 A pair at 0.37 or more is flagged (像). Two icons of the same data-category share their colour and mark on
 purpose, so they are scored on outline and layout only, (0.3 × 外形 + 0.3 × 布局) / 0.6, and flagged at 0.50
-or more: they have to differ in shape more than icons that already differ in colour. Calibrated on the eight
-brand-review drafts with their categories, the first redraw and the three examples: Scan–Trim 0.376 and
-Squeeze–Cutout 0.393 (drafts without categories), Ask–Upscale 0.62 and Scan–Convert 0.55 (drafts, same
-category) and the first redraw's Squeeze–Cutout 0.58 (sun at the top left over a white mass at the lower
-right) are flagged; the drafts' Trim–Loop (0.47 with categories) shares the play triangle, which is now the
-video mark, and is left to the eye. The final redraw's closest same-category pair, Squeeze–Cutout, is 0.47.
+or more: they have to differ in shape more than icons that already differ in colour. Calibrated on the solid
+graphite drafts; kept for the line style, where they still separate: the line drafts' Squeeze as a plain
+pinched card scored 0.40 to 0.42 against Halo (two wide rounded silhouettes) and was flagged, the final
+Squeeze with the sun on its corner is under the line, and so is every other pair of the eight line redraws.
 
 Accent register: the accent's centroid (final px) and its direction from the canvas centre (8 sectors; 中
 within 80 px). Accents closer than 160 px link up, and a group of 3 or more is flagged (扎堆); two image or
