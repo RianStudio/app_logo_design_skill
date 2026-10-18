@@ -153,6 +153,7 @@ python3 scripts/shapes.py bubble 560 210 300 200 100 90 right                   
 | `<name>-dark.svg/.png` | iOS Dark 外观的对照；`rian-app-theme` 的 `preview.py --icon-dark` 用它。交给 Xcode 的是透明底的 `export/ios-1024-dark.png` | 底 `#191C1F → #0E1115`，主体 `#EDEEEF → #BDBFC2`，辉光保留 |
 | `<name>-mono.svg/.png` | iOS Tinted / Clear 的来源，Android monochrome | 去掉底和辉光；主体白色 100 %，强调色白色 50 % |
 | `<name>-small.svg` | 64 px 及以下（对照图里的 60 / 40 / 29 px、favicon） | `#subject` 加 `feMorphology erode`，半径 8 ÷ k，切口 48 → 64；删掉 `class="detail"`；去掉辉光 |
+| `<name>-mark.svg/.png` | app 里的品牌插图：`rian-app-theme` 的引导、付费墙、空状态、关于页、启动页把它放在石墨品牌面板上（`preview.py --mark`） | 默认外观的 `#subject` 一组，辉光保留，去掉底；透明，裁到画出来的部分（含辉光）外加 8。只能整体缩放，切口跟着缩，始终是 48 / 1024 |
 
 - **erode 加在 `#subject` 上**，不分别加在 `#body`、`#accent-shape` 上：SVG 里滤镜先于 mask 执行，加在 `#body` 上时 mask 切出的切口不会变宽。半径 12 会把 72 宽的环削到 48（60 px 时只剩约 2.8 px），所以用 8。
 - **Tinted 和 Clear** 由系统从 mono 生成。对照图里给近似效果：Tinted 用黄、蓝两种色调各一张，叠在深底上；Clear 用 mono 白 90 % 叠在模糊的浅色壁纸和深色壁纸上各一张。HIG 要求至少一个元素是白色或接近白色，这里主体就是白色。
@@ -235,7 +236,7 @@ python3 scripts/series.py icon.svg [more.svg ...] [--with EXISTING.svg ...] [-o 
 | 参数 | 输出 |
 |---|---|
 | （总是） | `DIR/<name>-1024.png`、`DIR/<name>-sheet.png`，终端打印指标报告 |
-| `--variants` | `<name>-light`、`-dark`、`-mono` 的 `.svg/.png`，`<name>-small.svg` |
+| `--variants` | `<name>-light`、`-dark`、`-mono`、`-mark` 的 `.svg/.png`，`<name>-small.svg` |
 | `--export` | `DIR/export/` 下的各平台文件，见「平台导出」 |
 | `--store-ab` | `DIR/store-ab/` 下的商店 A/B 变体，见「商店 A/B 变体」 |
 | `--json` | `<name>-metrics.json`，内容和终端报告相同 |

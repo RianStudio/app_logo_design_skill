@@ -16,7 +16,9 @@ and prints a metrics report, one line per check with value, target and PASS / FA
 Exit code 0 even when a check fails (1 only when an SVG cannot be read).
 
   --variants  also writes <name>-light.svg/.png, <name>-dark.svg/.png, <name>-mono.svg/.png (transparent)
-              and <name>-small.svg (64 px and below: erode 8, no class="detail", no glow)
+              and <name>-small.svg (64 px and below: erode 8, no class="detail", no glow), and
+              <name>-mark.svg/.png: #subject alone in the default look (glow kept), transparent, cropped to the
+              subject, for in-app brand art on the graphite brand panel (rian-app-theme preview.py --mark)
   --export    also writes DIR/export/ (DIR/export/<name>/ when several SVGs are given):
               ios-1024.png, ios-1024-dark.png (asset catalog Dark: transparent background, the system draws
               its own), ios-1024-tinted.png (asset catalog Tinted: grayscale), icon-1024-transparent.png,
@@ -154,6 +156,7 @@ LOOKS = {
     "dark": {"bg": ("#191C1F", "#0E1115"), "body": ("#EDEEEF", "#BDBFC2")},
 }
 MONO_ACCENT_OPACITY = ".5"
+MARK_PAD = 8                  # <name>-mark: transparent margin around the subject (and its glow), px
 PALETTE = {"蓝": ("#7AAEFF", "#3B7BEA"), "绿": ("#6FD3A6", "#23A36B"), "黄": ("#FFD978", "#F2AE2E"),
            "珊瑚": ("#FF9C86", "#EC5B45"), "紫": ("#B3A6FF", "#7A63F0"), "灰": ("#C8C7C3", "#8E8D89")}
 TINTS = (("Tinted 黄", "#F5C542"), ("Tinted 蓝", "#5E9BFF"))
@@ -746,6 +749,23 @@ def without_background(text):
     _remove(root, node(root, "background"))
     _remove(root, node(root, "rim"))
     return serialize(root)
+
+
+def make_mark(renderer, text, pad=MARK_PAD):
+    """In-app brand art for rian-app-theme: #subject alone in the default look, glow kept, no background, cropped to
+    what is drawn (glow included) plus `pad`. Scaled only as a whole, so the cuts stay 48 / 1024 of the icon.
+    Returns (svg text, RGBA image)."""
+    flat = without_background(text)
+    im = renderer.image(flat, 1024, transparent=True)
+    alpha = np.asarray(im)[:, :, 3]
+    ys, xs = np.nonzero(alpha > 2)
+    x0, y0 = max(int(xs.min()) - pad, 0), max(int(ys.min()) - pad, 0)
+    x1, y1 = min(int(xs.max()) + 1 + pad, 1024), min(int(ys.max()) + 1 + pad, 1024)
+    root = ET.fromstring(strip_xml_prolog(flat))
+    root.set("viewBox", f"{x0} {y0} {x1 - x0} {y1 - y0}")
+    root.set("width", str(x1 - x0))
+    root.set("height", str(y1 - y0))
+    return serialize(root), im.crop((x0, y0, x1, y1))
 
 
 def make_store_variant(text, kind, accent_name=None):
@@ -2776,7 +2796,10 @@ def render(svgs, out_dir, variants=False, export_files=False, json_out=False, ti
                     ims[look].save(out_dir / f"{name}-{look}.png")
                     written += [f"{name}-{look}.svg", f"{name}-{look}.png"]
                 (out_dir / f"{name}-small.svg").write_text(looks["small"], encoding="utf-8")
-                written.append(f"{name}-small.svg")
+                mark_svg, mark_im = make_mark(renderer, text)
+                (out_dir / f"{name}-mark.svg").write_text(mark_svg, encoding="utf-8")
+                mark_im.save(out_dir / f"{name}-mark.png")
+                written += [f"{name}-small.svg", f"{name}-mark.svg", f"{name}-mark.png"]
             if export_files and result["info"]["variant"]:
                 print("  这是商店变体（data-variant），不出 --export：平台文件只从母版出")
             elif export_files:
