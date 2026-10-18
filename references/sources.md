@@ -29,6 +29,8 @@
 | [anthropics/skills · canvas-design](https://github.com/anthropics/skills/tree/main/skills/canvas-design) | 「先定义设计哲学再动手」的两段式流程；打磨阶段「只精修、不加东西」 | Apache-2.0 |
 | [anthropics/skills · frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) | 列出 AI 生成设计的常见特征并主动避开；先写方案、对照需求自审、再执行 | Apache-2.0 |
 | [op7418/logo-generator-skill](https://github.com/op7418/logo-generator-skill) | 信息收集 → 多方案 → 迭代 → 展示的流程；单一焦点、比例精确；SVG 转 PNG 的渲染脚本思路 | MIT |
-| [PianoNic/ClaudeSkills · app-icon-expert](https://github.com/PianoNic/ClaudeSkills) | 动笔前的需求检查；剪影测试；「AI 创业公司图标」反模式；平台规格和交付前的验收清单 | MIT |
+| [PianoNic/ClaudeSkills · app-icon-expert](https://github.com/PianoNic/ClaudeSkills) | 动笔前的需求检查（一句话概念、三个感受词、5–10 个同类图标找俗套，「Generic in → generic out」）；剪影测试；「AI 创业公司图标」反模式；平台规格和交付前的验收清单 | MIT |
+| [neonwatty/logo-designer-skill](https://github.com/neonwatty/logo-designer-skill) 和作者的 [Foil 图标复盘](https://neonwatty.com/posts/foil-icon-design-claude-code/) | 3–5 个概念并排让用户挑，再精修；每个方向换一个视角，打破所有方案长得一样；「概念错了，打磨救不回来」 | 见仓库 |
+| [eronred/aso-skills · app-icon-optimization](https://skillselion.com/skills/eronred/aso-skills/app-icon-optimization) | 先看同类前几名的图标；品类惯例「跟一半，再打破一点」；「三个词说得出来」和 60 px 商店尺寸下对比 | 见仓库 |
 
 本仓库没有复制上述项目的文件，只吸收了方法。Linear、Apple、Google 的规范和标志仅作参考，图标不画成它们的标志。
