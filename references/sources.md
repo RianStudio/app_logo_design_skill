@@ -31,6 +31,7 @@
 | [op7418/logo-generator-skill](https://github.com/op7418/logo-generator-skill) | 信息收集 → 多方案 → 迭代 → 展示的流程；单一焦点、比例精确；SVG 转 PNG 的渲染脚本思路 | MIT |
 | [PianoNic/ClaudeSkills · app-icon-expert](https://github.com/PianoNic/ClaudeSkills) | 动笔前的需求检查（一句话概念、三个感受词、5–10 个同类图标找俗套，「Generic in → generic out」）；剪影测试；「AI 创业公司图标」反模式；平台规格和交付前的验收清单 | MIT |
 | [neonwatty/logo-designer-skill](https://github.com/neonwatty/logo-designer-skill) 和作者的 [Foil 图标复盘](https://neonwatty.com/posts/foil-icon-design-claude-code/) | 3–5 个概念并排让用户挑，再精修；每个方向换一个视角，打破所有方案长得一样；「概念错了，打磨救不回来」 | 见仓库 |
+| [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)（v2，`design-taste-frontend`） | 想法从题材本身来：动笔前列一张只属于这个客户的清单，再用「竞品替换」检验（把最近的竞品放进同一句话还成立，就是品类的想法）；写日期、只给做法不给替代品的套路登记表（`tells.md`），「只删套路不够」；看图评审：一秒、眯眼、遮名，按固定格式写下来，带封顶的打分，每轮只修前三个问题，给自己打 9 分就当没画过的评委重打；交付不说没跑过的检查 | MIT |
 | [eronred/aso-skills · app-icon-optimization](https://skillselion.com/skills/eronred/aso-skills/app-icon-optimization) | 先看同类前几名的图标；品类惯例「跟一半，再打破一点」；「三个词说得出来」和 60 px 商店尺寸下对比 | 见仓库 |
 
 本仓库没有复制上述项目的文件，只吸收了方法。Linear、Apple、Google 的规范和标志仅作参考，图标不画成它们的标志。
