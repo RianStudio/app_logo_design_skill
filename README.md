@@ -56,7 +56,7 @@ python3 scripts/render.py icon.svg -o renders --store-ab           # 另出商�
 python3 scripts/render.py icon.svg -o renders --json                # 指标另存为 JSON
 python3 scripts/overview.py examples/tide.svg icon.svg -o renders/compare.png   # 新图标和 Tide 并排，看轻重
 python3 scripts/series.py icon.svg --with a.svg b.svg -o renders    # 系列检查：和已有图标一起出 40 / 29 px 对照，标出像的配对和扎堆的强调色（不写 --with 时和示例比）
-python3 scripts/concepts.py a.svg b.svg c.svg -o renders/concepts.png  # 概念板：每个方向 180 / 80 px 和单色
+python3 scripts/concepts.py a.svg b.svg c.svg -o renders/concepts.png  # 概念板：每个方向 180 / 80 px、单色和眯眼
 python3 scripts/concepts.py icon.svg --blind -o renders            # 盲测图：只标字母，交给不知道题目的人猜用途
 python3 scripts/shapes.py                                           # 线的中线（圆弧、圆角矩形、气泡、多边形和折线、播放三角）和强调色（胶囊、AI 斜带、扇形、环段、弓形、路径相减）的用法
 ```
@@ -69,12 +69,13 @@ python3 scripts/shapes.py                                           # 线的中�
 SKILL.md                    工作流程（入口）、示例索引、无字母品类的画法
 references/style.md         风格原则、线宽的来由、全部数字和测量口径、配色、类别记号、商店 A/B 变体、规则分级、系列检查、禁忌、验收清单
 references/construction.md  图层结构、属性和类、几何速查（shapes.py、四类记号的常用写法）、外观配方、平台导出、商店 A/B 变体、渲染参数
+references/tells.md         套路登记表：一眼就是「生成的」图标的样子，写日期，只给做法（参考 Taste-Skill）
 references/sources.md       一手来源与致谢
 assets/template.svg         图标模板（用 Tide 写成）：只改 TODO 的地方
 scripts/render.py           SVG → 1024 PNG、对照图、指标报告；外观、Icon Composer 分层、平台导出和商店 A/B 变体（Chromium 渲染）
 scripts/shapes.py           线的中线（圆弧、圆角矩形、气泡、圆角多边形和折线、播放三角）和强调色的轮廓（胶囊、AI 斜带、扇形、环段、弓形），路径相减（minus：强调色减去线外扩 90）
 scripts/series.py           系列检查：新图标和已有图标的 40 / 29 px 对照表、配对相似分数、强调色位置登记
-scripts/concepts.py         概念板（多个方向的 180 / 80 px 和单色）和盲测图（只标字母）
+scripts/concepts.py         概念板（多个方向的 180 / 80 px、单色和眯眼格）和盲测图（只标字母）
 scripts/overview.py         三枚示例并排的总览图（README 顶部那张）：深底一行，浅色外观一行
 examples/                   Tide、Halo、Ledgerly 三枚示例；renders/ 里是每枚的 1024 母版、对照图（-sheet.png）和三枚并排的 overview.png
 ```
