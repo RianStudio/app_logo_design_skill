@@ -106,8 +106,10 @@ render.py 靠这些标记测量、换外观、导出分层，画的时候顺手�
 | `<name>-dark.svg/.png` | iOS Dark 外观的对照；`rian-app-theme` 的 `preview.py --icon-dark` 用它。交给 Xcode 的是透明底的 `export/ios-1024-dark.png` | 底 `#191C1F → #0E1115`，线 `#EDEEEF → #BDBFC2`，辉光保留 |
 | `<name>-mono.svg/.png` | iOS Tinted / Clear 的来源，Android monochrome | 去掉底和辉光；线白色 100 %，强调色白色 50 % |
 | `<name>-small.svg` | 64 px 及以下（对照图里的 60 / 40 / 29 px、favicon） | `#body` 的 stroke-width 改成 76 ÷ k（29 px 约 2.2 px），去掉辉光；净空 60 → 44，40 px 下还分得开 |
-| `<name>-mark.svg/.png` | app 里的品牌插图：`rian-app-theme` 的引导、付费墙、空状态、关于页、启动页把它放在石墨品牌面板上（`preview.py --mark`） | 默认外观的 `#subject` 一组，辉光保留，去掉底；透明，裁到画出来的部分（含辉光）外加 8。只能整体缩放，线宽跟着缩，始终是 60 / 1024 |
+| `<name>-mark.svg/.png` | app 里的品牌插图，深色模式：`rian-app-theme` 的引导、付费墙、空状态、启动页把它放在石墨品牌面板上（`preview.py --mark`） | `#subject` 一组，去掉底和辉光，**平涂**：线全是 `#E6E8EB`（亮线），强调色是它的「主」一个色，没有渐变。透明，裁到画出来的部分外加 8。只能整体缩放，线宽跟着缩，始终是 60 / 1024 |
+| `<name>-mark-light.svg/.png` | 同上，浅色模式：放在浅色的品牌面板上 | 同 `-mark`，只是线换成 `#2A2C2F`（深线，浅色外观的线），强调色不变；外框和 `-mark` 一样大 |
 
+- **mark 是平的**：界面的 Lucide 图标是一种颜色的线，插图跟它一样，所以 mark 不带图标的顶光渐变和辉光；渐变只留在 app 图标本身。后缀和外观同名：`-mark` 配默认（石墨）的深色面板，`-mark-light` 配浅色面板。两种线色和 `rian-app-theme` 的 `brand-line` 同值（`render.py` 的 `MARK_LINE`）。
 - **small 版只加粗线**：线宽写在 `#body` 上，所有线一起变；强调色不变。加粗到 76 而不是更多：净空还剩 44，40 px 时约 1.7 px。
 - **Tinted 和 Clear** 由系统从 mono 生成。对照图里给近似效果：Tinted 用黄、蓝两种色调各一张，叠在深底上；Clear 用 mono 白 90 % 叠在模糊的浅色壁纸和深色壁纸上各一张。HIG 要求至少一个元素是白色或接近白色，这里线就是白色。
 - **安卓主题图标**由启动器从 monochrome 层生成，用哪一对色调看系统的浅色、深色主题（Launcher3 `ThemedIconDrawable.getColors`），色相来自壁纸。对照图里浅色主题放在浅壁纸上、深色主题放在深壁纸上各一张：从壁纸取种子色相（彩度 ≥ 12 的像素按彩度加权，取色相直方图的峰），按 Material You 的色调近似上色。浅色主题：底 accent1 色调 90，图形 neutral2 色调 30；深色主题：底 neutral1 色调 20，图形 accent1 色调 90（色调 = CIE L*，彩度 accent1 36、neutral1 4、neutral2 8）。强调色是图形色 50 % 叠在底上。这是近似，待验证（见 `sources.md`），上架前在开启主题图标的真机启动器上看一遍。
@@ -189,7 +191,7 @@ python3 scripts/series.py icon.svg [more.svg ...] [--with EXISTING.svg ...] [-o 
 | 参数 | 输出 |
 |---|---|
 | （总是） | `DIR/<name>-1024.png`、`DIR/<name>-sheet.png`，终端打印指标报告 |
-| `--variants` | `<name>-light`、`-dark`、`-mono`、`-mark` 的 `.svg/.png`，`<name>-small.svg` |
+| `--variants` | `<name>-light`、`-dark`、`-mono`、`-mark`、`-mark-light` 的 `.svg/.png`，`<name>-small.svg` |
 | `--export` | `DIR/export/` 下的各平台文件，见「平台导出」 |
 | `--store-ab` | `DIR/store-ab/` 下的商店 A/B 变体，见「商店 A/B 变体」 |
 | `--json` | `<name>-metrics.json`，内容和终端报告相同 |

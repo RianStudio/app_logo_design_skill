@@ -47,7 +47,7 @@ Claude 会读懂产品、自己选定隐喻和配色、从模板画 SVG、渲染
 
 ```bash
 python3 scripts/render.py icon.svg -o renders                       # 1024 PNG + 对照图 + 指标报告
-python3 scripts/render.py icon.svg -o renders --variants            # 另出浅色、深色、单色、small 版和线稿 mark（给界面的品牌插图）
+python3 scripts/render.py icon.svg -o renders --variants            # 另出浅色、深色、单色、small 版和两份平涂的 mark（界面品牌插图：-mark 亮线配深色面板，-mark-light 深线配浅色面板）
 python3 scripts/render.py icon.svg -o renders --variants --export   # 另出 Icon Composer、Android、Play、PWA、favicon 文件
 python3 scripts/render.py icon.svg -o renders --store-ab           # 另出商店 A/B 变体（浅一档底、细亮边、类别色底）和对比图
 python3 scripts/render.py icon.svg -o renders --json                # 指标另存为 JSON
