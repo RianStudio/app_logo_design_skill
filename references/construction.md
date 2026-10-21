@@ -45,10 +45,10 @@ render.py 靠这些标记测量、换外观、导出分层，画的时候顺手�
 |---|---|---|
 | 根 | 只写 `viewBox="0 0 1024 1024"` | |
 | 根 | `data-variant="lighter｜rim｜tint"`，细亮边另有 `<path id="rim" fill="url(#rim-fill)">` | 只出现在 `--store-ab` 写出的商店变体上。手画的母版不写 |
-| `<defs>` | `#bg`、`#body-fill`、`#accent` 三个 `linearGradient`，都用 `userSpaceOnUse`；每个只有两个 stop，取色板里那一对值；不放 filter | 读色板，算渐变跨度。整个文件 id 不能重复 |
+| `<defs>` | `#bg`、`#body-fill`、`#accent` 三个 `linearGradient`，都用 `userSpaceOnUse`；`#bg`、`#body-fill` 只有两个 stop，取石墨那一对值；`#accent` 的颜色不限（两个或更多不透明的 stop，「浅 → 主」）；不放 filter | 读颜色，算渐变跨度。整个文件 id 不能重复 |
 | `#background` | 一个 `rect`，x = y = 0，宽高 1024，fill `url(#bg)`；没有子元素、没有 transform | 换外观时改它 |
 | `#subject` | `data-shape="circle｜square｜tall｜wide｜open"`、`transform="translate(512 512) scale(k) translate(-512 -512) translate(tx ty)"` | 选尺寸检查（封闭的线稿看剪影，`open` 看凸包）；k 用来换算源坐标 |
-| `#subject` | `data-category="tools｜image｜video｜ai｜health｜finance"`，不属于这些类就不写 | 按类别查强调色和类别记号 |
+| `#subject` | `data-category="tools｜image｜video｜ai｜health｜finance"`，不属于这些类就不写 | 按类别查类别记号（类别不定颜色） |
 | `#subject` | `data-volume="none"`：只在不画体积层时写 | 体积层一行改报 INFO |
 | `#subject` | `data-relax="parts long_side silhouette hull accent category"` 中的几个：只在它们挡住用户点名的元素时写（`style.md`「规则分级」） | 这几项的 FAIL 改报 INFO，数值后标「data-relax」；写了别的 key 报结构 FAIL |
 | `#volume` | `#subject` 的第一个子元素，一个 `path`、`circle`、`rect`、`ellipse` 或 `polygon`，`fill="#FFFFFF" fill-opacity="0.14"`；不描边、不写 `opacity`、不用渐变 | 体积层检查；Icon Composer 组 1；换外观时改颜色和透明度 |
@@ -180,7 +180,7 @@ python3 scripts/render.py icon.svg -o renders --store-ab
 |---|---|
 | `<name>-lighter.svg/.png` | 浅一档的底，别的不动 |
 | `<name>-rim.svg/.png` | 默认底，Apple 图标外形里最外 16 px 一圈细亮边 |
-| `<name>-tint.svg/.png` | 类别色底，四类以外的 app 叫强调色底（强调色是灰或色板外时不出） |
+| `<name>-tint.svg/.png` | 强调色底：底朝强调色主色的色相偏一点，任何颜色都按它现场算（灰这类彩度 < 10 的强调色不出） |
 | `<name>-store-ab.png` | 对比图：默认和变体放在黑、白两种商店底上，120 px 和 60 px，标边缘对比度 |
 | `README.txt` | 在产品页优化里怎么用：备用图标打进安装包、和主图标相像（审核规则 2.3.8）、一次只测一项 |
 
@@ -213,7 +213,7 @@ python3 scripts/concepts.py a.svg b.svg ... [-o FILE] [--blind]   # 概念板；
   |---|---|---|
   | 结构（id、图层和顺序；id 重复；`#background` 是不是一个干净的全画布 rect；旧风格的 `#cut`、`data-cut`、`detail`、`#line`、`#backing`） | `structure` | 有问题才出现，FAIL |
   | 线宽（60 ± 1，一种线宽，圆头圆角；#body 不填色；强调色不描边；两层之外没有图形） | `stroke` | FAIL |
-  | 颜色（每个 stop 都在那一对值里、不透明；线的 stroke 是 `url(#body-fill)`；单个元素不带自己的颜色、线宽和透明度） | `palette` | FAIL |
+  | 颜色（底和线的每个 stop 都在石墨那一对值里；强调色颜色不限；所有 stop 不透明；线的 stroke 是 `url(#body-fill)`；单个元素不带自己的颜色、线宽和透明度） | `palette` | FAIL |
   | 线条段数（1–4）；强调色块数 = 1 | `parts`、`accent_count` | FAIL（`parts` 可 `data-relax`） |
   | 线间净空（分开的线之间 ≥ 60） | `line_gap` | FAIL |
   | 线间夹缝（半径 30 闭运算后多出的一块 ≤ 3000 px²） | `pinch` | FAIL |
@@ -227,7 +227,7 @@ python3 scripts/concepts.py a.svg b.svg ... [-o FILE] [--blind]   # 概念板；
   | 线对底、强调色对底（线对体积层、浅色外观的数字附在后面，INFO） | `contrast_body`、`contrast_accent` | FAIL |
   | 体积层（边沿 ≥ 90 % 藏在线或强调色下，伸出凸包 ≤ 1 %，占凸包多少只报数；`data-volume="none"` 时 INFO） | `volume` | FAIL |
 | 辉光和滤镜（有 `#glow` 或任何 filter 就 FAIL） | `glow` | FAIL |
-  | 类别记号（强调色是不是这一类的颜色，记号在不在；绿只给健康、财务，斜带只给 AI；没写 `data-category` 时 INFO） | `category` | FAIL（可 `data-relax`） |
+  | 类别记号（记号在不在，不查颜色；斜带只给 AI；健康、财务和没写 `data-category` 时 INFO） | `category` | FAIL（可 `data-relax`） |
   | 商店边缘 | `store_edge` | INFO |
   | 安卓主题图标 | `themed` | INFO |
   | 商店变体（文件根上有 `data-variant`） | `variant` | 有才出现，INFO |
