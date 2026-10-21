@@ -19,7 +19,7 @@ Pair score, 0–1:
   0.3 × 布局    the small version's glyph on a 12 × 12 grid of its own box (where the lines and the accent
                 sit): soft IoU
   0.4 × 强调色  the accents on the canvas at 40 px, blurred σ 3: soft IoU times hue closeness (1 − Δh / 60°)
-A pair at 0.37 or more is flagged (像). Two icons of the same data-category share their colour and mark on
+A pair at 0.37 or more is flagged (像). Two icons of the same data-category share their mark on
 purpose, so they are scored on outline and layout only, (0.3 × 外形 + 0.3 × 布局) / 0.6, and flagged at 0.50
 or more: they have to differ in shape more than icons that already differ in colour. Calibrated on the solid
 graphite drafts; kept for the line style, where they still separate: the line drafts' Squeeze as a plain
@@ -124,7 +124,7 @@ def features(renderer, svg):
         ImageFilter.GaussianBlur(ACCENT_BLUR))
     return {
         "file": str(svg), "name": label_for(svg, root), "category": info["category"],
-        "colour": colour, "hue": float(h), "chroma": float(C),
+        "colour": colour, "main": stops[-1] if stops else None, "hue": float(h), "chroma": float(C),
         "accent_at": [round(centre[0]), round(centre[1])], "sector": sector(centre),
         "aspect": (x1 - x0) / max(y1 - y0, 1),
         "outline": boxed((R.silhouette(union) * 255).astype(np.uint8), box, OUTLINE_GRID),
@@ -194,7 +194,7 @@ def crowding(icons):
         owner = MARK_SECTOR.get(ic["sector"])
         if owner and ic["category"] != owner:
             out.append({"kind": "占了记号的角", "sector": ic["sector"], "icons": [ic["name"]], "ids": [ic["id"]],
-                        "owner": R.CATEGORIES[owner][0]})
+                        "owner": R.CATEGORIES[owner]})
     return out
 
 
@@ -209,9 +209,9 @@ def report(icons, pairs, crowds):
     lines.append("  强调色登记")
     lines.append("  " + pad("图标", 14) + pad("类别", 8) + pad("强调色", 8) + pad("重心", 14) + "方位")
     for ic in icons:
-        cat = R.CATEGORIES[ic["category"]][0] if ic["category"] in R.CATEGORIES else "—"
+        cat = R.CATEGORIES[ic["category"]] if ic["category"] in R.CATEGORIES else "—"
         mark = " *" if ic["role"] == "new" else ""
-        lines.append("  " + pad(ic["name"] + mark, 14) + pad(cat, 8) + pad(ic["colour"] or "色板外", 8)
+        lines.append("  " + pad(ic["name"] + mark, 14) + pad(cat, 8) + pad(ic["colour"] or ic["main"] or "—", 8)
                      + pad(f"({ic['accent_at'][0]}, {ic['accent_at'][1]})", 14) + ic["sector"])
     lines.append(f"  配对（分数 = {W_OUTLINE} 外形 + {W_LAYOUT} 布局 + {W_ACCENT} 强调色，≥ {FLAG} 标出；"
                  f"同类别只比外形和布局，÷ {W_OUTLINE + W_LAYOUT:g}，≥ {FLAG_SAME} 标出）")
@@ -299,7 +299,7 @@ def accent_map(icons, crowds):
     crowded = {i for c in crowds for i in c["ids"]}
     for ic in icons:
         x, y = ic["accent_at"][0] * s, ic["accent_at"][1] * s
-        fill = R.PALETTE[ic["colour"]][1] if ic["colour"] else "#8E8D89"
+        fill = ic["main"] or "#8E8D89"
         ring = ' stroke="#FF6B5A" stroke-width="2"' if ic["id"] in crowded else ""
         parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{fill}"{ring}/>'
                      f'<text x="{x + 9:.1f}" y="{y + 4:.1f}" font-size="10" fill="#C6C8CB">{esc(ic["name"])}</text>')
@@ -321,8 +321,8 @@ def build_sheet(renderer, icons, pairs, crowds, path):
                   f'{esc(" – ".join(p["pair"]))}</div><div>外形 {p["outline"]:.2f} · 布局 {p["layout"]:.2f} · '
                   + ("同类别，不比强调色" if p["same_category"] else f'强调色 {p["accent"]:.2f}')
                   + "</div></div></div>")
-    rows = "".join(f"<tr><td>{esc(ic['name'])}</td><td>{R.CATEGORIES[ic['category']][0] if ic['category'] in R.CATEGORIES else '—'}"
-                   f"</td><td>{ic['colour'] or '色板外'}</td><td>({ic['accent_at'][0]}, {ic['accent_at'][1]})</td>"
+    rows = "".join(f"<tr><td>{esc(ic['name'])}</td><td>{R.CATEGORIES[ic['category']] if ic['category'] in R.CATEGORIES else '—'}"
+                   f"</td><td>{ic['colour'] or ic['main'] or '—'}</td><td>({ic['accent_at'][0]}, {ic['accent_at'][1]})</td>"
                    f"<td>{ic['sector']}</td></tr>" for ic in icons)
     table = f"<table><tr><th>图标</th><th>类别</th><th>强调色</th><th>重心</th><th>方位</th></tr>{rows}</table>"
     crowd_html = "".join(f'<div class="{"label" if c["old_only"] else "bad"}" style="font-size:12px;margin-top:10px">'

@@ -1,13 +1,13 @@
 ---
 name: rian-app-icon
-description: Design app icons as production SVG in Rian's house style, the graphite line style with Apple and Google platform specs - a light round-cap line drawing (60 px at 1024, the same line as the UI's Lucide icons) on a graphite gradient, a translucent white flat volume inside the object behind the lines, and one filled accent shape, following Apple's iOS 26 icon guidance (Icon Composer groups, six appearances, no baked glow). No opaque fills and no letters; every gap at least one line width, so the mark survives monochrome and small sizes, and tools, image, video and AI apps each carry a fixed category mark. Renders a review sheet with automatic stroke, gap, size, contrast, volume, accent and category checks and an approximate Liquid Glass row of the six iOS 26 appearances, runs a series check against existing icons, and generates light, dark and mono appearances, three Icon Composer groups, Android adaptive and themed icons, Play, PWA and favicon exports, and App Store A/B variants. Starts from a product brief (keeping every element the user names) with an inventory of what only this product has, a concept board of several directions (with a squint tile and a competitor-swap test) for the user to pick, a dated registry of generated-icon tells, a written critique with capped scores each round, and gates the result with a blind product-fit test; soft rules give way to what the user asked for. Use when asked to create, redesign or iterate on an app icon, launcher icon, app logo mark or favicon. Not for wordmarks or logos with letters, and not for in-app UI icons. 用于按 Rian 的石墨线稿风格（深石墨底、60 px 圆头亮线、物件里一层半透明白的体积、一块填色强调色，和界面的 Lucide 细线图标同一种线）设计应用图标、启动图标和 favicon（SVG）；不做字标或带字母的 logo，也不做界面里的小图标。
+description: Design app icons as production SVG in Rian's house style, the graphite line style with Apple and Google platform specs - a light round-cap line drawing (60 px at 1024, the same line as the UI's Lucide icons) on a graphite gradient, a translucent white flat volume inside the object behind the lines, and one filled accent shape in any colour (red included; only contrast is checked), following Apple's iOS 26 icon guidance (Icon Composer groups, six appearances, no baked glow). No opaque fills and no letters; every gap at least one line width, so the mark survives monochrome and small sizes, and tools, image, video and AI apps each carry a fixed category mark. Renders a review sheet with automatic stroke, gap, size, contrast, volume, accent and category checks and an approximate Liquid Glass row of the six iOS 26 appearances, runs a series check against existing icons, and generates light, dark and mono appearances, three Icon Composer groups, Android adaptive and themed icons, Play, PWA and favicon exports, and App Store A/B variants. Starts from a product brief (keeping every element the user names) with an inventory of what only this product has, a concept board of several directions (with a squint tile and a competitor-swap test) for the user to pick, a dated registry of generated-icon tells, a written critique with capped scores each round, and gates the result with a blind product-fit test; soft rules give way to what the user asked for. Use when asked to create, redesign or iterate on an app icon, launcher icon, app logo mark or favicon. Not for wordmarks or logos with letters, and not for in-app UI icons. 用于按 Rian 的石墨线稿风格（深石墨底、60 px 圆头亮线、物件里一层半透明白的体积、一块颜色不限的填色强调色，和界面的 Lucide 细线图标同一种线）设计应用图标、启动图标和 favicon（SVG）；不做字标或带字母的 logo，也不做界面里的小图标。
 ---
 
 # Rian App Icon
 
 把一句产品描述变成一枚可以直接上架的 app 图标：1024 全出血 SVG 母版，默认（石墨）、浅色、深色、单色四种平面外观，Icon Composer 三组分层（iOS 26 的六种外观由系统从它推出），一张评审对照图；需要时再导出 Android、Play、PWA、favicon 文件和商店 A/B 变体。
 
-只有一种风格：**石墨线稿**。深石墨底上一笔亮色圆头细线画出物件，物件里面垫一层半透明白的平涂实形（体积层），强调色是一块填色，只点一处。线 1024 下 60 px（Lucide 24 格上 2 个单位的线，按主体约 640 px 放大；界面里 20 px 图标的 1.5 px 线同比例约 56），只有一种线宽，圆头圆角，线本身不填色；分开的线之间、线和强调色之间都至少隔一个线宽。每一枚都是同样的四层：石墨底、体积层（`#FFFFFF` 14 %，边沿藏在线下）、线稿、强调色，后三层就是 Icon Composer 的三组。工具、图片、视频、AI 四类 app 各有一个固定的类别记号。不画不透明的实心主体，也不画辉光和任何滤镜：iOS 26 的 Liquid Glass 由系统按层加。图标的分层、外观和细节要求学 Apple 的 HIG；Android 的文件从同一个母版派生。
+只有一种风格：**石墨线稿**。深石墨底上一笔亮色圆头细线画出物件，物件里面垫一层半透明白的平涂实形（体积层），强调色是一块填色，只点一处，颜色不限（红也可以），只要对底看得清。线 1024 下 60 px（Lucide 24 格上 2 个单位的线，按主体约 640 px 放大；界面里 20 px 图标的 1.5 px 线同比例约 56），只有一种线宽，圆头圆角，线本身不填色；分开的线之间、线和强调色之间都至少隔一个线宽。每一枚都是同样的四层：石墨底、体积层（`#FFFFFF` 14 %，边沿藏在线下）、线稿、强调色，后三层就是 Icon Composer 的三组。工具、图片、视频、AI 四类 app 各有一个固定的类别记号（只是形状，不定颜色）。不画不透明的实心主体，也不画辉光和任何滤镜：iOS 26 的 Liquid Glass 由系统按层加。图标的分层、外观和细节要求学 Apple 的 HIG；Android 的文件从同一个母版派生。
 
 **动笔前读 `references/style.md`**：风格规则、线宽的来由、全部阈值和验收清单都在那里。**画 SVG 时再查 `references/construction.md`** 的「几何速查」（`shapes.py` 各命令、常用写法）和「属性和类」；平台规格也在它的「平台导出」。**定概念和评审时对一遍 `references/tells.md`**：一眼就是「生成的」图标的套路登记表，写了日期，只给做法。
 
@@ -46,7 +46,7 @@ description: Design app icons as production SVG in Rian's house style, the graph
 
 这个风格追求**一眼看懂这是什么 app**，像 Apple 和 Google 自己的 app：计时就是秒表，天气就是太阳和云，记账就是饼图。概念错了，后面怎么打磨都救不回来，所以图标像不像这个产品，在这一步就定了。
 
-先定类别：工具、图片、视频、AI，健康、财务，或者都不是（按主要功能归，顺序见 `style.md`「类别记号」：先看是不是靠模型，再看处理的是图片、视频还是文件；计时、笔记、翻译这类不归类）。类别定了强调色和类别记号，隐喻要放得下这个记号：工具是一条横贯整幅的水平直线，图片是左上角的圆太阳，视频是一个线画的播放三角，AI 是外轮廓右下角的 45° 斜角加旁边的「/」斜带。
+先定类别：工具、图片、视频、AI，健康、财务，或者都不是（按主要功能归，顺序见 `style.md`「类别记号」：先看是不是靠模型，再看处理的是图片、视频还是文件；计时、笔记、翻译这类不归类）。类别只定类别记号，不定颜色；隐喻要放得下这个记号：工具是一条横贯整幅的水平直线，图片是左上角的圆太阳，视频是一个线画的播放三角，AI 是外轮廓右下角的 45° 斜角加旁边的「/」斜带。
 
 1. **词表**：围绕简报的一句话写四列，每列 3–5 个：**物件**（文件夹、托盘）、**动作**（搜索、收纳、拖进来）、**结果**（找到了、整整齐齐）、**领域符号**（这一行的人一看就懂的东西：矢量的锚点和手柄、圆三角方、`< >`）。用户点名的元素和专属清单里能画的几样直接放进词表。
 2. **六个方向，每个换一个视角**，每个一行：**画什么 → 强调色是哪一块 → 为什么一眼能懂**。六个视角：直译物件、动作、结果、领域符号、两样组合、抽象形。用户点名了元素时，至少一半的方向要把点名的元素全部画进去。
@@ -76,14 +76,13 @@ description: Design app icons as production SVG in Rian's house style, the graph
 
 ### 3. 定颜色
 
-从 `style.md` 的强调色表里只选一个，按顺序判断，命中就停：
+强调色**颜色不限**：红、粉、橙、青、任何色值都可以，类别也不定颜色。只选一个强调色（一块填色，渐变的 stop 可以是任意不透明的颜色），按顺序判断，命中就停：
 
-1. 属于四类或健康、财务 → 这一类的颜色（工具蓝、图片黄、视频珊瑚、AI 紫、健康和财务绿），不看品牌色
-2. 有品牌色 → 表里最接近的一个（绿除外）
-3. 物件在现实里有颜色（太阳、天空）→ 用它（绿除外）
-4. 都没有 → 蓝
+1. 用户点了颜色或有品牌色 → 直接用它，不用往色板上靠
+2. 物件在现实里有颜色（太阳、天空、红色的录制键）→ 用它
+3. 都没有 → 从 `style.md` 的建议色板里挑一个合这个产品的（蓝、绿、黄、珊瑚、红、紫、灰），或者自己调一个
 
-不要自造颜色。底和线的颜色是固定的，不用选。只画默认（石墨）外观，浅色、深色、单色由脚本生成。
+唯一的要求是看得清：强调色对石墨底 ≥ 3:1（`contrast_accent`），太深的红、蓝、紫会 FAIL，提亮就行。渐变照「浅 → 主」写，浅色那一头比主色亮一档。底和线的颜色是固定的，不用选。只画默认（石墨）外观，浅色、深色、单色由脚本生成。
 
 ### 4. 画 SVG
 
@@ -152,10 +151,10 @@ python3 <skill 目录>/scripts/concepts.py icon.svg [概念板上另外的方向
 | 主体显得小、显得重，和 Tide 不一样大 | 长边 `long_side`、剪影面积或凸包面积 `silhouette` / `hull`（形状 `shape` 只作参考）；墨量 `ink`（INFO） | 照报告给的「k 改为 …」改 scale，stroke-width 跟着改，再用 `shapes.py --k` 重出圆角和强调色 |
 | 主体偏上、偏下或偏一边 | 重心 `centroid` | 照报告给的「translate 改为 (…)」改，一次到位 |
 | 强调色太抢或太弱 | 强调色占比 `accent` | 改强调色的大小或角度，不动线 |
-| 看起来发平、发灰，或多出了颜色 | 颜色 `palette`、线渐变 `body_gradient`、线对底 `contrast_body` | 底和线只用色板的值，每个渐变只有那一对 stop；线渐变跨度 600，所有线共用一个；y1、y2 照报告给的值改 |
+| 看起来发平、发灰，或多出了颜色 | 颜色 `palette`、线渐变 `body_gradient`、线对底 `contrast_body` | 底和线只用石墨那一对值，强调色不限色但 stop 不透明；线渐变跨度 600，所有线共用一个；y1、y2 照报告给的值改 |
 | 体积层的边露在线外，或伸出物件 | 体积层 `volume` | 体积层的轮廓改成线的中线（复制那条 path 的 `d`）；开口的形状沿某一笔的中线封口，不要在空处画边 |
 | 强调色周围发亮，或报告说有滤镜 | 辉光和滤镜 `glow` | 删掉 `#glow`、`#glow-blur` 和任何 `filter`：光由 Liquid Glass 加 |
-| 遮住颜色说不出类别，或类别记号 FAIL | 类别记号 `category` | 颜色换成这一类的；工具加一条横贯整幅的水平直线（中线在高度 35–75 %），图片的太阳画成整圆（r ≥ 72）挪到左上角，视频单独画一个 `play` H ≥ 240 ÷ k 的三角，AI 在外轮廓右下角走一道 45° 斜角、旁边放 `shapes.py aiband`（不放在圆上）。见 `style.md`「类别记号」 |
+| 遮住颜色说不出类别，或类别记号 FAIL | 类别记号 `category` | 颜色不用改（类别不定颜色）；工具加一条横贯整幅的水平直线（中线在高度 35–75 %），图片的太阳画成整圆（r ≥ 72）挪到左上角，视频单独画一个 `play` H ≥ 240 ÷ k 的三角，AI 在外轮廓右下角走一道 45° 斜角、旁边放 `shapes.py aiband`（不放在圆上）。见 `style.md`「类别记号」 |
 | 和已有的某个图标像，或强调色挤在一处 | `series.py` 的「像」「扎堆」「占了记号的角」 | 改轮廓（长宽比、线在哪里断开、强调色压在框角上）或强调色的位置，只换颜色不算 |
 | 安卓主题图标里认不出 | 对照图的主题图标两格 | 底和强调色都没了，只剩线：换更具体的轮廓 |
 | 深色商店里边缘看不见 | 商店边缘 `store_edge`（INFO） | 不改母版：交付时提 `--store-ab` 的变体，见第 6 步 |
@@ -191,7 +190,7 @@ python3 <skill 目录>/scripts/render.py icon.svg -o renders --variants --export
 - 系列检查的结论：和哪个已有图标分数最高、多少（为点名的内容让步的，说一句）
 - 「可再调」：没修完的问题和已知取舍（比如浅色版里白云读成乌云），没有就省略
 - 一句提醒：安卓主题图标在对照图里是近似，上架前在开启主题图标的真机启动器上看一遍
-- 出了 `--store-ab` 时一句：深色 App Store 里石墨底的边缘看不清，`renders/store-ab/` 的浅一档底、细亮边（和类别色底）可以在产品页优化里和主图标对照，测试图标要作为备用图标打进安装包（`README.txt` 有步骤）
-- 一行界面主色，按 `style.md` 强调色表的「界面主色」列（蓝、绿、紫同色，珊瑚、黄、灰用蓝）。要做 UI 主题时用 `rian-app-theme`：`python3 <rian-app-theme 目录>/scripts/build.py --name <名字> --accent <色名> -o themes/<名字>`。`--accent` 传图标强调色的**色名**（蓝 / 绿 / 黄 / 珊瑚 / 紫 / 灰，或 blue / green / yellow / coral / violet / gray；强调色表里的两个色值也认，别的色值会被拒），脚本自己换算界面主色。预览用 `python3 <rian-app-theme 目录>/scripts/preview.py themes/<名字> --screen <timer|notes|list|editor|chat> --icon renders/<name>-1024.png --icon-dark renders/<name>-dark.png`（深色版来自 `--variants`）。`--variants` 还写出两份平涂的主体（只有体积层、线稿和强调色，透明底，不带渐变，体积层是线色的半透明，和界面的 Lucide 线是一种画法）：`<name>-mark.svg/.png` 是亮线，给深色模式的石墨品牌面板；`<name>-mark-light.svg/.png` 是深线，给浅色模式的浅品牌面板。界面的引导、付费墙、空状态、启动页用它们做插图，`preview.py` 在 `--icon` 旁边自动找到。app 图标本身（关于页）保留渐变。`--screen` 按 app 类型选：计时、工具类，以及翻译这类 → `timer`，笔记和阅读类 → `notes`，账本和列表类 → `list`，图片、视频类 → `editor`，AI 类 → `chat`，拿不准就 `timer`
+- 出了 `--store-ab` 时一句：深色 App Store 里石墨底的边缘看不清，`renders/store-ab/` 的浅一档底、细亮边（和强调色底）可以在产品页优化里和主图标对照，测试图标要作为备用图标打进安装包（`README.txt` 有步骤）
+- 一行界面主色，按 `style.md` 强调色表的「界面主色」列（蓝、绿、紫同色，珊瑚、红、黄、灰用蓝；色板外的颜色看它最接近哪一个）。要做 UI 主题时用 `rian-app-theme`：`python3 <rian-app-theme 目录>/scripts/build.py --name <名字> --accent <色名> -o themes/<名字>`。`--accent` 传图标强调色的**色名**（蓝 / 绿 / 黄 / 珊瑚 / 紫 / 灰，或 blue / green / yellow / coral / violet / gray；强调色表里的两个色值也认，别的色值会被拒；红和色板外的颜色传最接近的色名，比如红传珊瑚），脚本自己换算界面主色。预览用 `python3 <rian-app-theme 目录>/scripts/preview.py themes/<名字> --screen <timer|notes|list|editor|chat> --icon renders/<name>-1024.png --icon-dark renders/<name>-dark.png`（深色版来自 `--variants`）。`--variants` 还写出两份平涂的主体（只有体积层、线稿和强调色，透明底，不带渐变，体积层是线色的半透明，和界面的 Lucide 线是一种画法）：`<name>-mark.svg/.png` 是亮线，给深色模式的石墨品牌面板；`<name>-mark-light.svg/.png` 是深线，给浅色模式的浅品牌面板。界面的引导、付费墙、空状态、启动页用它们做插图，`preview.py` 在 `--icon` 旁边自动找到。app 图标本身（关于页）保留渐变。`--screen` 按 app 类型选：计时、工具类，以及翻译这类 → `timer`，笔记和阅读类 → `notes`，账本和列表类 → `list`，图片、视频类 → `editor`，AI 类 → `chat`，拿不准就 `timer`
 
 Android 三层图标、Play 512、PWA 和 favicon 也在 `renders/export/` 里，用户要上架时指给他，见 `construction.md`「平台导出」。Xcode 走 asset catalog 时，深色外观用透明底的 `ios-1024-dark.png`。迭代时只改用户点名的部分。

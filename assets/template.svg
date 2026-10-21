@@ -29,11 +29,11 @@
       <stop offset="0" stop-color="#F8F9FB"/>
       <stop offset="1" stop-color="#C6C8CB"/>
     </linearGradient>
-    <!-- TODO accent gradient: ONE colour from the palette in style.md, light → main; with data-category it is
-         that category's colour (tools blue, image yellow, video coral, AI purple, health and finance green).
+    <!-- TODO accent gradient: ONE accent, any colour (red too; the palette in style.md is only a suggestion),
+         light → main; the category does not set the colour. The main tone needs 3:1 on the graphite.
          Span 480 ÷ k, centred on the accent shape's vertical range.
          Here: coral #FF9C86 → #EC5B45; the sector runs y 394..676 (centre 535), so y1 295, y2 775.
-         Two opaque stops, exactly the palette pair: a third colour or a highlight band FAILs. -->
+         Opaque stops only. -->
     <linearGradient id="accent" x1="0" y1="295" x2="0" y2="775" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FF9C86"/>
       <stop offset="1" stop-color="#EC5B45"/>
@@ -49,12 +49,11 @@
        start from, measured on the lines' outer edge: circle 600, square 540 × 540, tall 480 × 600,
        wide 600 × 480; open is sized by its hull (about 290k px²); long side ≤ 720.
        TODO data-category: tools | image | video | ai | health | finance; leave it out for an app outside these
-       (Tide, a focus timer, has none). It fixes the accent colour and the mark: tools one horizontal straight
+       (Tide, a focus timer, has none). It fixes the mark (not the colour): tools one horizontal straight
        line across the whole drawing (centre at 35 to 75 % of its height), image a whole round sun (r ≥ 72) in
        the top left corner, video a play triangle drawn in line on its own (scripts/shapes.py play, H ≥ 240 ÷ k),
        AI a 45° chamfer in the outline's lower right corner with a band running "/" beside it (scripts/shapes.py
-       aiband, data-accent="band" on the accent, never on a circle). Green only for health and finance, the band
-       only for AI.
+       aiband, data-accent="band" on the accent, never on a circle). The band only for AI.
        TODO transform: translate(512 512) scale(k) translate(-512 -512) translate(tx ty). Draw in final pixels
        with k = 1. When the size line FAILs it prints the k to use; then stroke-width becomes 60 ÷ k and the
        corners and accent are redone with shapes.py and its k flag. translate puts the filled silhouette's

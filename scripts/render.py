@@ -132,10 +132,8 @@ BAND_ANGLE = 135.0            # the AI band's long axis, y down: bottom left to 
 BAND_ANGLE_TOL = 1.5
 BAND_WIDTH = 80.0
 BAND_WIDTH_TOL = 3.0
-# category marks (references/style.md, 类别记号): data-category -> (name, accent colour)
-CATEGORIES = {"tools": ("工具", "蓝"), "image": ("图片", "黄"), "video": ("视频", "珊瑚"), "ai": ("AI", "紫"),
-              "health": ("健康", "绿"), "finance": ("财务", "绿")}
-RESERVED = "绿"               # only health and finance
+# category marks (references/style.md, 类别记号): data-category -> name. The category sets the mark, not the colour
+CATEGORIES = {"tools": "工具", "image": "图片", "video": "视频", "ai": "AI", "health": "健康", "finance": "财务"}
 TOOLS_SPAN = 0.95             # the tools line runs across this share of the drawing's width (or more)
 TOOLS_AT = (0.35, 0.75)       # its centre line, share of the drawing's height from the top
 SUN_CORNER = 0.42             # the image sun's centre within this share of the box from the top left (inside a
@@ -174,8 +172,11 @@ MARK_PAD = 8                  # <name>-mark: transparent margin around the subje
 MARK_LINE = {"mark": "#E6E8EB", "mark-light": "#2A2C2F"}
 # the marks keep the volume, flat, in the line colour at a low opacity: the in-app art reads as the same object
 MARK_VOLUME = {"mark": 0.14, "mark-light": 0.08}
+# suggested accents (style.md, 强调色), light -> main: a starting point, not a limit. Any colour may be the accent; only
+# the contrast checks judge it
 PALETTE = {"蓝": ("#7AAEFF", "#3B7BEA"), "绿": ("#6FD3A6", "#23A36B"), "黄": ("#FFD978", "#F2AE2E"),
-           "珊瑚": ("#FF9C86", "#EC5B45"), "紫": ("#B3A6FF", "#7A63F0"), "灰": ("#C8C7C3", "#8E8D89")}
+           "珊瑚": ("#FF9C86", "#EC5B45"), "红": ("#FF8A8F", "#E5484D"), "紫": ("#B3A6FF", "#7A63F0"),
+           "灰": ("#C8C7C3", "#8E8D89")}
 TINT = "#5E9BFF"              # the tint the sheet's two Tinted tiles use (the user picks it on the device)
 FAVICON_RADIUS = 0.22         # favicon: graphite tile with 22 % corners
 IOS_CORNER = 0.2237           # Apple's icon shape: corner radius / side ...
@@ -183,13 +184,24 @@ IOS_SMOOTH = 0.6              # ... with 60 % corner smoothing (previews, the st
 
 # App Store A/B variants (style.md, 商店图标的 A/B 变体): extra exports of the default look, never the master
 STORE_AB = ("lighter", "rim", "tint")
-STORE_NAME = {"lighter": "浅一档", "rim": "细亮边", "tint": "类别色"}   # tint: 强调色底 outside the categories
+STORE_NAME = {"lighter": "浅一档", "rim": "细亮边", "tint": "强调色底"}
 LIGHTER_BG = ("#323538", "#26282B")   # one step lighter: L 22 -> 16, the default's top is its bottom
 RIM = ("#66686C", "#44474A")          # rim gradient, L 44 -> 30, hue 265, chroma 2.5
 RIM_W = 16                            # rim width inside Apple's icon shape (ios_path), final px
-TINT_BG = {"蓝": ("#262730", "#1A1B23"), "黄": ("#2D2720", "#201B13"), "珊瑚": ("#302523", "#241917"),
-           "紫": ("#29272F", "#1D1A22"), "绿": ("#212A24", "#151E18")}   # L 16 -> 10, chroma 6 at the accent's hue
+TINT_L = (16.0, 10.0)                 # tint variant: the default's lightness, chroma 6 at the accent's hue
+TINT_C = 6.0
+TINT_MIN_C = 10.0                     # an accent below this chroma (grey) has no hue to tint towards
 STORE_BG = {"dark": "#000000", "light": "#FFFFFF"}
+
+
+def tint_bg(accent_main):
+    """The tint variant's base for an accent's main tone (any colour): (top, bottom), or None for a grey accent."""
+    if not accent_main or not re.fullmatch(r"#[0-9A-Fa-f]{6}", accent_main):
+        return None
+    _, C, h = rgb_lch(hex_rgb(accent_main))
+    if float(C) < TINT_MIN_C:
+        return None
+    return tuple("#%02X%02X%02X" % tuple(int(v) for v in lch_rgb(L, TINT_C, float(h))) for L in TINT_L)
 
 # Android themed icon, approximated: Material You tonal palettes (Android 13 tonal spot: accent1 chroma 36,
 # neutral1 4, neutral2 8; tone = CIE L*) from a seed hue taken from the wallpaper. Launcher3
@@ -705,6 +717,9 @@ def _set_stops(root, gid, stops, opacity=None):
     st = list(g.iter(q("stop")))
     for s, c in zip((st[0], st[-1]) if st else (), stops):
         set_prop(s, "stop-color", c)
+    if len(set(stops)) == 1:              # one colour (mono): the stops in between too
+        for s in st[1:-1]:
+            set_prop(s, "stop-color", stops[0])
     if opacity is not None:
         for s in st:
             set_prop(s, "stop-opacity", opacity)
@@ -842,7 +857,7 @@ def make_marks(renderer, text, pad=MARK_PAD):
     return out
 
 
-def make_store_variant(text, kind, accent_name=None):
+def make_store_variant(text, kind, accent_main=None):
     """App Store A/B variant of the default look, marked data-variant on the root: lighter (the base one step
     lighter), rim (a thin bright rim inside Apple's icon shape) or tint (the base turned towards the accent's
     hue)."""
@@ -852,7 +867,7 @@ def make_store_variant(text, kind, accent_name=None):
     if kind == "lighter":
         _set_stops(root, bg_id, LIGHTER_BG)
     elif kind == "tint":
-        _set_stops(root, bg_id, TINT_BG[accent_name])
+        _set_stops(root, bg_id, tint_bg(accent_main))
     elif kind == "rim":
         defs = root.find(q("defs"))
         if defs is None:
@@ -1493,8 +1508,8 @@ def measure(renderer, text, root, name, ref):
     C.append(check("stroke", "线宽", val + ("；" + "；".join(probs) if probs else " · 圆头圆角"),
                    f"{STROKE:.0f} ± {STROKE_TOL:.0f}，一种线宽，圆头圆角", ok(not probs)))
 
-    # palette: every stop of the three gradients is one of the allowed pair (no third colour, no light band,
-    # no see-through stop); the lines paint only with the body gradient, the accent only with its own
+    # palette: the base and the lines are the fixed graphite pairs (no third colour, no light band, no see-through
+    # stop); the accent is any opaque colours; the lines paint only with the body gradient, the accent only with its own
     def stop_note(g, pair):
         """'' when the gradient's stops are the pair (first and last) and nothing else, else what is wrong."""
         if not g:
@@ -1513,15 +1528,16 @@ def measure(renderer, text, root, name, ref):
     acs = info["accent_grad"]
     acc_ends = tuple(acs["stops"][:1] + acs["stops"][-1:]) if acs else ()
     acc_name = next((n_ for n_, v in PALETTE.items() if acc_ends == v), None)
+    acc_main = acs["stops"][-1] if acs and acs["stops"] else None
     # the base is the fixed graphite; only the App Store A/B variants written by --store-ab change it
     variant = info["variant"]
-    bg_pair = {"lighter": LIGHTER_BG, "tint": TINT_BG.get(acc_name)}.get(variant) or LOOKS["default"]["bg"]
+    bg_pair = {"lighter": LIGHTER_BG, "tint": tint_bg(acc_main)}.get(variant) or LOOKS["default"]["bg"]
     bg_label = "底" + (f"（A/B {STORE_NAME[variant]}）" if variant in STORE_NAME else "")
     bgs = info["bg_grad"]
     bg_vertical = bool(bgs) and bgs["tag"] == "linearGradient" and bgs["x1"] == bgs["x2"] and bgs["y2"] > bgs["y1"]
     note = stop_note(bgs, bg_pair)
-    if variant == "tint" and acc_name not in TINT_BG:
-        parts.append(f"{bg_label} 灰和色板外的强调色没有类别色变体")
+    if variant == "tint" and tint_bg(acc_main) is None:
+        parts.append(f"{bg_label} 灰色的强调色没有强调色底变体")
         good = False
     elif bg_vertical and not note and url_id(info["bg_fill"]):
         parts.append(f"{bg_label} {bg_pair[0]}→{bg_pair[1]}")
@@ -1547,9 +1563,14 @@ def measure(renderer, text, root, name, ref):
     if info["piece_fills"]:
         parts.append("单个元素自带颜色、线宽或透明度：" + ", ".join(info["piece_fills"][:3]))
         good = False
-    note = stop_note(acs, PALETTE[acc_name]) if acc_name else ("→".join(acc_ends) or "缺渐变") + " 不在色板"
+    if not acs or len(acs["stops"]) < 2:
+        note = "缺渐变" if not acs else "要至少两个 stop"
+    elif any(o < 1 for o in acs.get("opacities", [])):
+        note = "stop 半透明"
+    else:
+        note = ""
     if not note and url_id(info["accent_fill"]) == "accent":
-        parts.append(f"强调色 {acc_name} {acc_ends[0]}→{acc_ends[1]}")
+        parts.append(f"强调色 {acc_name or '自定'} " + "→".join(acs["stops"]))
     else:
         parts.append("强调色 " + (note or f"fill 写 url(#accent)，不是 {info['accent_fill']}"))
         good = False
@@ -1561,8 +1582,8 @@ def measure(renderer, text, root, name, ref):
                      f" 应为 fill {VOLUME_FILL}、fill-opacity {VOLUME_OPACITY:g}，平涂"
                      + ("；" + "；".join(vol["problems"][:2]) if vol["problems"] else "")))
         good = good and v_ok
-    raw["accent_colour"] = acc_name
-    C.append(check("palette", "颜色", " · ".join(parts), "默认外观 + 六色表", ok(good)))
+    raw["accent_colour"], raw["accent_main"] = acc_name, acc_main
+    C.append(check("palette", "颜色", " · ".join(parts), "石墨底和线；强调色不限色，不透明", ok(good)))
     if variant:
         C.append(check("variant", "商店变体", f'data-variant="{variant}"：--store-ab 写出的 A/B 变体，不是母版',
                        "母版不写 data-variant；变体只进产品页优化，不出 --export", "INFO"))
@@ -1769,10 +1790,10 @@ def measure(renderer, text, root, name, ref):
     C.append(check("glow", "辉光和滤镜", "没有" if not probs else "；".join(probs),
                    "不画辉光、阴影、高光（iOS 26 由系统加）", ok(not probs)))
 
-    # category mark (tools line, image sun, video play outline, AI band) and the reserved green
-    C.append(category_check(info, union, body, acc, acc_c, lines_, hull, acc_name, raw))
+    # category mark (tools line, image sun, video play outline, AI band)
+    C.append(category_check(info, union, body, acc, acc_c, lines_, hull, raw))
     # the tile's edge in the App Store (dark and light), with the A/B variants for comparison
-    C.append(store_edge_check(full, acc_name, raw))
+    C.append(store_edge_check(full, raw.get("accent_main"), raw))
     # Android themed icon: the base and the accent are gone, the shape has to carry it
     C.append(themed_check(raw))
 
@@ -1877,12 +1898,11 @@ def min_width(points):
 
 CATEGORY_TARGET = {"tools": "一条横贯整幅线稿的水平直线（中线在高度 35–75 %）",
                    "image": "左上角一个实心正圆太阳（强调色）", "video": "一个描边的播放三角（尖朝右，中间是空的）",
-                   "ai": "右下角一条「/」向 45° 斜带（宽 80，强调色）", "health": "强调色绿", "finance": "强调色绿"}
+                   "ai": "右下角一条「/」向 45° 斜带（宽 80，强调色）", "health": "没有形状记号", "finance": "没有形状记号"}
 
 
-def category_check(info, union, body, acc, acc_c, lines_, hull, acc_name, raw):
-    """data-category: the accent colour of the category and its mark; green only for health and finance;
-    the band only for AI."""
+def category_check(info, union, body, acc, acc_c, lines_, hull, raw):
+    """data-category: the mark of the category (the colour is free); the band only for AI."""
     cat, kind = info["category"], info["accent_kind"]
     x0, y0, x1, y1 = bbox(union)
     W, H = x1 - x0, y1 - y0
@@ -1891,17 +1911,13 @@ def category_check(info, union, body, acc, acc_c, lines_, hull, acc_name, raw):
             return check("category", "类别记号", f'data-category="{cat}" 不认识', "工具 / 图片 / 视频 / AI 各有记号",
                          "FAIL")
         probs = []
-        if acc_name == RESERVED:
-            probs.append('绿只给健康和财务：写 data-category="health" 或 "finance"，别的 app 换色')
         if kind == "band":
             probs.append('斜带只给 AI 类（data-category="ai"）')
         return check("category", "类别记号", "没写 data-category：不属于四类" + ("；" + "；".join(probs) if probs else ""),
                      "工具 / 图片 / 视频 / AI 各有记号", "FAIL" if probs else "INFO")
-    name, colour = CATEGORIES[cat]
+    name = CATEGORIES[cat]
     raw["category"] = cat
     notes, probs = [], []
-    if acc_name != colour:
-        probs.append(f"{name}类的强调色是{colour}，这里是{acc_name or '色板外的颜色'}")
     if kind == "band" and cat != "ai":
         probs.append("斜带只给 AI 类")
     if cat == "tools":
@@ -1961,6 +1977,8 @@ def category_check(info, union, body, acc, acc_c, lines_, hull, acc_name, raw):
                 probs.append("圆 + 斜带像 Linear 的标：AI 斜带不放在圆形物件上")
     else:
         notes.append("没有形状记号")
+        val = f"{name}类" + "".join(" · " + n_ for n_ in notes)
+        return check("category", "类别记号", val, CATEGORY_TARGET[cat], "INFO")
     val = f"{name}类" + "".join(" · " + n_ for n_ in notes) + ("；" + "；".join(probs) if probs else "")
     return check("category", "类别记号", val, CATEGORY_TARGET[cat], ok(not probs))
 
@@ -1971,10 +1989,10 @@ def edge_ring(width=RIM_W):
 
 
 def store_name(kind, category):
-    return "强调色底" if kind == "tint" and category not in CATEGORIES else STORE_NAME[kind]
+    return STORE_NAME[kind]
 
 
-def store_edge_check(full, acc_name, raw):
+def store_edge_check(full, acc_main, raw):
     """Contrast of the tile's outer edge against the dark (#000) and the light (#FFF) App Store, for this
     file and for the A/B variants --store-ab writes."""
     ring = edge_ring()
@@ -1985,8 +2003,8 @@ def store_edge_check(full, acc_name, raw):
 
     own = against(full)
     ab = {"lighter": against(vgrad(*LIGHTER_BG)), "rim": against(vgrad(*RIM))}
-    if acc_name in TINT_BG:
-        ab["tint"] = against(vgrad(*TINT_BG[acc_name]))
+    if tint_bg(acc_main):
+        ab["tint"] = against(vgrad(*tint_bg(acc_main)))
     raw["store_edge"] = {"dark": round(own[0], 2), "light": round(own[1], 2),
                          "ab_dark": {k: round(v[0], 2) for k, v in ab.items()}}
     val = (f"对黑 {own[0]:.1f}:1 · 对白 {own[1]:.1f}:1 · A/B 变体对黑："
@@ -2295,7 +2313,8 @@ def build_sheet(renderer, result, ims, tide_im, path):
     raw = result["raw"]
     fails = [c["key"] for c in result["checks"] if c["status"] == "FAIL"]
     cat = raw.get("category")
-    stat_lines = [(f"{CATEGORIES[cat][0]}类 · {CATEGORIES[cat][1]}" if cat in CATEGORIES else "不属于四类")
+    stat_lines = [(f"{CATEGORIES[cat]}类" if cat in CATEGORIES else "不属于四类")
+                  + f' · 强调色 {raw.get("accent_colour") or raw.get("accent_main") or "—"}'
                   + f' · 剪影 {raw.get("silhouette_ratio", 0):.2f}× Tide · 凸包 {raw.get("hull_ratio", 0):.2f}×',
                   f'强调色 {raw.get("accent_share", 0):.1f} % · 长边 {raw.get("long_side", 0)} px · '
                   f'{raw.get("parts", 0)} 段线',
@@ -2737,16 +2756,16 @@ def store_ab(renderer, text, result, ims, out):
     """App Store A/B variants of the default look (style.md, 商店图标的 A/B 变体): .svg + .png each, a comparison
     sheet on the dark and the light store, README.txt."""
     out.mkdir(parents=True, exist_ok=True)
-    name, acc_name, category = result["name"], result["raw"].get("accent_colour"), result["raw"].get("category")
-    kinds = [k for k in STORE_AB if k != "tint" or acc_name in TINT_BG]
+    name, acc_main, category = result["name"], result["raw"].get("accent_main"), result["raw"].get("category")
+    kinds = [k for k in STORE_AB if k != "tint" or tint_bg(acc_main)]
     pics, written, lines = {"default": ims["master"]}, [], []
     for kind in kinds:
-        svg = make_store_variant(text, kind, acc_name)
+        svg = make_store_variant(text, kind, acc_main)
         (out / f"{name}-{kind}.svg").write_text(svg, encoding="utf-8")
         pics[kind] = renderer.image(svg, 1024)
         pics[kind].save(out / f"{name}-{kind}.png")
         written += [f"{name}-{kind}.svg", f"{name}-{kind}.png"]
-        stops = {"lighter": LIGHTER_BG, "rim": RIM, "tint": TINT_BG.get(acc_name)}[kind]
+        stops = {"lighter": LIGHTER_BG, "rim": RIM, "tint": tint_bg(acc_main)}[kind]
         lines.append((f"{name}-{kind}.svg/.png", STORE_FILE[kind].format(*stops, name=store_name(kind, category))))
     ring = edge_ring()
     rows = {}
@@ -2855,7 +2874,7 @@ def main():
     ap.add_argument("--variants", action="store_true", help="also write the light, dark, mono and small looks")
     ap.add_argument("--export", action="store_true", help="also write the platform files to DIR/export/")
     ap.add_argument("--store-ab", action="store_true",
-                    help="also write the App Store A/B variants (lighter base, rim, category tint) to DIR/store-ab/")
+                    help="also write the App Store A/B variants (lighter base, rim, accent tint) to DIR/store-ab/")
     ap.add_argument("--json", action="store_true", help="also write <name>-metrics.json")
     ap.add_argument("--tide", type=Path, default=TIDE_SVG, metavar="FILE",
                     help="Tide reference SVG (default examples/tide.svg)")
